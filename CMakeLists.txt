@@ -9,6 +9,7 @@ project(multi_drone_platform)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  sensor_msgs
   roscpp
   rospy
   rviz
@@ -151,6 +152,16 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+
+
+add_executable(virtualflie src/virtualflie/virtualflie.cpp)
+target_link_libraries(virtualflie ${catkin_LIBRARIES})
+#add_dependencies(virtualflie multi_drone_platform_generate_messages_cpp)
+
+add_executable(joyflie src/virtualflie/joyflie.cpp)
+target_link_libraries(joyflie ${catkin_LIBRARIES})
+#add_dependencies(joyflie multi_drone_platform_generate_messages_cpp)
+
 
 #############
 ## Install ##
