@@ -1,0 +1,13 @@
+<launch>
+    <arg name="vrpn" default="true" />
+    <arg name="server" default = "129.127.29.166"/>
+    <include file="$(find vrpn_client_ros)/launch/sample.launch">
+        <arg name="server" value="$(arg server)"/>
+    </include>
+    <node 
+        name="rviz" 
+        pkg="rviz" 
+        type="rviz" 
+        args="-f world -d $(find vec_control)/launch/rigidBodies.rviz"
+    />
+</launch>
