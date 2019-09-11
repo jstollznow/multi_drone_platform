@@ -1,0 +1,33 @@
+<launch>
+    <node 
+        name="joy_node" 
+        pkg="joy" 
+        type="joy_node" 
+        output="screen"
+    />
+    <node 
+        name="static_transform_publisher" 
+        pkg="tf" 
+        type="static_transform_publisher" 
+        args="0.0 0.0 0.0 0.0 0 0.0 100 map vflie 100"
+        output="screen"
+    />
+    <node 
+        name="joyflie" 
+        pkg="multi_drone_platform" 
+        type="joyflie" 
+        output="screen"
+    />
+    <node 
+        name="virtualflie" 
+        pkg="multi_drone_platform" 
+        type="virtualflie" 
+        output="screen"
+    />
+    <node 
+        name="rviz" 
+        pkg="rviz" 
+        type="rviz" 
+        args="-f map -d $(find multi_drone_platform)/launch/virtualflie/virtualflie.rviz"
+    />
+</launch>
