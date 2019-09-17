@@ -1,13 +1,31 @@
 <launch>
     <arg name="vrpn" default="true" />
     <arg name="server" default = "129.127.29.166"/>
-    <include file="$(find vrpn_client_ros)/launch/sample.launch">
-        <arg name="server" value="$(arg server)"/>
-    </include>
+  <!-- <remap from="/vrpn_client_node" to="/optitrack"/>\ -->
+    <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn_client_node" output="screen">
+        <rosparam subst_value="true">
+        server: $(arg server)
+        port: 3883
+
+        update_frequency: 100.0
+        frame_id: world
+
+        # Use the VRPN server's time, or the client's ROS time.
+        use_server_time: false
+        broadcast_tf: true
+
+        # Must either specify refresh frequency > 0.0, or a list of trackers to create
+        refresh_tracker_frequency: 1.0
+        #trackers:
+        #- FirstTracker
+        #- SecondTracker
+        </rosparam>
+        <remap from="/vrpn_client_node" to="/optitrack"/>\
+    </node>
     <node 
         name="rviz" 
         pkg="rviz" 
         type="rviz" 
-        args="-f world -d $(find vec_control)/launch/rigidBodies.rviz"
+        args="-f world -d $(find multi_drone_platform)/launch/vec_creation/rigidBodies.rviz"
     />
 </launch>
