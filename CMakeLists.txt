@@ -58,11 +58,10 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  movementFeedbackSRV.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -142,6 +141,12 @@ add_library(${PROJECT_NAME}
   ${obj_src}
 )
 
+add_library(MDP_API
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/user_api/user_api.cpp
+)
+target_link_libraries(MDP_API ${catkin_LIBRARIES})
+add_dependencies(MDP_API multi_drone_platform_generate_messages_cpp)
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -179,6 +184,14 @@ target_link_libraries(joyflie ${catkin_LIBRARIES} ${PROJECT_NAME})
 add_executable(ps4teleop src/PS4_control/ps4teleop.cpp)
 target_link_libraries(ps4teleop ${catkin_LIBRARIES} ${PROJECT_NAME}) 
 add_dependencies(ps4teleop multi_drone_platform_generate_messages_cpp)
+
+add_executable(tst_drone_server src/drone_server/test_drone_server.cpp)
+target_link_libraries(tst_drone_server ${catkin_LIBRARIES} ${PROJECT_NAME}) 
+add_dependencies(tst_drone_server multi_drone_platform_generate_messages_cpp)
+
+add_executable(tst_program src/user_api/test_user_api_program.cpp)
+target_link_libraries(tst_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
+add_dependencies(tst_program multi_drone_platform_generate_messages_cpp)
 #############
 ## Install ##
 #############

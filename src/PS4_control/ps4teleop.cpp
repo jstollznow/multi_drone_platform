@@ -65,6 +65,11 @@ void PS4_remote::run(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+    printf("%d: ", argc);
+    for (int i = 0; i < argc; i++) {
+        printf("%s ", argv[i]);
+    }
+    printf("\n");
     PS4_remote myRemote;
     myRemote.run(argc,argv);
 
