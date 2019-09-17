@@ -1,0 +1,21 @@
+<launch>
+  <!-- assumes ds4drv is running -->
+  <node name="joy_node" pkg="joy" type="joy_node">
+    <remap from="joy" to="ps4"/>
+    <remap from="joy/set_feedback" to="ps4/set_feedback"/>
+  </node>
+
+  <node 
+    name="output" 
+    pkg="multi_drone_platform" 
+    type="ps4output"
+    output="screen">
+  </node>
+
+  <!-- remap joy to emulate ps3joy mappings -->
+  <!-- <node name="joy_remap" pkg="joy" type="joy_remap.py">
+    <remap from="joy_in" to="joy_orig"/>
+    <remap from="joy_out" to="joy"/>
+  </node> -->
+
+</launch>
