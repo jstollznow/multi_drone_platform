@@ -54,6 +54,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   inputAPI.msg
+  movementFeedback.msg
 )
 
 ## Generate services in the 'srv' folder

@@ -5,6 +5,4 @@ uint32 drone_id
 string msg_type
 
 # either a velocity change or position change
-geometry_msgs/Vector3 vec3
-
-float32 yaw
+multi_drone_platform/movementFeedback movement
