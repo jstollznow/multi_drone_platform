@@ -8,7 +8,7 @@
   <node 
     name="output" 
     pkg="multi_drone_platform" 
-    type="ps4output" 
+    type="ps4output"
     output="screen">
   </node>
 

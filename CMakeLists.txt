@@ -9,6 +9,7 @@ project(multi_drone_platform)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  message_generation
   sensor_msgs
   roscpp
   rospy
@@ -50,11 +51,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+  FILES
+  inputAPI.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -71,10 +71,12 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   std_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  std_msgs
+  sensor_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -108,7 +110,14 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES multi_drone_platform
-#  CATKIN_DEPENDS geometry_msgs roscpp rospy rviz std_msgs
+  CATKIN_DEPENDS 
+  geometry_msgs
+  message_generation
+  sensor_msgs
+  roscpp
+  rospy
+  rviz
+  std_msgs
 #  DEPENDS system_lib
 )
 
@@ -123,10 +132,14 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/multi_drone_platform.cpp
-# )
+file(GLOB obj_src
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/objects/*.cpp"
+)
+
+# Declare a C++ library
+add_library(${PROJECT_NAME}
+  ${obj_src}
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -155,14 +168,16 @@ include_directories(
 
 
 add_executable(virtualflie src/virtualflie/virtualflie.cpp)
-target_link_libraries(virtualflie ${catkin_LIBRARIES})
-#add_dependencies(virtualflie multi_drone_platform_generate_messages_cpp)
+target_link_libraries(virtualflie ${catkin_LIBRARIES} ${PROJECT_NAME})
+# add_dependencies(virtualflie multi_drone_platform_generate_messages_cpp)
 
 add_executable(joyflie src/virtualflie/joyflie.cpp)
-target_link_libraries(joyflie ${catkin_LIBRARIES})
+target_link_libraries(joyflie ${catkin_LIBRARIES} ${PROJECT_NAME})
 #add_dependencies(joyflie multi_drone_platform_generate_messages_cpp)
 
-
+add_executable(ps4teleop src/PS4_control/ps4teleop.cpp)
+target_link_libraries(ps4teleop ${catkin_LIBRARIES} ${PROJECT_NAME}) 
+add_dependencies(ps4teleop multi_drone_platform_generate_messages_cpp)
 #############
 ## Install ##
 #############
