@@ -7,11 +7,13 @@
             },
             "includePath": [
                 "/home/jacob/catkin_ws/devel/include/**",
+                "/home/awmint/catkin_ws/devel/include/**",
                 "/opt/ros/kinetic/include/**",
                 "/home/jacob/catkin_ws/src/bash_scripts/include/**",
                 "/home/jacob/catkin_ws/src/beginner_tutorials/include/**",
                 "/home/jacob/catkin_ws/src/learning_joy/include/**",
                 "/home/jacob/catkin_ws/src/multi_drone_platform/include/**",
+                "/home/awmint/catkin_ws/src/multi_drone_platform/include/**",
                 "/home/jacob/catkin_ws/src/vec_control/include/**",
                 "/usr/include/**"
             ],
