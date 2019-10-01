@@ -1,5 +1,6 @@
 #include <string>
-
+#include "geometry_msgs/Pose.h"
+#include "geometry_msgs/Vector3.h"
 class rigidBody
 {
     private:
@@ -8,13 +9,10 @@ class rigidBody
         int platform_id;
         //rigid body tag
         std::string optitrackTag;
-        float* velocity;
+        geometry_msgs::Pose lastMotionCapture;
+        geometry_msgs::Vector3 velocity;
     public: 
         rigidBody(std::string tag);
         ~rigidBody();
-    // std::vector<rigidBody*> arr;
-    // rigidBody* body = arr[0];
-    // if (body->isDrone()) {
-    //     drone* d = (drone*)body;
-    // }
+        
 };
