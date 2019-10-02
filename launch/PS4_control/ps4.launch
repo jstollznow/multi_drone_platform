@@ -6,9 +6,9 @@
   </node>
 
   <node 
-    name="output" 
+    name="ps4teleop" 
     pkg="multi_drone_platform" 
-    type="ps4output"
+    type="ps4teleop"
     output="screen">
   </node>
 
