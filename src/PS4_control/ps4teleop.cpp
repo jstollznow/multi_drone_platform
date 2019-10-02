@@ -40,6 +40,7 @@ void PS4_remote::construct_msg(const sensor_msgs::Joy::ConstPtr& msg)
         sendAPImsg("HOVER", droneID);
         droneID+= msg->axes[7];
         if (droneID<0) droneID = 0;
+        // need MAX id, get from drone server
         msg_type = "ID";
         ROS_INFO("You now control drone with ID %d", droneID);
         // api_msg.msg_type = "ID";
@@ -70,8 +71,9 @@ void PS4_remote::construct_msg(const sensor_msgs::Joy::ConstPtr& msg)
         
         // LJ (T)
         // Thrust
-        float zScale = 60000.0f;
-        float z = DRONE THRUST*(msg->axes[1]);
+        // fix to link with rigid bodies
+        float zScale = 30000.0f;
+        float z = zScale*(msg->axes[1]);
 
         // RJ (L)
         // Roll
