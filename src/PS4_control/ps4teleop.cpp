@@ -9,20 +9,16 @@
 #define LOOP_RATE 10
 #define INPUT_TOP "/ps4"
 #define OUTPUT_TOP "/api_input"
-struct node_data
-{
-    ros::NodeHandle* Node;
-    ros::Publisher output;
-    ros::Subscriber input;
-} NodeData;
+#include "../../src/objects/nodeData.cpp"
 
 namespace PS4_remote
 {
     static int droneID;
+    node_data myNode;
     void run(int argc, char **argv);
-    static void input_callback(const sensor_msgs::Joy::ConstPtr& msg);
-    static void construct_msg(const sensor_msgs::Joy::ConstPtr& msg);
-    static void sendAPImsg(std::string msg_type, uint32_t droneID, float velX = 0.0f, float velY = 0.0f, float velZ = 0.0f, float yawRate = 0.0f);
+    void input_callback(const sensor_msgs::Joy::ConstPtr& msg);
+    void construct_msg(const sensor_msgs::Joy::ConstPtr& msg);
+    void sendAPImsg(std::string msg_type, uint32_t droneID, float velX = 0.0f, float velY = 0.0f, float velZ = 0.0f, float yawRate = 0.0f);
     void terminate();
 };
 
@@ -106,7 +102,7 @@ void PS4_remote::sendAPImsg(std::string msg_type, uint32_t droneID, float velX, 
     Msg.movement.vec3.z = velZ;
     Msg.movement.yaw = yawRate;
 
-    NodeData.output.publish(Msg);
+    myNode.Pub.publish(Msg);
 }
 void PS4_remote::input_callback(const sensor_msgs::Joy::ConstPtr& msg)
 {
@@ -115,9 +111,9 @@ void PS4_remote::input_callback(const sensor_msgs::Joy::ConstPtr& msg)
 void PS4_remote::run(int argc, char **argv)
 {
     ros::init(argc,argv,"ps4_remote");
-    NodeData.Node= new ros::NodeHandle;
-    NodeData.output = NodeData.Node->advertise<multi_drone_platform::inputAPI>(OUTPUT_TOP,100);
-    NodeData.input = NodeData.Node->subscribe<sensor_msgs::Joy>(INPUT_TOP, 10, &PS4_remote::input_callback);
+    myNode.Node= new ros::NodeHandle;
+    myNode.Pub = myNode.Node->advertise<multi_drone_platform::inputAPI>(OUTPUT_TOP,100);
+    myNode.Sub = myNode.Node->subscribe<sensor_msgs::Joy>(INPUT_TOP, 10, &PS4_remote::input_callback);
     
     ros::Rate loop_rate(10);
     ROS_INFO("Initialised PS4 Remote");
@@ -129,11 +125,11 @@ void PS4_remote::run(int argc, char **argv)
         loop_rate.sleep();
         ++count;
     }
-    delete NodeData.Node;
+    delete myNode.Node;
 }
 void PS4_remote::terminate()
 {
-    delete NodeData.Node;
+    delete myNode.Node;
     ROS_INFO("Shutting Down Client API Connection");
 }
 
