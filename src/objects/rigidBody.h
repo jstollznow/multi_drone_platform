@@ -1,6 +1,9 @@
 #include <string>
-#include "geometry_msgs/Pose.h"
-#include "geometry_msgs/Vector3.h"
+#include <vector>
+#include "ros/ros.h"
+#include "nodeData.cpp"
+#include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/Twist.h"
 class rigidBody
 {
     private:
@@ -9,10 +12,18 @@ class rigidBody
         int platform_id;
         //rigid body tag
         std::string optitrackTag;
-        geometry_msgs::Pose lastMotionCapture;
-        geometry_msgs::Vector3 velocity;
+        std::vector<geometry_msgs::PoseStamped> motionCapture;
+        geometry_msgs::Twist velocity;
+        geometry_msgs::Vector3 homePos;
+        void calcVel();
+        float yaw;
     public: 
+        node_data myNode;
         rigidBody(std::string tag);
         ~rigidBody();
-        
+
+        geometry_msgs::Twist getVelocity();
+        void addMotionCapture(geometry_msgs::PoseStamped msg);
+        geometry_msgs::PoseStamped getMotionCapture();
+
 };
