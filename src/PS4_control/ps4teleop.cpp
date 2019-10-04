@@ -24,6 +24,7 @@ namespace PS4_remote
 
 void PS4_remote::construct_msg(const sensor_msgs::Joy::ConstPtr& msg)
 {
+
     geometry_msgs::Vector3 v;
     std::string msg_type = "VELOCITY";
     // PS Button
@@ -58,7 +59,7 @@ void PS4_remote::construct_msg(const sensor_msgs::Joy::ConstPtr& msg)
         sendAPImsg(msg_type,droneID);
         return;
     }
-    else
+    else if (msg->axes[0] != 0 || msg->axes[1] != 0 || msg->axes[3] != 0 || msg->axes[4] != 0)
     {
         // LJ (L)
         // Yaw

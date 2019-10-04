@@ -14,12 +14,14 @@ class rigidBody
         std::string optitrackTag;
         std::vector<geometry_msgs::PoseStamped> motionCapture;
         geometry_msgs::Twist velocity;
+        geometry_msgs::Vector3 homePos;
         void calcVel();
         float yaw;
     public: 
         node_data myNode;
         rigidBody(std::string tag);
         ~rigidBody();
+
         geometry_msgs::Twist getVelocity();
         void addMotionCapture(geometry_msgs::PoseStamped msg);
         geometry_msgs::PoseStamped getMotionCapture();

@@ -34,8 +34,7 @@ void rigidBody::calcVel()
     geometry_msgs::PoseStamped firstPos = motionCapture.front();
     velocity.linear.x = lastPos.pose.position.x - firstPos.pose.position.x;
     velocity.linear.y = lastPos.pose.position.y - firstPos.pose.position.y;
-    velocity.linear.z = lastPos.pose.position.z - firstPos.pose.position.z;
-    
+    velocity.linear.z = lastPos.pose.position.z - firstPos.pose.position.z;  
 }
 geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 {
