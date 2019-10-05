@@ -54,7 +54,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   inputAPI.msg
-  movementFeedback.msg
+  inputData.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -135,10 +135,13 @@ include_directories(
 file(GLOB obj_src
   "${CMAKE_CURRENT_SOURCE_DIR}/src/objects/*.cpp"
 )
-
+# file(GLOB test_src
+#   "${CMAKE_CURRENT_SOURCE_DIR}/src/testing/*.cpp"
+# )
 # Declare a C++ library
 add_library(${PROJECT_NAME}
   ${obj_src}
+  # ${test_src}
 )
 
 add_library(MDP_API
@@ -192,6 +195,7 @@ add_dependencies(tst_drone_server multi_drone_platform_generate_messages_cpp)
 add_executable(tst_program src/user_api/test_user_api_program.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
 add_dependencies(tst_program multi_drone_platform_generate_messages_cpp)
+
 #############
 ## Install ##
 #############

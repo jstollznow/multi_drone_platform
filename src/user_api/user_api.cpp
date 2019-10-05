@@ -49,10 +49,10 @@ void set_drone_velocity(uint32_t pDroneID, float pVelX, float pVelY, float pVelZ
     Msg.drone_id = pDroneID;
     Msg.msg_type = "VELOCITY";
 
-    Msg.movement.vec3.x = pVelX;
-    Msg.movement.vec3.y = pVelY;
-    Msg.movement.vec3.z = pVelZ;
-    Msg.movement.yaw = pYawRate;
+    // Msg.movement.vec3.x = pVelX;
+    // Msg.movement.vec3.y = pVelY;
+    // Msg.movement.vec3.z = pVelZ;
+    // Msg.movement.yaw = pYawRate;
 
     NodeData.Pub.publish(Msg);
 }
@@ -65,10 +65,10 @@ void set_drone_position(uint32_t pDroneID, float pPosX, float pPosY, float pPosZ
     Msg.drone_id = pDroneID;
     Msg.msg_type = "POSITION";
 
-    Msg.movement.vec3.x = pPosX;
-    Msg.movement.vec3.y = pPosY;
-    Msg.movement.vec3.z = pPosZ;
-    Msg.movement.yaw = pYaw;
+    // Msg.movement.vec3.x = pPosX;
+    // Msg.movement.vec3.y = pPosY;
+    // Msg.movement.vec3.z = pPosZ;
+    // Msg.movement.yaw = pYaw;
 
     NodeData.Pub.publish(Msg);
 }
