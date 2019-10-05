@@ -14,7 +14,7 @@
 void API_input(const multi_drone_platform::inputAPI& Msg)
 {
     ROS_INFO("Recieved command from api");
-    ROS_INFO("Msg: %s %d %f %f %f %f", Msg.msg_type.c_str(), Msg.drone_id, Msg.movement.vec3.x,Msg.movement.vec3.y,Msg.movement.vec3.z);
+    // ROS_INFO("Msg: %s %d %f %f %f %f", Msg.msg_type.c_str(), Msg.drone_id, Msg.movement.vec3.x,Msg.movement.vec3.y,Msg.movement.vec3.z);
 }
 
 bool API_get_data_srv(multi_drone_platform::movementFeedbackSRV::Request &Req, multi_drone_platform::movementFeedbackSRV::Response &Res)
