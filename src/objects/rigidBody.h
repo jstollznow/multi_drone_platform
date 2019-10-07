@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 #include "ros/ros.h"
-#include "nodeData.cpp"
+#include "nodeData.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Vector3.h"
 #include "multi_drone_platform/inputData.h"

@@ -1,19 +1,7 @@
 #include "rigidBody.h"
 #include "ros/ros.h"
-void rigidBody::initialise()
-{
-    
-}
+#include "velocity.cpp"
 
-void rigidBody::calcVel()
-{
-    geometry_msgs::PoseStamped lastPos = motionCapture.front();
-    motionCapture.erase(motionCapture.begin());
-    geometry_msgs::PoseStamped firstPos = motionCapture.front();
-    // velocity.linear.x = lastPos.pose.position.x - firstPos.pose.position.x;
-    // velocity.linear.y = lastPos.pose.position.y - firstPos.pose.position.y;
-    // velocity.linear.z = lastPos.pose.position.z - firstPos.pose.position.z;  
-}
 
 void rigidBody::initialise()
 {
@@ -27,7 +15,7 @@ void rigidBody::calcVel()
     geometry_msgs::PoseStamped lastPos = motionCapture.front();
     motionCapture.erase(motionCapture.begin());
     geometry_msgs::PoseStamped firstPos = motionCapture.front();
-    // currVel = mdp_velControl::calcVel(lastPos,firstPos);
+    currVel = mdp_velControl::calcVel(lastPos,firstPos);
 }
 
 // constructor
@@ -122,7 +110,7 @@ void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped msg)
     // update currPos
     geometry_msgs::PoseStamped lastPos = motionCapture.front();
     geometry_msgs::Vector3 angPos;
-    // angPos = mdp_velControl::getUpVector(lastPos.pose.orientation);
+    angPos = mdp_velControl::getUpVector(lastPos.pose.orientation);
     
     currPos.posvel.x = lastPos.pose.position.x;
     currPos.posvel.y = lastPos.pose.position.y;

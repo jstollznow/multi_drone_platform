@@ -4,8 +4,8 @@
 #include "multi_drone_platform/movementFeedbackSRV.h"
 #include "geometry_msgs/PoseStamped.h"
 
-#include "../objects/nodeData.cpp"
-#include "../objects/rigidBody.cpp"
+#include "../objects/nodeData.h"
+#include "../objects/rigidBody.h"
 #include<vector>
 
 class droneServer

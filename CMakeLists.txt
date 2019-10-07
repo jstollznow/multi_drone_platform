@@ -140,13 +140,14 @@ file(GLOB obj_src
 # )
 # Declare a C++ library
 add_library(${PROJECT_NAME}
-  ${obj_src}
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/objects/rigidBody.cpp
   # ${test_src}
 )
 
 add_library(MDP_API
   ${CMAKE_CURRENT_SOURCE_DIR}/src/user_api/user_api.cpp
 )
+
 target_link_libraries(MDP_API ${catkin_LIBRARIES})
 add_dependencies(MDP_API multi_drone_platform_generate_messages_cpp)
 

@@ -1,3 +1,4 @@
+#pragma once
 #include "ros/ros.h"
 struct node_data
 {
