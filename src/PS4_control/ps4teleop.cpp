@@ -6,6 +6,7 @@
 #include "multi_drone_platform/inputAPI.h"
 #include "../objects/rigidBody.h"
 #include "../../include/user_api.h"
+
 #define LOOP_RATE 10
 #define INPUT_TOP "/ps4"
 #define OUTPUT_TOP "/api_input"
