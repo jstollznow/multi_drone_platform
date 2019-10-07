@@ -4,11 +4,6 @@
 #include "multi_drone_platform/movementFeedbackSRV.h"
 #include "geometry_msgs/PoseStamped.h"
 
-#define LOOP_RATE_HZ 100
-
-#define FRAME_ID  "drone_server"
-#define SRV_TOPIC "mdp_api_srv"
-#define SUB_TOPIC "mdp_api"
 
 
 void API_input(const multi_drone_platform::inputAPI& Msg)
@@ -38,20 +33,20 @@ bool API_get_data_srv(multi_drone_platform::movementFeedbackSRV::Request &Req, m
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, FRAME_ID);
+    // ros::init(argc, argv, "optitrack");
 
-    ros::NodeHandle Node;
+    // ros::NodeHandle Node;
+    
+    // ros::Publisher moCap = Node.advertise(, API_get_data_srv);
+    // ros::Subscriber Sub = Node.subscribe(SUB_TOPIC, 10, &API_input);
 
-    ros::ServiceServer SrvServer = Node.advertiseService(SRV_TOPIC, API_get_data_srv);
-    ros::Subscriber Sub = Node.subscribe(SUB_TOPIC, 10, &API_input);
+    // ros::Rate LoopRate(LOOP_RATE_HZ);
 
-    ros::Rate LoopRate(LOOP_RATE_HZ);
-
-    while (ros::ok())
-    {
-        ros::spinOnce();
-        LoopRate.sleep();
-    }
+    // while (ros::ok())
+    // {
+    //     ros::spinOnce();
+    //     LoopRate.sleep();
+    // }
 
     return 0;
 }

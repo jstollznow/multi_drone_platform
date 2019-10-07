@@ -9,7 +9,6 @@
 #define LOOP_RATE 10
 #define INPUT_TOP "/ps4"
 #define OUTPUT_TOP "/api_input"
-#include "../../src/objects/nodeData.cpp"
 
 namespace PS4_remote
 {
@@ -98,10 +97,10 @@ void PS4_remote::sendAPImsg(std::string msg_type, uint32_t droneID, float velX, 
     Msg.drone_id = droneID;
     Msg.msg_type = msg_type;
 
-    Msg.movement.vec3.x = velX;
-    Msg.movement.vec3.y = velY;
-    Msg.movement.vec3.z = velZ;
-    Msg.movement.yaw = yawRate;
+    // Msg.movement.vec3.x = velX;
+    // Msg.movement.vec3.y = velY;
+    // Msg.movement.vec3.z = velZ;
+    // Msg.movement.yaw = yawRate;
 
     myNode.Pub.publish(Msg);
 }
