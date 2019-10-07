@@ -4,10 +4,20 @@
 #include "ros/ros.h"
 #include "nodeData.h"
 #include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/TwistStamped.h"
 #include "geometry_msgs/Vector3.h"
 #include "multi_drone_platform/inputData.h"
 #include "multi_drone_platform/inputAPI.h"
-
+struct returnPos{
+    geometry_msgs::Vector3 position;
+    float yaw;
+    float duration;
+};
+struct returnVel{
+    geometry_msgs::Vector3 velocity;
+    float yawRate;
+    float duration;
+};
 class rigidBody
 {
     private:
@@ -25,43 +35,62 @@ class rigidBody
         std::vector<geometry_msgs::PoseStamped> motionCapture;
 
         // duration of command
-        float commDur;
+        float duration;
 
         // Velocity handles
-        multi_drone_platform::inputData desVel;
-        multi_drone_platform::inputData currVel;
+        geometry_msgs::Twist desVel;
+        geometry_msgs::Twist currVel;
 
         // Position handles
-        multi_drone_platform::inputData desPos;
-        multi_drone_platform::inputData currPos;
+        geometry_msgs::Pose desPos;
+        geometry_msgs::Pose currPos;
         
         geometry_msgs::Vector3 homePos;
+    
+        node_data moCapNode;
 
         void initialise();
         void calcVel();
-        
+    protected:
+        virtual void wrapperControlLoop() = 0;
     public: 
 
-        node_data moCapNode;
-        node_data apiNode;
+        
     
-        rigidBody(std::string tag);
+        rigidBody(std::string tag, bool controllable = false);
         ~rigidBody();
         
-        multi_drone_platform::inputData getCurrPos();
-        multi_drone_platform::inputData getCurrVel();
+        bool getControllable();
 
-        multi_drone_platform::inputData getDesPos();
-        void setDesPos(multi_drone_platform::inputData pos, float duration);
+        returnPos getCurrPos();
+        returnVel getCurrVel();
 
-        multi_drone_platform::inputData getDesVel();
-        void setDesVel(multi_drone_platform::inputData vel, float duration);
+        returnPos getDesPos();
+        void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration);
+
+        returnVel getDesVel();
+        void setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration);
 
         geometry_msgs::Vector3 getHomePos();
         void setHomePos(geometry_msgs::Vector3 pos);
 
-        void addMotionCapture(geometry_msgs::PoseStamped msg);
+        void addMotionCapture(const geometry_msgs::PoseStamped& msg);
         geometry_msgs::PoseStamped getMotionCapture();
 
-        void APIUpdate(multi_drone_platform::inputAPI msg);
+        // control loop, whatever else needs to be done each time
+        // safeguarding
+        void update(std::vector<rigidBody*>& rigidBodies);
+
+
+        
 };
+
+// ouir control loop, please run
+// class cflie : public rigidBody
+// {
+
+//     virtual void wrapperControlLoop() override
+//     {
+//         getCurrPos();getDesPos()
+//     }
+// };
