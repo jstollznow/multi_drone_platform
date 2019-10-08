@@ -62,8 +62,8 @@ class rigidBody
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
     protected:
         virtual void wrapperControlLoop() = 0;
-        virtual void velocity(multi_drone_platform::inputData vel, float duration) = 0;
-        virtual void position(multi_drone_platform::inputData pos, float duration) = 0;
+        virtual void velocity(geometry_msgs::Vector3 vel, float duration) = 0;
+        virtual void position(geometry_msgs::Vector3 pos, float duration) = 0;
     public: 
 
         
@@ -85,7 +85,7 @@ class rigidBody
         geometry_msgs::Vector3 getHomePos();
         void setHomePos(geometry_msgs::Vector3 pos);
 
-        void addMotionCapture(const geometry_msgs::PoseStamped& msg);
+        void addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg);
         geometry_msgs::PoseStamped getMotionCapture();
 
         // control loop, whatever else needs to be done each time

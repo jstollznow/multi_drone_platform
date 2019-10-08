@@ -18,7 +18,7 @@ rigidBody::rigidBody(std::string tag, bool controllable)
     std::string optiTop = "/optitrack/" + tag;
     
     moCapNode.Node = new ros::NodeHandle();
-    moCapNode.Sub = moCapNode.Node->subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture);
+    moCapNode.Sub = moCapNode.Node->subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
     ROS_INFO("Subscribing to %s for motion capture", optiTop);
     
 }
@@ -101,9 +101,9 @@ void rigidBody::calcVel()
     currVel = mdp_conversions::calcVel(lastPos,firstPos);
 }
 
-void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped& msg)
+void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-    motionCapture.push_back(msg);
+    motionCapture.push_back(*msg);
     if (motionCapture.size() >= 2){ calcVel(); }
     
     currPos = motionCapture.front().pose;
@@ -121,7 +121,7 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 
     // vrpn update has already been loaded, so no need to update motion capture
 
-    
+
 
 
 }
