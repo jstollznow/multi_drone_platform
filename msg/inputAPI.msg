@@ -1,5 +1,5 @@
 
-uint32 drone_id
+mdpID drone_id
 
 # velocity, waypoint, take-off, land, emergency land etc.
 string msg_type

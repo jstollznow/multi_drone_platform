@@ -95,7 +95,7 @@ void PS4_remote::sendAPImsg(std::string msg_type, uint32_t droneID, float velX, 
     }
 
     multi_drone_platform::inputAPI Msg;
-    Msg.drone_id = droneID;
+    Msg.drone_id.drone_id = droneID;
     Msg.msg_type = msg_type;
 
     // Msg.movement.vec3.x = velX;

@@ -190,7 +190,7 @@ void rigidBody::calcVel()
 
 }
 
-rigidBody::rigidBody(std::string tag, bool controllable = false)
+rigidBody::rigidBody(std::string tag, bool controllable)
 {
     this->moCapTag = tag;
 }

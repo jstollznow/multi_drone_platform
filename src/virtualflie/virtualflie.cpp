@@ -31,7 +31,7 @@
 
 #define GRAVITY_BIAS 30000.0f
 
-/* Declarations */
+/* Declarations (these can be put here because virtualflie.cpp should never be included in another file) */
 class virtual_drone
 {
 private:

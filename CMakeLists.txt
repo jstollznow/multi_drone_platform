@@ -53,6 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  mdpID.msg
   inputAPI.msg
   inputData.msg
 )
@@ -60,7 +61,8 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  movementFeedbackSRV.srv
+  droneFeedbackSRV.srv
+  rigidbodyListSRV.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -189,9 +191,9 @@ add_executable(ps4teleop src/PS4_control/ps4teleop.cpp)
 target_link_libraries(ps4teleop ${catkin_LIBRARIES} ${PROJECT_NAME}) 
 add_dependencies(ps4teleop multi_drone_platform_generate_messages_cpp)
 
-add_executable(tst_drone_server src/drone_server/test_drone_server.cpp)
-target_link_libraries(tst_drone_server ${catkin_LIBRARIES} ${PROJECT_NAME}) 
-add_dependencies(tst_drone_server multi_drone_platform_generate_messages_cpp)
+add_executable(drone_server src/drone_server/drone_server.cpp)
+target_link_libraries(drone_server ${catkin_LIBRARIES} ${PROJECT_NAME}) 
+add_dependencies(drone_server multi_drone_platform_generate_messages_cpp)
 
 add_executable(tst_program src/user_api/test_user_api_program.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
