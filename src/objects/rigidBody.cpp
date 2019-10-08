@@ -117,5 +117,11 @@ geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 
 void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 {
-    // control loop for stabilisation, velocity or position control check
+    // input will be used for safeguarding
+
+    // vrpn update has already been loaded, so no need to update motion capture
+
+    
+
+
 }

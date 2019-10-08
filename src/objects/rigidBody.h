@@ -65,6 +65,8 @@ class rigidBody
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
     protected:
         virtual void wrapperControlLoop() = 0;
+        virtual void velocity(multi_drone_platform::inputData vel, float duration) = 0;
+        virtual void position(multi_drone_platform::inputData pos, float duration) = 0;
     public: 
 
         
