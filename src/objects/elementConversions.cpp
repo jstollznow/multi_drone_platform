@@ -6,7 +6,7 @@
 #include "geometry_msgs/Twist.h"
 #include "multi_drone_platform/inputData.h"
 
-namespace mdp_velControl
+namespace mdp_conversions
 {
     struct euler_rotation
     {
@@ -48,23 +48,42 @@ namespace mdp_velControl
         v.z = 1 - 2 * (pQuaternion.x*pQuaternion.x + pQuaternion.y*pQuaternion.y);
         return v;
     }
-    multi_drone_platform::inputData calcVel(geometry_msgs::PoseStamped lastPos, geometry_msgs::PoseStamped firstPos)
+    float min(float a, float b)
     {
-        multi_drone_platform::inputData currVel;
+        return (a > b)? b: a;
+    }
+    geometry_msgs::Twist calcVel(geometry_msgs::PoseStamped& lastPos, geometry_msgs::PoseStamped& firstPos)
+    {
+        geometry_msgs::Twist returnVel;
+        
         float dx = lastPos.pose.position.x - firstPos.pose.position.x;
         float dy = lastPos.pose.position.y - firstPos.pose.position.y;
         float dz = lastPos.pose.position.z - firstPos.pose.position.z;
         float dt = lastPos.header.stamp.sec - firstPos.header.stamp.sec;
-        currVel.posvel.x =  dx / dt;
-        currVel.posvel.y = dy / dt; 
-        currVel.posvel.z = dz / dt;
+        returnVel.linear.x =  dx / dt;
+        returnVel.linear.y = dy / dt; 
+        returnVel.linear.z = dz / dt;
 
-        geometry_msgs::Vector3 lPosAVel = getUpVector(lastPos.pose.orientation);
-        geometry_msgs::Vector3 fPosAVel = getUpVector(firstPos.pose.orientation);
+        geometry_msgs::Vector3 lastPosAng = getUpVector(lastPos.pose.orientation);
+        geometry_msgs::Vector3 firstPosAng = getUpVector(firstPos.pose.orientation);
+        
+        // not used by Duong in his algorithms
+        // maybe yaw will be useful but pitch and roll will be internal controls
+        
         
         // angular velocities
-        currVel.forward.x = (lPosAVel.x - fPosAVel.x) / dt;
-        currVel.forward.y = (lPosAVel.y - fPosAVel.y) / dt;
-        currVel.forward.z = (lPosAVel.z - fPosAVel.z) / dt;
+        // assume easiest route to the same point
+
+        float rollDiff = (lastPosAng.x - firstPosAng.x);
+        float pitchDiff = (lastPosAng.y - firstPosAng.y);
+        float yawDiff = (lastPosAng.z - firstPosAng.z);
+
+        // @FIX does not account for direction
+        returnVel.angular.x =  min(rollDiff, 180 - rollDiff)/ dt;
+        returnVel.angular.y = min(pitchDiff, 90 - pitchDiff) / dt;
+        returnVel.angular.z = min(yawDiff, 180 - yawDiff) / dt;
+
+
+        return returnVel;
     }
 }

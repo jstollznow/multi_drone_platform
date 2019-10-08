@@ -1,223 +1,67 @@
 #include "rigidBody.h"
 #include "ros/ros.h"
-#include "velocity.cpp"
-
-
-// void rigidBody::initialise()
-// {
-
-// }
-
-// void rigidBody::calcVel()
-// {
-//     ROS_INFO("Calculating Velocity");
-
-//     geometry_msgs::PoseStamped lastPos = motionCapture.front();
-//     motionCapture.erase(motionCapture.begin());
-//     geometry_msgs::PoseStamped firstPos = motionCapture.front();
-//     // currVel = mdp_velControl::calcVel(lastPos,firstPos);
-// }
-
-// // constructor
-// rigidBody::rigidBody(std::string tag, bool controllable)
-// {
-//     this->platform_id = global_id++;
-//     this->moCapTag = tag;
-//     this->controllable = controllable;
-//     float init[3] = {0.0, 0.0, 0.0};
-//     std::string optiTop = "/optitrack/" + tag;
-    
-//     moCapNode.Node = new ros::NodeHandle();
-//     moCapNode.Sub = moCapNode.Node->subscribe<geometry_msgs::PoseStamped> (optiTop, 10, &rigidBody::addMotionCapture, this);
-//     ROS_INFO("Subscribing to %s for motion capture", optiTop);
-    
-//     // optitrack update rate
-//     int loopFeq;
-//     ros::Rate LoopRate(loopFeq);
-//     ROS_INFO("Loop Freq is %d", loopFeq);
-
-//     while (ros::ok())
-//     {
-//         ros::spinOnce();
-//         LoopRate.sleep();
-//     }
-// }
-
-// // deconstructor
-// rigidBody::~rigidBody()
-// {
-//     delete moCapNode.Node;
-//     ROS_INFO("Shutting down rigid body %d:%s",platform_id,moCapTag);
-// }
-// geometry_msgs::PoseStamped rigidBody::getDesPos()
-// {
-//     return currPos;
-// }
-
-// multi_drone_platform::inputData rigidBody::getCurrVel()
-// {
-//     return currVel;
-// }
-
-// geometry_msgs::PoseStamped rigidBody::getDesPos()
-// {
-//     return desPos;
-// }
-
-// void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
-// {
-//     desPos = pos;    
-//     this->duration = duration;
-// }
-        
-// multi_drone_platform::inputData rigidBody::getDesVel()
-// {
-//     return desVel;
-// }
-
-// void rigidBody::setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration)
-// {
-//     desVel = vel;
-//     commDur = duration;
-// }
-
-// // for home pos, angular pos does not matter
-// geometry_msgs::Vector3 rigidBody::getHomePos()
-// {
-//     return homePos;
-// }
-
-// void rigidBody::setHomePos(geometry_msgs::Vector3 pos)
-// {
-//     homePos = pos;    
-// }
-
-// void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped& msg)
-// {
-//     motionCapture.push_back(msg);
-//     if (motionCapture.size() >= 2)
-//     {
-//         calcVel();
-//     }
-
-//     // update currPos
-//     geometry_msgs::PoseStamped lastPos = motionCapture.front();
-//     geometry_msgs::Vector3 angPos;
-//     angPos = mdp_velControl::getUpVector(lastPos.pose.orientation);
-    
-//     currPos.posvel.x = lastPos.pose.position.x;
-//     currPos.posvel.y = lastPos.pose.position.y;
-//     currPos.posvel.z = lastPos.pose.position.z;
-
-//     currPos.forward.x = angPos.x;
-//     currPos.forward.y = angPos.y;
-//     currPos.forward.z = angPos.z;
-// }
-
-// geometry_msgs::PoseStamped rigidBody::getMotionCapture()
-// {
-//     return motionCapture.front();
-// }
-
-// // 
-// void rigidBody::APIUpdate(const multi_drone_platform::inputAPI msg)
-// {
-//     char msgChar = msg.msg_type[0];
-//     multi_drone_platform::inputData desired = msg.data;
-//     float dur = msg.data.duration;
-//     switch (msgChar)
-//     {
-//     // Take-off
-//     case 'T':
-//         // take-off command
-//         break;
-
-//     // Eland
-//     case 'E':
-        
-//         break;
-    
-//     // Land
-//     case 'L':
-//         desired.posvel.z = 0;
-//         setDesPos(desired);
-//         break;
-    
-//     // Velocity
-//     case 'V':
-//         setDesVel(desired);
-//         break;
-    
-//     // Position
-//     case 'P':
-//         setDesPos(desired);
-//         break;
-    
-//     // Hover
-//     case 'H':
-//         // need to manage timing here, not sure how
-//         desired.posvel.x = 0.0;
-//         desired.posvel.y = 0.0;
-//         desired.posvel.z = 0.0;       
-//         setDesVel(desired);
-//         break;
-    
-//     // GoToHome
-//     case 'G':
-//         desired.posvel = getHomePos();
-//         // need to reflect a constant velocity
-//         // always travel to home at same velocity
-//         setDesPos(desired);
-//         break;
-    
-//     // Set Home
-//     case 'S':
-//         setHomePos(desired.posvel);
-//         break;    
-    
-//     default:
-//         break;
-//     }
-// }
+#include "elementConversions.cpp"
 
 void rigidBody::initialise()
 {
 
 }
 
-void rigidBody::calcVel()
-{
 
-}
 
 rigidBody::rigidBody(std::string tag, bool controllable = false)
 {
+    this->platform_id = global_id++;
     this->moCapTag = tag;
+    this->controllable = controllable;
+    float init[3] = {0.0, 0.0, 0.0};
+    std::string optiTop = "/optitrack/" + tag;
+    
+    moCapNode.Node = new ros::NodeHandle();
+    moCapNode.Sub = moCapNode.Node->subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture);
+    ROS_INFO("Subscribing to %s for motion capture", optiTop);
+    
 }
 
 rigidBody::~rigidBody()
 {
-
+    delete moCapNode.Node;
+    ROS_INFO("Shutting down rigid body %d:%s",platform_id,moCapTag);
 }
 
 bool rigidBody::getControllable()
 {
-    return true;
+    return this->controllable;
 }
 
+geometry_msgs::Vector3 rigidBody::vec3PosConvert(geometry_msgs::Pose& pos)
+{
+    geometry_msgs::Vector3 returnPos;
+    returnPos.x = pos.position.x;
+    returnPos.y = pos.position.y;
+    returnPos.z = pos.position.z;
+    return returnPos;
+}
+float rigidBody::getYaw(geometry_msgs::Pose& pos)
+{
+    return mdp_conversions::toEuler(pos.orientation).Yaw;
+}
 returnPos rigidBody::getCurrPos()
 {
-    return {};
+    // returns 0 duration
+    float duration = 0;
+    return {vec3PosConvert(currPos), getYaw(currPos), duration};
 }
 
 returnVel rigidBody::getCurrVel()
 {
-    return {};
+    float duration = 0;
+    return {currVel.linear, currVel.angular.z, duration};
 }
 
 returnPos rigidBody::getDesPos()
 {
-    return {};
+    return {vec3PosConvert(desPos), getYaw(desPos), commandDuration};
 }
 
 void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
@@ -227,35 +71,57 @@ void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
 
 returnVel rigidBody::getDesVel()
 {
-    return {};
+    return {desVel.linear, desVel.angular.z, commandDuration};
 }
 
 void rigidBody::setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration)
 {
-    return;
+    desVel.linear = vel;
+    desVel.angular.z = yawRate;
+    commandDuration = duration;
 }
 
 geometry_msgs::Vector3 rigidBody::getHomePos()
 {
-    return {};
+    return homePos;
 }   
 
 void rigidBody::setHomePos(geometry_msgs::Vector3 pos)
 {
-    return;
+    homePos = pos;
+}
+
+void rigidBody::calcVel()
+{
+    ROS_INFO("Calculating Velocity");
+
+    geometry_msgs::PoseStamped lastPos = motionCapture.front();
+    motionCapture.erase(motionCapture.begin());
+    geometry_msgs::PoseStamped firstPos = motionCapture.front();
+    currVel = mdp_conversions::calcVel(lastPos,firstPos);
 }
 
 void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped& msg)
 {
-    return;
+    motionCapture.push_back(msg);
+    if (motionCapture.size() >= 2){ calcVel(); }
+    
+    currPos = motionCapture.front().pose;
+
 }
 
 geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 {
-    return {};
+    return motionCapture.front();
 }
 
 void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 {
-    return;
+    // input will be used for safeguarding
+
+    // vrpn update has already been loaded, so no need to update motion capture
+
+    
+
+
 }
