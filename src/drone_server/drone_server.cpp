@@ -5,39 +5,17 @@
 #include "../objects/rigidBody.h"
 
 #include "multi_drone_platform/inputAPI.h"
-#include "multi_drone_platform/movementFeedbackSRV.h"
+#include "multi_drone_platform/droneFeedbackSRV.h"
+#include "multi_drone_platform/rigidbodyListSRV.h"
 #include "geometry_msgs/PoseStamped.h"
 
 #define LOOP_RATE_HZ 100
 
-#define NODE_NAME  "mdp_drone_server"
+#define NODE_NAME "mdp_drone_server"
 #define SRV_TOPIC "mdp_api_srv"
+#define LIST_SRV_TOPIC "mdp_api_list_srv"
 #define SUB_TOPIC "mdp_api"
 
-
-void API_input(const multi_drone_platform::inputAPI& Msg)
-{
-    ROS_INFO("Recieved command from api");
-    // ROS_INFO("Msg: %s %d %f %f %f %f", Msg.msg_type.c_str(), Msg.drone_id, Msg.movement.vec3.x,Msg.movement.vec3.y,Msg.movement.vec3.z);
-}
-
-bool API_get_data_srv(multi_drone_platform::movementFeedbackSRV::Request &Req, multi_drone_platform::movementFeedbackSRV::Response &Res)
-{
-    if (strcmp(Req.data_type.c_str(), "VELOCITY") == 0) {
-        Res.vec3.x = -1.0f;
-        Res.vec3.y = -2.0f;
-        Res.vec3.z = -3.0f;
-        Res.yaw    = -4.0f;
-        return true;
-    } else if (strcmp(Req.data_type.c_str(), "POSITION") == 0) {
-        Res.vec3.x = 1.0f;
-        Res.vec3.y = 2.0f;
-        Res.vec3.z = 3.0f;
-        Res.yaw    = 4.0f;
-        return true;
-    }
-    return false;
-}
 
 
 class drone_server
@@ -50,31 +28,81 @@ class drone_server
         ros::ServiceServer ListServer;
         ros::ServiceServer DataServer;
 
+        ros::Rate LoopRate;
+
         void initialiseRigidbodiesFromVRPN();
 
     public:
         drone_server();
         ~drone_server();
 
+        void APICallback(const multi_drone_platform::inputAPI::ConstPtr& msg);
+        bool APIGetDataService(multi_drone_platform::droneFeedbackSRV::Request &Req, multi_drone_platform::droneFeedbackSRV::Response &Res);
+        bool APIListService(multi_drone_platform::rigidbodyListSRV::Request &Req, multi_drone_platform::rigidbodyListSRV::Response &Res);
+
         void run();
 };
+
+
+
+
+drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
+{
+    ROS_INFO("Initialising drone server");
+    InputAPISub = Node.subscribe<multi_drone_platform::inputAPI> (SUB_TOPIC, 10, &drone_server::APICallback, this);
+    DataServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIGetDataService, this);
+    ListServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIListService, this);
+}
+
+drone_server::~drone_server()
+{
+    ROS_INFO("Shutting down drone server");
+    for (size_t i = 0; i < RigidBodyList.size(); i++) {
+        delete RigidBodyList[i];
+    }
+    RigidBodyList.clear();
+}
+
+void drone_server::initialiseRigidbodiesFromVRPN()
+{
+
+}
+
+void drone_server::run()
+{
+    while (ros::ok) {
+        ros::spinOnce();
+
+        for (size_t i = 0; i < RigidBodyList.size(); i++) {
+            RigidBodyList[i]->update(RigidBodyList);
+        }
+    }
+}
+
+void drone_server::APICallback(const multi_drone_platform::inputAPI::ConstPtr& msg)
+{
+
+}
+
+bool drone_server::APIGetDataService(multi_drone_platform::droneFeedbackSRV::Request &Req, multi_drone_platform::droneFeedbackSRV::Response &Res)
+{
+    return true;
+}
+
+bool drone_server::APIListService(multi_drone_platform::rigidbodyListSRV::Request &Req, multi_drone_platform::rigidbodyListSRV::Response &Res)
+{
+    return true;
+}
+
+
+
 
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, NODE_NAME);
 
-    ros::NodeHandle Node;
-
-    ros::ServiceServer SrvServer = Node.advertiseService(SRV_TOPIC, API_get_data_srv);
-    ros::Subscriber Sub = Node.subscribe(SUB_TOPIC, 10, &API_input);
-
-    ros::Rate LoopRate(LOOP_RATE_HZ);
-
-    while (ros::ok())
-    {
-        ros::spinOnce();
-        LoopRate.sleep();
-    }
+    drone_server Server;
+    Server.run();
 
     return 0;
 }
