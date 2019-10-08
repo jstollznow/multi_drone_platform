@@ -34,9 +34,17 @@ class rigidBody
         std::vector<geometry_msgs::PoseStamped> motionCapture;
 
         // duration of command
-        float duration;
+        float commandDuration;
 
         // Velocity handles
+        // Twist:
+        // linear- m/s
+        // angular euler angles (rad/s)
+        //      x: roll rate (cw about north axis)
+        //      y: pitch rate (cw about east axis)
+        //      z: yaw rate (cw about down axis)
+        // typically twist.angular are about fixed axes
+        // gimbal lock at 90 degrees pitch
         geometry_msgs::Twist desVel;
         geometry_msgs::Twist currVel;
 
@@ -50,8 +58,12 @@ class rigidBody
 
         void initialise();
         void calcVel();
+        float getYaw(geometry_msgs::Pose& pos);
+        geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
     protected:
         virtual void wrapperControlLoop() = 0;
+        virtual void velocity(multi_drone_platform::inputData vel, float duration) = 0;
+        virtual void position(multi_drone_platform::inputData pos, float duration) = 0;
     public: 
 
         
