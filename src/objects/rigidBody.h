@@ -6,9 +6,6 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/TwistStamped.h"
 #include "geometry_msgs/Vector3.h"
-#include "multi_drone_platform/inputData.h"
-#include "multi_drone_platform/inputAPI.h"
-
 
 struct returnPos{
     geometry_msgs::Vector3 position;
@@ -80,7 +77,7 @@ class rigidBody
         returnVel getCurrVel();
 
         returnPos getDesPos();
-        void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration);
+        void setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration);
 
         returnVel getDesVel();
         void setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration);

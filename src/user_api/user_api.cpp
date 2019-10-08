@@ -46,7 +46,7 @@ void set_drone_velocity(uint32_t pDroneID, float pVelX, float pVelY, float pVelZ
 {
     multi_drone_platform::inputAPI Msg;
 
-    Msg.drone_id = pDroneID;
+    Msg.drone_id.drone_id = pDroneID;
     Msg.msg_type = "VELOCITY";
 
     // Msg.movement.vec3.x = pVelX;
@@ -62,7 +62,7 @@ void set_drone_position(uint32_t pDroneID, float pPosX, float pPosY, float pPosZ
     // @FIX: we need to add Duration to the message
     multi_drone_platform::inputAPI Msg;
 
-    Msg.drone_id = pDroneID;
+    Msg.drone_id.drone_id = pDroneID;
     Msg.msg_type = "POSITION";
 
     // Msg.movement.vec3.x = pPosX;

@@ -9,7 +9,7 @@ void rigidBody::initialise()
 
 
 
-rigidBody::rigidBody(std::string tag, bool controllable = false)
+rigidBody::rigidBody(std::string tag, bool controllable)
 {
     this->platform_id = global_id++;
     this->moCapTag = tag;
