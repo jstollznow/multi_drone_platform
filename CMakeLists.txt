@@ -28,6 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   rviz
   std_msgs
+  crazyflie_driver
 )
 
 ## System dependencies are found with CMake's conventions
@@ -123,8 +124,8 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES multi_drone_platform
+  INCLUDE_DIRS include
+  LIBRARIES multi_drone_platform
   CATKIN_DEPENDS 
   geometry_msgs
   message_generation
@@ -133,7 +134,8 @@ catkin_package(
   rospy
   rviz
   std_msgs
-#  DEPENDS system_lib
+  crazyflie_ros
+#  DEPENDS 
 )
 
 ###########
@@ -211,6 +213,7 @@ add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE
 add_executable(tst_program src/user_api/test_user_api_program.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
 add_dependencies(tst_program multi_drone_platform_generate_messages_cpp)
+
 
 #############
 ## Install ##

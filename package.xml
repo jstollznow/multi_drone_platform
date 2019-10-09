@@ -8,6 +8,7 @@
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="aw@todo.todo">Alexander Woolfall</maintainer>
+  <maintainer email="jstollznow@hotmail.com">Jacob Stollznow</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -57,11 +58,15 @@
   <build_depend>message_generation</build_depend>
   <build_depend>rviz</build_depend>
 
+  <build_depend>crazyflie_ros</build_depend>
+
   <build_export_depend>geometry_msgs</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
+
+  <build_export_depend>crazyflie_ros</build_export_depend>
 
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
@@ -70,6 +75,10 @@
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>rviz</exec_depend>
+
+  <exec_depend>crazyflie_ros</exec_depend>
+
+
   <exec_depend>message_generation</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->

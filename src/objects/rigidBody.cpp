@@ -12,21 +12,20 @@ void rigidBody::initialise()
 rigidBody::rigidBody(std::string tag, bool controllable)
 {
     this->platform_id = global_id++;
-    this->moCapTag = tag;
+    this->tag = tag;
     this->controllable = controllable;
-    float init[3] = {0.0, 0.0, 0.0};
     std::string optiTop = "/optitrack/" + tag;
     
-    moCapNode.Node = new ros::NodeHandle();
-    moCapNode.Sub = moCapNode.Node->subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
-    ROS_INFO("Subscribing to %s for motion capture", optiTop);
+    motionHandle = ros::NodeHandle(tag);
+    motionSub = motionHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
+    ROS_INFO("Subscribing to %s for motion capture", optiTop.c_str());
     
 }
 
 rigidBody::~rigidBody()
 {
-    delete moCapNode.Node;
-    ROS_INFO("Shutting down rigid body %d:%s",platform_id,moCapTag);
+    // delete moCapNode.Node;
+    ROS_INFO("Shutting down rigid body %d : %s", platform_id, tag.c_str());
 }
 
 bool rigidBody::getControllable()
@@ -45,7 +44,7 @@ geometry_msgs::Vector3 rigidBody::vec3PosConvert(geometry_msgs::Pose& pos)
 float rigidBody::getYaw(geometry_msgs::Pose& pos)
 {
     return mdp_conversions::toEuler(pos.orientation).Yaw;
-}
+} 
 returnPos rigidBody::getCurrPos()
 {
     // returns 0 duration
@@ -147,5 +146,7 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
     direction.z = desPos.position.z - currPos.position.z;
     // z < 0 reduce thrust
     // z > 0 increase thrust
+
+    wrapperControlLoop();
 
 }
