@@ -21,8 +21,8 @@ void initialise(int argc, char **argv)
 
     NodeData.Node = new ros::NodeHandle();
 
-    NodeData.Pub = NodeData.Node->advertise<mdp::input_api_ros_msg> (PUB_TOPIC, 10);
-    NodeData.Client = NodeData.Node->serviceClient<mdp::drone_feedback_ros_srv> (FEEDBACK_TOPIC);
+    NodeData.Pub = NodeData.Node->advertise<geometry_msgs::TransformStamped> (PUB_TOPIC, 10);
+    NodeData.Client = NodeData.Node->serviceClient<nav_msgs::GetPlan> (FEEDBACK_TOPIC);
 
     ROS_INFO("Initialised Client API Connection");
 }
@@ -42,10 +42,10 @@ std::vector<mdp_api::id> get_all_rigidbodies()
 
 void set_drone_velocity(mdp_api::id pDroneID, float pVelX, float pVelY, float pVelZ, float pYawRate)
 {
-    mdp::input_api_ros_msg Msg_data;
+    geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
 
-    Msg.drone_id().numeric_id = pDroneID;
+    Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "VELOCITY";
 
     Msg.posvel().x = pVelX;
@@ -53,15 +53,15 @@ void set_drone_velocity(mdp_api::id pDroneID, float pVelX, float pVelY, float pV
     Msg.posvel().z = pVelZ;
     Msg.yaw_rate() = pYawRate;
 
-    NodeData.Pub.publish(Msg);
+    NodeData.Pub.publish(Msg_data);
 }
 
 void set_drone_position(mdp_api::id pDroneID, float pPosX, float pPosY, float pPosZ, float pDuration, float pYaw)
 {
-    mdp::input_api_ros_msg Msg_data;
+    geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
 
-    Msg.drone_id().numeric_id = pDroneID;
+    Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "POSITION";
 
     Msg.posvel().x = pPosX;
@@ -70,12 +70,12 @@ void set_drone_position(mdp_api::id pDroneID, float pPosX, float pPosY, float pP
     Msg.duration() = pDuration;
     Msg.yaw_rate() = pYaw;
 
-    NodeData.Pub.publish(Msg);
+    NodeData.Pub.publish(Msg_data);
 }
 
 position_data get_body_position(mdp_api::id pRigidbodyID)
 {
-    mdp::drone_feedback_ros_srv Srv_data;
+    nav_msgs::GetPlan Srv_data;
     mdp::drone_feedback_srv Srv(&Srv_data);
 
     mdp::id ID;
@@ -84,7 +84,7 @@ position_data get_body_position(mdp_api::id pRigidbodyID)
 
     Srv.setDroneID(ID.getData());
     Srv.msg_type() = "POSITION";
-    NodeData.Client.call(Srv);
+    NodeData.Client.call(Srv_data);
 
     position_data Data;
     Data.x = Srv.vec3().x;
@@ -97,7 +97,7 @@ position_data get_body_position(mdp_api::id pRigidbodyID)
 
 velocity_data get_body_velocity(mdp_api::id pRigidbodyID)
 {
-    mdp::drone_feedback_ros_srv Srv_data;
+    nav_msgs::GetPlan Srv_data;
     mdp::drone_feedback_srv Srv(&Srv_data);
 
     mdp::id ID;
@@ -106,7 +106,7 @@ velocity_data get_body_velocity(mdp_api::id pRigidbodyID)
 
     Srv.setDroneID(ID.getData());
     Srv.msg_type() = "VELOCITY";
-    NodeData.Client.call(Srv);
+    NodeData.Client.call(Srv_data);
 
     velocity_data Data;
     Data.x = Srv.vec3().x;
@@ -119,67 +119,67 @@ velocity_data get_body_velocity(mdp_api::id pRigidbodyID)
 
 void cmd_takeoff(mdp_api::id pDroneID)
 {
-    mdp::input_api_ros_msg Msg_data;
+    geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
 
-    Msg.drone_id().numeric_id = pDroneID;
+    Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "TAKEOFF";
 
-    NodeData.Pub.publish(Msg);
+    NodeData.Pub.publish(Msg_data);
 }
 
 void cmd_land(mdp_api::id pDroneID)
 {
-    mdp::input_api_ros_msg Msg_data;
+    geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
 
-    Msg.drone_id().numeric_id = pDroneID;
+    Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "LAND";
 
-    NodeData.Pub.publish(Msg);
+    NodeData.Pub.publish(Msg_data);
 }
 
 void cmd_emergency(mdp_api::id pDroneID)
 {
-    mdp::input_api_ros_msg Msg_data;
+    geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
 
-    Msg.drone_id().numeric_id = pDroneID;
+    Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "EMERGENCY";
 
-    NodeData.Pub.publish(Msg);
+    NodeData.Pub.publish(Msg_data);
 }
 
 void cmd_hover(mdp_api::id pDroneID)
 {
-    mdp::input_api_ros_msg Msg_data;
+    geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
 
-    Msg.drone_id().numeric_id = pDroneID;
+    Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "HOVER";
 
-    NodeData.Pub.publish(Msg);
+    NodeData.Pub.publish(Msg_data);
 }
 
 
 void set_home(mdp_api::id pDroneID, float pPosX, float pPosY, float pPosZ)
 {
-    mdp::input_api_ros_msg Msg_data;
+    geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
 
-    Msg.drone_id().numeric_id = pDroneID;
+    Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "SET_HOME";
 
     Msg.posvel().x = pPosX;
     Msg.posvel().y = pPosY;
     Msg.posvel().z = pPosZ;
 
-    NodeData.Pub.publish(Msg);
+    NodeData.Pub.publish(Msg_data);
 }
 
 position_data get_home(mdp_api::id pDroneID)
 {
-    mdp::drone_feedback_ros_srv Srv_data;
+    nav_msgs::GetPlan Srv_data;
     mdp::drone_feedback_srv Srv(&Srv_data);
 
     mdp::id ID;
@@ -188,7 +188,7 @@ position_data get_home(mdp_api::id pDroneID)
 
     Srv.setDroneID(ID.getData());
     Srv.msg_type() = "GET_HOME";
-    NodeData.Client.call(Srv);
+    NodeData.Client.call(Srv_data);
 
     position_data Data;
     Data.x = Srv.vec3().x;
@@ -200,13 +200,13 @@ position_data get_home(mdp_api::id pDroneID)
 
 void goto_home(mdp_api::id pDroneID)
 {
-    mdp::input_api_ros_msg Msg_data;
+    geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
 
-    Msg.drone_id().numeric_id = pDroneID;
+    Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "GOTO_HOME";
 
-    NodeData.Pub.publish(Msg);
+    NodeData.Pub.publish(Msg_data);
 }
 
 

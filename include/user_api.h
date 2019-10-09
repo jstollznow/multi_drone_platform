@@ -1,4 +1,7 @@
+#pragma once
+
 #include <stdint.h>
+#include <string>
 #include <vector>
 
 #define FRAME_ID "user_api"

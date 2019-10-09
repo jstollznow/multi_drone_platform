@@ -4,8 +4,6 @@
 
 namespace mdp {
 
-typedef geometry_msgs::TransformStamped input_api_ros_msg;
-typedef nav_msgs::GetPlan drone_feedback_ros_srv;
 
 class id
 {
