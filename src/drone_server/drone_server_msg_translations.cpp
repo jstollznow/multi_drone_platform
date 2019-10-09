@@ -4,6 +4,9 @@
 
 namespace mdp {
 
+typedef geometry_msgs::TransformStamped input_api_ros_msg;
+typedef nav_msgs::GetPlan drone_feedback_ros_srv;
+
 class id
 {
     private:
@@ -37,6 +40,25 @@ class input_msg
         double& yaw_rate()  { return data->transform.rotation.z; }
         double& duration() { return data->transform.rotation.w; }
 
+};
+
+class drone_feedback_srv
+{
+    private:
+        nav_msgs::GetPlan* data;
+        
+    public:
+        drone_feedback_srv(nav_msgs::GetPlan* input) {data = input;}
+        ~drone_feedback_srv() {}
+
+        const id drone_id() {return id(&data->request.start.header);}
+        void setDroneID(std_msgs::Header header) {data->request.start.header = header;}
+        std::string& msg_type() {return data->request.goal.header.frame_id;}
+        
+        geometry_msgs::Point& vec3() {return data->response.plan.poses[0].pose.position;}
+        double& forward_x() {return data->response.plan.poses[0].pose.orientation.x;}
+        double& forward_y() {return data->response.plan.poses[0].pose.orientation.y;}
+        double& yaw_rate()  {return data->response.plan.poses[0].pose.orientation.z;}
 };
 
 class drone_feedback_srv_req
