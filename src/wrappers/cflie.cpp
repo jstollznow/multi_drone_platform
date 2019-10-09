@@ -78,6 +78,7 @@ public:
         }
 
         imuMeasure = droneHandle.subscribe<sensor_msgs::Imu>(tag + "/imu", 10, &cflie::imuCallback, this); 
+        
         emergencyService = droneHandle.serviceClient<std_srvs::Empty>("/emergency");
 
         landService = droneHandle.serviceClient<crazyflie_driver::Land>("/land");
@@ -105,7 +106,8 @@ public:
     }
     void wrapperControlLoop() override
     {
-        
+        // implemented later
+        // or not 
     }
     void land() override
     {

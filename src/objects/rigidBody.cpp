@@ -14,7 +14,7 @@ rigidBody::rigidBody(std::string tag, bool controllable)
     this->platform_id = global_id++;
     this->tag = tag;
     this->controllable = controllable;
-    std::string optiTop = "/optitrack/" + tag;
+    std::string optiTop = "/" + tag + "/vrpn_client_node/" + tag;
     
     motionHandle = ros::NodeHandle(tag);
     motionSub = motionHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);

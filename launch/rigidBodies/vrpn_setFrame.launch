@@ -1,0 +1,27 @@
+<launch>
+    <arg name="vrpn" default="true" />
+    <arg name="server" default = "129.127.29.166"/>
+    <arg name="port" default = "3883"/>
+    <arg name="frame" default = "cflie_00"/>
+  <!-- <remap from="/vrpn_client_node" to="/optitrack"/>\ -->
+    <node pkg="vrpn_client_ros" type="vrpn_client_node" name="vrpn_client_node" output="screen">
+        <rosparam subst_value="true">
+        server: $(arg server)
+        port: $(arg port)
+        update_frequency: 100.0
+        frame_id: /world
+        child_frame_id: $(arg frame)
+        use_server_time: false
+        broadcast_tf: false
+        refresh_tracker_frequency: 1.0
+    
+        </rosparam>
+        <!-- <remap from="/vrpn_client_node" to="/optitrack"/>\ -->
+    </node>
+    <node 
+        name="rviz" 
+        pkg="rviz" 
+        type="rviz" 
+        args="-f world -d $(find multi_drone_platform)/launch/rigidBodies/rigidBodies.rviz"
+    />
+</launch>

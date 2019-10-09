@@ -56,8 +56,14 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     InputAPISub = Node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 10, &drone_server::APICallback, this);
     DataServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIGetDataService, this);
     ListServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIListService, this);
+    std::string droneName;
+    ROS_INFO("is this your drone? %s", droneName.c_str());
+    if (Node.hasParam("cflie_test"))
+    {
+        Node.getParam("cflie_test", droneName);
+        addNewRigidbody(droneName);
+    }
 
-    addNewRigidbody("cflie_00");
 }
 
 drone_server::~drone_server()
