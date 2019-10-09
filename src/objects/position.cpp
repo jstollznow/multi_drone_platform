@@ -2,6 +2,11 @@
 
 void position::defineRotate()
 {
+    // r is roll
+    // p is pitch
+    // y is yaw
+
+
     // tait bryan angles
     Eigen::VectorXd Ry = Eigen::VectorXd(3,3);
     Ry <<
@@ -31,6 +36,6 @@ void position::defineRotate()
     // 3,1,2;...
     // 3,2,1;...
     // ];
-
-    // then angular velocity = R * euler angle rate
+    rot = Rr * Rp * Ry;
+    
 }

@@ -5,7 +5,7 @@ class position{
     public:
     std_msgs::Header posHeader;
     Eigen::Quaterniond wOrientation;
-    Eigen::Vector3d world;
+    Eigen::Vector3d worldPos;
     float r;
     float p;
     float y;

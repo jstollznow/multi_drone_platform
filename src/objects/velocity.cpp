@@ -25,6 +25,8 @@ Eigen::Vector3d velocity::getAngleRates(position& lastPos, position& firstPos)
     eulerAngleRate.y = eulerDiff.y / dt;
     eulerAngleRate.z = eulerDiff.z / dt;
     
+    auto angDiff = relRotation.toRotationMatrix();
+    
 
 }
 void velocity::getAngularVelocity(position& lastPos)
