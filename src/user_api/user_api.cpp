@@ -21,8 +21,8 @@ void initialise(int argc, char **argv)
 
     NodeData.Node = new ros::NodeHandle();
 
-    NodeData.Pub = NodeData.Node->advertise<geometry_msgs::TransformStamped> (PUB_TOPIC, 10);
-    NodeData.Client = NodeData.Node->serviceClient<nav_msgs::GetPlan> (FEEDBACK_TOPIC);
+    NodeData.Pub = NodeData.Node->advertise<geometry_msgs::TransformStamped> ("mdp_api", 10);
+    NodeData.Client = NodeData.Node->serviceClient<nav_msgs::GetPlan> ("mdp_api_data_srv");
 
     ROS_INFO("Initialised Client API Connection");
 }
@@ -82,16 +82,16 @@ position_data get_body_position(mdp_api::id pRigidbodyID)
     ID.numeric_id() = pRigidbodyID.numeric_id;
     ID.name() = pRigidbodyID.name;
 
-    Srv.setDroneID(ID.getData());
+    Srv.setDroneID(pRigidbodyID.numeric_id);
     Srv.msg_type() = "POSITION";
-    NodeData.Client.call(Srv_data);
-
+printf("%d, %d\n", pRigidbodyID.numeric_id, Srv.numeric_id());
     position_data Data;
+    NodeData.Client.call(Srv_data);
     Data.x = Srv.vec3().x;
     Data.y = Srv.vec3().y;
     Data.z = Srv.vec3().z;
     Data.yaw = Srv.yaw_rate();
-    
+
     return Data;
 }
 
@@ -104,7 +104,7 @@ velocity_data get_body_velocity(mdp_api::id pRigidbodyID)
     ID.numeric_id() = pRigidbodyID.numeric_id;
     ID.name() = pRigidbodyID.name;
 
-    Srv.setDroneID(ID.getData());
+    Srv.setDroneID(pRigidbodyID.numeric_id);
     Srv.msg_type() = "VELOCITY";
     NodeData.Client.call(Srv_data);
 
@@ -186,7 +186,7 @@ position_data get_home(mdp_api::id pDroneID)
     ID.numeric_id() = pDroneID.numeric_id;
     ID.name() = pDroneID.name;
 
-    Srv.setDroneID(ID.getData());
+    Srv.setDroneID(pDroneID.numeric_id);
     Srv.msg_type() = "GET_HOME";
     NodeData.Client.call(Srv_data);
 

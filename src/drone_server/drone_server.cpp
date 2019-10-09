@@ -34,7 +34,7 @@ class drone_server
         mdp_id addNewRigidbody(std::string pTag);
         void removeRigidbody(unsigned int pDroneID);
 
-        bool getRigidbodyFromDroneID(mdp::id pID, rigidBody* pReturnRigidbody);
+        bool getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigidbody);
 
     public:
         drone_server();
@@ -54,8 +54,8 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
 {
     ROS_INFO("Initialising drone server");
     InputAPISub = Node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 10, &drone_server::APICallback, this);
-    DataServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIGetDataService, this);
-    ListServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIListService, this);
+    DataServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIListService, this);
+    ListServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIGetDataService, this);
 
     addNewRigidbody("cflie_00");
 }
@@ -99,12 +99,15 @@ void drone_server::removeRigidbody(unsigned int pDroneID)
     }
 }
 
-bool drone_server::getRigidbodyFromDroneID(mdp::id pID, rigidBody* pReturnRigidbody)
+bool drone_server::getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigidbody)
 {
-    if (pID.numeric_id() >= RigidBodyList.size()) return false;
+    if (pID >= RigidBodyList.size()) {
+        ROS_WARN("supplied ID is greater than size of rigidbody list: %d >= %d", pID, RigidBodyList.size());
+        return false;
+    }
 
-    pReturnRigidbody = RigidBodyList[pID.numeric_id()];
-    return (pReturnRigidbody == nullptr);
+    pReturnRigidbody = RigidBodyList[pID];
+    return (pReturnRigidbody != nullptr);
 }
 
 void drone_server::run()
@@ -134,8 +137,10 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
 {
     mdp::input_msg msg((geometry_msgs::TransformStamped*)input.get());
 
+    ROS_INFO_STREAM("Server recieved set data call of type: " << msg.msg_type());
+
     rigidBody* RB;
-    if (!getRigidbodyFromDroneID(msg.drone_id(), RB)) return;
+    if (!getRigidbodyFromDroneID(msg.drone_id().numeric_id(), RB)) return;
 
     switch(APIMap[msg.msg_type()]) {
         case 0: {   /* VELOCITY */
@@ -171,13 +176,15 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
             ROS_ERROR_STREAM("The API command '" << msg.msg_type() << "' is not a valid command for inputAPI");
         } break;
     }
+    ROS_INFO_STREAM("Server completed the set data call of type: " << msg.msg_type());
 }
 
 bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs::GetPlan::Response &pRes)
 {
     mdp::drone_feedback_srv_req Req(&pReq);
     mdp::drone_feedback_srv_res Res(&pRes);
-
+    ROS_INFO_STREAM("Server recieved get data service of type: " << Req.msg_type());
+    
     rigidBody* RB;
     if (!getRigidbodyFromDroneID(Req.drone_id(), RB)) return false;
 
@@ -191,6 +198,7 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
             Res.yaw_rate() = RetVel.yawRate;
             Res.forward_x() = cos(-RetPos.yaw);
             Res.forward_y() = sin(-RetPos.yaw);
+            ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
             return true;
         } break;
         case 1: {   /* POSITION */
@@ -202,6 +210,7 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
             Res.yaw_rate() = RetVel.yawRate;
             Res.forward_x() = cos(-RetPos.yaw);
             Res.forward_y() = sin(-RetPos.yaw);
+            ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
             return true;
         } break;
         case 7: {   /* GET_HOME */
@@ -209,12 +218,14 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
             Res.vec3().x = Pos.x;
             Res.vec3().y = Pos.y;
             Res.vec3().z = Pos.z;
+            ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
             return true;
         } break;
         default: {
             ROS_ERROR_STREAM("The API command '" << Req.msg_type() << "' is not a valid command for dataFeedbackSRV");
         } break;
     }
+    ROS_WARN_STREAM("Server failed get data service of type: " << Req.msg_type());
     return false;
 }
 
