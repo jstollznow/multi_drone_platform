@@ -1,10 +1,10 @@
 #include "../objects/rigidBody.h"
 
-class tello : private rigidBody
+class vflie : private rigidBody
 {
 public:
-    tello(std::string tag):rigidBody(tag) {}
-    ~tello() {}
+    vflie(std::string tag):rigidBody(tag) {ROS_INFO_STREAM("vflie: " << tag.c_str());}
+    ~vflie() {printf("Closing vflie\n");}
 
 protected:
     virtual void wrapperControlLoop() override {};
