@@ -107,6 +107,13 @@ void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg
     if (motionCapture.size() >= 2){ calcVel(); }
     
     currPos = motionCapture.front().pose;
+    if (currPos.position.z < 0.05)
+    {
+        // set offsets
+        // pitch roll and yaw offset difference between 
+        // optitrack and device
+        // if there are offsets?
+    }
 
 }
 
@@ -120,8 +127,25 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
     // input will be used for safeguarding
 
     // vrpn update has already been loaded, so no need to update motion capture
+    
+    // map desired linear velocity to cflie
 
+    // assume position control
 
+    // direction
+    geometry_msgs::Vector3 direction;
 
+    // x change translates to roll
+    // how?
+    direction.x = desPos.position.x - currPos.position.x;
+    
+    // y change translates to pitch
+    // how?
+    direction.y = desPos.position.y - currPos.position.y;
+    
+    // z change translates to thrust
+    direction.z = desPos.position.z - currPos.position.z;
+    // z < 0 reduce thrust
+    // z > 0 increase thrust
 
 }
