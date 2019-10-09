@@ -10,9 +10,9 @@ namespace mdp_conversions
 {
     struct euler_rotation
     {
-        float Yaw;
-        float Pitch;
         float Roll;
+        float Pitch;
+        float Yaw;
     };
     euler_rotation toEuler(geometry_msgs::Quaternion pQuaternion)
     {
@@ -39,6 +39,7 @@ namespace mdp_conversions
 
         return angles;
     }
+    
     geometry_msgs::Vector3 getUpVector(geometry_msgs::Quaternion pQuaternion)
     {
         geometry_msgs::Vector3 v;
@@ -64,6 +65,7 @@ namespace mdp_conversions
         returnVel.linear.y = dy / dt; 
         returnVel.linear.z = dz / dt;
 
+        // convert orientation to angular position
         geometry_msgs::Vector3 lastPosAng = getUpVector(lastPos.pose.orientation);
         geometry_msgs::Vector3 firstPosAng = getUpVector(firstPos.pose.orientation);
         
@@ -78,7 +80,7 @@ namespace mdp_conversions
         float pitchDiff = (lastPosAng.y - firstPosAng.y);
         float yawDiff = (lastPosAng.z - firstPosAng.z);
 
-        // @FIX does not account for direction
+        // @FIX: does not account for direction
         returnVel.angular.x =  min(rollDiff, 180 - rollDiff)/ dt;
         returnVel.angular.y = min(pitchDiff, 90 - pitchDiff) / dt;
         returnVel.angular.z = min(yawDiff, 180 - yawDiff) / dt;
