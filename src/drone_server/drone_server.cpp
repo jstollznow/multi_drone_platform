@@ -177,7 +177,7 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
     mdp::drone_feedback_srv_res Res(&pRes);
 
     rigidBody* RB;
-    if (!getRigidbodyFromDroneID(Req.drone_id, RB)) return false;
+    if (!getRigidbodyFromDroneID(Req.drone_id(), RB)) return false;
 
     switch(APIMap[Req.msg_type()]) {
         case 0: {   /* VELOCITY */
@@ -216,16 +216,19 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
     return false;
 }
 
-bool drone_server::APIListService(multi_drone_platform::rigidbodyListSRV::Request &Req, multi_drone_platform::rigidbodyListSRV::Response &Res)
+bool drone_server::APIListService(nav_msgs::GetPlan::Request &Req, nav_msgs::GetPlan::Response &Res)
 {
-    Res.drone_ids.clear();
+    /* encoding for the list service is done here without a helper class */
+    /* check API functions documentation for clarity */
+    Res.plan.poses.clear();
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] == nullptr) continue;
 
-        multi_drone_platform::mdpID ID;
-        ID.drone_id = i;
-        ID.name = "";
-        Res.drone_ids.push_back(ID);
+        geometry_msgs::PoseStamped pose;
+        mdp::id id(&pose.header);
+        id.numeric_id() = i;
+        id.name() = RigidBodyList[i]->getName();
+        Res.plan.poses.push_back(pose);
     }
     return true;
 }

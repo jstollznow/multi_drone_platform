@@ -125,3 +125,8 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 
 
 }
+
+std::string rigidBody::getName()
+{
+    return this->moCapTag;
+}
