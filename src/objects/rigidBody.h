@@ -6,7 +6,11 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/TwistStamped.h"
 #include "geometry_msgs/Vector3.h"
+#include "sensor_msgs/Imu.h"
 
+
+
+// api structures
 struct returnPos{
     geometry_msgs::Vector3 position;
     float yaw;
@@ -17,6 +21,10 @@ struct returnVel{
     float yawRate;
     float duration;
 };
+
+
+
+
 class rigidBody
 {
     private:
@@ -28,7 +36,6 @@ class rigidBody
     
         //rigid body tag
         std::string moCapTag;
-
         bool controllable;
 
         std::vector<geometry_msgs::PoseStamped> motionCapture;
@@ -60,10 +67,12 @@ class rigidBody
         void calcVel();
         float getYaw(geometry_msgs::Pose& pos);
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
+    
     protected:
         virtual void wrapperControlLoop() = 0;
         virtual void velocity(geometry_msgs::Vector3 vel, float duration) = 0;
         virtual void position(geometry_msgs::Vector3 pos, float duration) = 0;
+        virtual sensor_msgs::Imu getIMU() = 0;
     public: 
 
         

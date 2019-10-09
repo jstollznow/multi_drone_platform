@@ -22,6 +22,10 @@ public:
     {
 
     }
+    sensor_msgs::Imu getIMU() override
+    {
+        
+    }
 };
 
 
