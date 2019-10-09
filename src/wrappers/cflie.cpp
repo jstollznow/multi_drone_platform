@@ -99,6 +99,8 @@ public:
         crazyflie_driver::GoTo msg;
         msg.request.duration = ros::Duration(duration);
         msg.request.goal = pos;
+        // relative position I think? as in a movement for the drone, not in world coords
+        msg.request.relative = true;
 
     }
     void wrapperControlLoop() override
