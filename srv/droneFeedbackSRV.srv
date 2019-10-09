@@ -1,5 +1,5 @@
 
-uint32 drone_id
+mdpID drone_id
 
 string data_type
 

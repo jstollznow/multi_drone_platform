@@ -8,13 +8,13 @@ private:
 
 public:
     cflie(std::string tag):rigidBody(tag){};
-    ~cflie();
+    ~cflie() {}
     
-    void cflie::velocity(geometry_msgs::Vector3 vel, float duration) override
+    void velocity(geometry_msgs::Vector3 vel, float duration) override
     {
 
     }
-    void cflie::position(geometry_msgs::Vector3 pos, float duration) override
+    void position(geometry_msgs::Vector3 pos, float duration) override
     {
 
     }

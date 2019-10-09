@@ -2,7 +2,20 @@ cmake_minimum_required(VERSION 2.8.3)
 project(multi_drone_platform)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
+
+
+add_custom_command(
+  OUTPUT 
+      ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/wrappers.h
+      ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h
+  COMMAND python ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/gen_wrappers_h.py
+)
+
+add_custom_target(
+  always_run_target ALL
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h
+)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -193,7 +206,7 @@ add_dependencies(ps4teleop multi_drone_platform_generate_messages_cpp)
 
 add_executable(drone_server src/drone_server/drone_server.cpp)
 target_link_libraries(drone_server ${catkin_LIBRARIES} ${PROJECT_NAME}) 
-add_dependencies(drone_server multi_drone_platform_generate_messages_cpp)
+add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
 add_executable(tst_program src/user_api/test_user_api_program.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 

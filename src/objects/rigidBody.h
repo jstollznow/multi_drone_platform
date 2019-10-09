@@ -78,7 +78,7 @@ class rigidBody
         
     
         rigidBody(std::string tag, bool controllable = false);
-        ~rigidBody();
+        virtual ~rigidBody();
         
         bool getControllable();
 
