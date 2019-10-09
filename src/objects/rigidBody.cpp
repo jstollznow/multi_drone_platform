@@ -150,3 +150,8 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
     wrapperControlLoop();
 
 }
+
+std::string rigidBody::getName()
+{
+    return this->moCapTag;
+}

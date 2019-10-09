@@ -85,6 +85,7 @@ class rigidBody
         virtual ~rigidBody();
         
         bool getControllable();
+        std::string getName();
 
         returnPos getCurrPos();
         returnVel getCurrVel();

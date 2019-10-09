@@ -2,23 +2,20 @@
 #include <vector>
 #include <memory>
 
+#include "drone_server_msg_translations.cpp"
+
 #include "../objects/rigidBody.h"
 #include "wrappers.h"
-
-#include "multi_drone_platform/inputAPI.h"
-#include "multi_drone_platform/droneFeedbackSRV.h"
-#include "multi_drone_platform/rigidbodyListSRV.h"
-#include "geometry_msgs/PoseStamped.h"
 
 #define LOOP_RATE_HZ 100
 
 #define NODE_NAME "mdp_drone_server"
-#define SRV_TOPIC "mdp_api_srv"
+#define SRV_TOPIC "mdp_api_data_srv"
 #define LIST_SRV_TOPIC "mdp_api_list_srv"
 #define SUB_TOPIC "mdp_api"
 
 
-
+typedef std_msgs::Header mdp_id;
 
 class drone_server
 {
@@ -34,18 +31,18 @@ class drone_server
 
         void initialiseRigidbodiesFromVRPN();
 
-        multi_drone_platform::mdpID addNewRigidbody(std::string pTag);
+        mdp_id addNewRigidbody(std::string pTag);
         void removeRigidbody(unsigned int pDroneID);
 
-        bool getRigidbodyFromDroneID(const multi_drone_platform::mdpID pID, rigidBody* pReturnRigidbody);
+        bool getRigidbodyFromDroneID(mdp::id pID, rigidBody* pReturnRigidbody);
 
     public:
         drone_server();
         ~drone_server();
 
-        void APICallback(const multi_drone_platform::inputAPI::ConstPtr& msg);
-        bool APIGetDataService(multi_drone_platform::droneFeedbackSRV::Request &Req, multi_drone_platform::droneFeedbackSRV::Response &Res);
-        bool APIListService(multi_drone_platform::rigidbodyListSRV::Request &Req, multi_drone_platform::rigidbodyListSRV::Response &Res);
+        void APICallback(const geometry_msgs::TransformStamped::ConstPtr& msg);
+        bool APIGetDataService(nav_msgs::GetPlan::Request &Req, nav_msgs::GetPlan::Response &Res);
+        bool APIListService(nav_msgs::GetPlan::Request &Req, nav_msgs::GetPlan::Response &Res);
 
         void run();
 };
@@ -56,7 +53,7 @@ class drone_server
 drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
 {
     ROS_INFO("Initialising drone server");
-    InputAPISub = Node.subscribe<multi_drone_platform::inputAPI> (SUB_TOPIC, 10, &drone_server::APICallback, this);
+    InputAPISub = Node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 10, &drone_server::APICallback, this);
     DataServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIGetDataService, this);
     ListServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIListService, this);
 
@@ -80,13 +77,14 @@ void drone_server::initialiseRigidbodiesFromVRPN()
     ROS_WARN("Initialising drones from vrpn is currently not supported, please add drones manually");
 }
 
-multi_drone_platform::mdpID drone_server::addNewRigidbody(std::string pTag)
+mdp_id drone_server::addNewRigidbody(std::string pTag)
 {
-    multi_drone_platform::mdpID ID;
-    ID.name = pTag.c_str();
-    ID.drone_id = RigidBodyList.size();
+    mdp_id ID;
+    ID.frame_id = pTag.c_str();
+    ID.seq = RigidBodyList.size();
     RigidBodyList.push_back(mdp_wrappers::createNewRigidbody(pTag));
-    // we link rigidbody to tag, but how do we link drone to rigidbody?
+    return ID;
+    // we link rigidbody to tag, but how do we link drone to rigidbody? <drone_type>_<wrapper specific identifier> 'cflie_E7'
 }
 
 void drone_server::removeRigidbody(unsigned int pDroneID)
@@ -101,11 +99,11 @@ void drone_server::removeRigidbody(unsigned int pDroneID)
     }
 }
 
-bool drone_server::getRigidbodyFromDroneID(const multi_drone_platform::mdpID pID, rigidBody* pReturnRigidbody)
+bool drone_server::getRigidbodyFromDroneID(mdp::id pID, rigidBody* pReturnRigidbody)
 {
-    if (pID.drone_id >= RigidBodyList.size()) return false;
+    if (pID.numeric_id() >= RigidBodyList.size()) return false;
 
-    pReturnRigidbody = RigidBodyList[pID.drone_id];
+    pReturnRigidbody = RigidBodyList[pID.numeric_id()];
     return (pReturnRigidbody == nullptr);
 }
 
@@ -132,17 +130,19 @@ static std::map<std::string, int> APIMap = {
     {"SET_HOME", 6},    {"GET_HOME", 7},    {"GOTO_HOME", 8}
 };
 
-void drone_server::APICallback(const multi_drone_platform::inputAPI::ConstPtr& msg)
+void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& input)
 {
-    rigidBody* RB;
-    if (!getRigidbodyFromDroneID(msg->drone_id, RB)) return;
+    mdp::input_msg msg((geometry_msgs::TransformStamped*)input.get());
 
-    switch(APIMap[msg->msg_type]) {
+    rigidBody* RB;
+    if (!getRigidbodyFromDroneID(msg.drone_id(), RB)) return;
+
+    switch(APIMap[msg.msg_type()]) {
         case 0: {   /* VELOCITY */
-            RB->setDesVel(msg->data.posvel, msg->data.forward.z, msg->data.duration);
+            RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
         } break;
         case 1: {   /* POSITION */
-            RB->setDesPos(msg->data.posvel, msg->data.forward.z, msg->data.duration);
+            RB->setDesPos(msg.posvel(), msg.yaw_rate(), msg.duration());
         } break;
         case 2: {   /* TAKEOFF */
             auto PosData = RB->getCurrPos();
@@ -160,7 +160,7 @@ void drone_server::APICallback(const multi_drone_platform::inputAPI::ConstPtr& m
             // @TODO: need an emergency command on the rigidbody
         } break;
         case 6: {   /* SET_HOME */
-            geometry_msgs::Vector3 Pos = msg->data.posvel;
+            geometry_msgs::Vector3 Pos = msg.posvel();
             Pos.z = std::max(Pos.z, 1.0); // make sure the home position is above the ground
             RB->setHomePos(Pos);
         } break;
@@ -168,56 +168,69 @@ void drone_server::APICallback(const multi_drone_platform::inputAPI::ConstPtr& m
             RB->setDesPos(RB->getHomePos(), 0.0f, 0.0f);
         } break;
         default: {
-            ROS_ERROR_STREAM("The API command '" << msg->msg_type << "' is not a valid command for inputAPI");
+            ROS_ERROR_STREAM("The API command '" << msg.msg_type() << "' is not a valid command for inputAPI");
         } break;
     }
 }
 
-bool drone_server::APIGetDataService(multi_drone_platform::droneFeedbackSRV::Request &Req, multi_drone_platform::droneFeedbackSRV::Response &Res)
+bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs::GetPlan::Response &pRes)
 {
-    rigidBody* RB;
-    if (!getRigidbodyFromDroneID(Req.drone_id, RB)) return false;
+    mdp::drone_feedback_srv_req Req(&pReq);
+    mdp::drone_feedback_srv_res Res(&pRes);
 
-    switch(APIMap[Req.data_type]) {
+    rigidBody* RB;
+    if (!getRigidbodyFromDroneID(Req.drone_id(), RB)) return false;
+
+    switch(APIMap[Req.msg_type()]) {
         case 0: {   /* VELOCITY */
             auto RetVel = RB->getCurrVel();
             auto RetPos = RB->getCurrPos();
-            Res.vec3 = RetVel.velocity;
-            Res.forward.z = RetVel.yawRate;
-            Res.forward.x = cos(-RetPos.yaw);
-            Res.forward.y = sin(-RetPos.yaw);
+            Res.vec3().x = RetVel.velocity.x;
+            Res.vec3().y = RetVel.velocity.y;
+            Res.vec3().z = RetVel.velocity.z;
+            Res.yaw_rate() = RetVel.yawRate;
+            Res.forward_x() = cos(-RetPos.yaw);
+            Res.forward_y() = sin(-RetPos.yaw);
             return true;
         } break;
         case 1: {   /* POSITION */
             auto RetVel = RB->getCurrVel();
             auto RetPos = RB->getCurrPos();
-            Res.vec3 = RetPos.position;
-            Res.forward.z = RetVel.yawRate;
-            Res.forward.x = cos(-RetPos.yaw);
-            Res.forward.y = sin(-RetPos.yaw);
+            Res.vec3().x = RetPos.position.x;
+            Res.vec3().y = RetPos.position.y;
+            Res.vec3().z = RetPos.position.z;
+            Res.yaw_rate() = RetVel.yawRate;
+            Res.forward_x() = cos(-RetPos.yaw);
+            Res.forward_y() = sin(-RetPos.yaw);
             return true;
         } break;
         case 7: {   /* GET_HOME */
-            Res.vec3 = RB->getHomePos();
+            geometry_msgs::Vector3 Pos = RB->getHomePos();
+            Res.vec3().x = Pos.x;
+            Res.vec3().y = Pos.y;
+            Res.vec3().z = Pos.z;
             return true;
         } break;
         default: {
-            ROS_ERROR_STREAM("The API command '" << Req.data_type << "' is not a valid command for dataFeedbackSRV");
+            ROS_ERROR_STREAM("The API command '" << Req.msg_type() << "' is not a valid command for dataFeedbackSRV");
         } break;
     }
     return false;
 }
 
-bool drone_server::APIListService(multi_drone_platform::rigidbodyListSRV::Request &Req, multi_drone_platform::rigidbodyListSRV::Response &Res)
+bool drone_server::APIListService(nav_msgs::GetPlan::Request &Req, nav_msgs::GetPlan::Response &Res)
 {
-    Res.drone_ids.clear();
+    /* encoding for the list service is done here without a helper class */
+    /* check API functions documentation for clarity */
+    Res.plan.poses.clear();
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] == nullptr) continue;
 
-        multi_drone_platform::mdpID ID;
-        ID.drone_id = i;
-        ID.name = "";
-        Res.drone_ids.push_back(ID);
+        geometry_msgs::PoseStamped pose;
+        mdp::id id(&pose.header);
+        id.numeric_id() = i;
+        id.name() = RigidBodyList[i]->getName();
+        Res.plan.poses.push_back(pose);
     }
     return true;
 }
