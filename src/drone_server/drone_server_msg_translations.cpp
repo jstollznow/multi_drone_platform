@@ -1,6 +1,7 @@
 
 #include "geometry_msgs/TransformStamped.h"
 #include "nav_msgs/GetPlan.h"
+#include "diagnostic_msgs/AddDiagnostics.h"
 
 namespace mdp {
 
@@ -16,7 +17,6 @@ class id
         id(std_msgs::Header* header) {data = header;}
         ~id() {if (owner) {delete data;}}
 
-        std::string& name() {return data->frame_id;}
         uint32_t& numeric_id() {return data->stamp.sec;}
 
         std_msgs::Header getData() {return *data;}

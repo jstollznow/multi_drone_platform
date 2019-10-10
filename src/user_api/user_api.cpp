@@ -1,6 +1,7 @@
 #include "../../include/user_api.h"
 
 #include "ros/ros.h"
+#include "boost/algorithm/string/split.hpp"
 
 #include "../drone_server/drone_server_msg_translations.cpp"
 
@@ -10,7 +11,8 @@ struct node_data
 {
     ros::NodeHandle* Node;
     ros::Publisher Pub;
-    ros::ServiceClient Client;
+    ros::ServiceClient DataClient;
+    ros::ServiceClient ListClient;
 } NodeData;
 
 
@@ -20,10 +22,11 @@ void initialise()
     int int_val = 0;
     ros::init(int_val, (char**)nullptr, FRAME_ID);
 
-    NodeData.Node = new ros::NodeHandle();
+    NodeData.Node = new ros::NodeHandle("");
 
     NodeData.Pub = NodeData.Node->advertise<geometry_msgs::TransformStamped> ("mdp_api", 10);
-    NodeData.Client = NodeData.Node->serviceClient<nav_msgs::GetPlan> ("mdp_api_data_srv");
+    NodeData.DataClient = NodeData.Node->serviceClient<nav_msgs::GetPlan> ("mdp_api_data_srv");
+    NodeData.ListClient = NodeData.Node->serviceClient<diagnostic_msgs::AddDiagnostics> ("mdp_api_list_srv");
 
     ROS_INFO("Initialised Client API Connection");
 }
@@ -36,8 +39,24 @@ void terminate()
 
 std::vector<mdp_api::id> get_all_rigidbodies()
 {
-    // @TODO: implement this functionality
+    diagnostic_msgs::AddDiagnostics Srv_data;
+    NodeData.ListClient.call(Srv_data);
+
+    std::vector<std::string> results;
+    boost::split(results, Srv_data.response.message, [](char c){return c == ' ';});
+
     std::vector<mdp_api::id> Vec;
+    for (std::string& str : results) {
+        if (str.length() > 0) {
+            std::vector<std::string> id_str;
+            boost::split(id_str, str, [](char c){return c == ':';});
+            mdp_api::id ID;
+            ID.numeric_id = atoi(id_str[0].c_str());
+            ID.name = id_str[1];
+            Vec.push_back(ID);
+        }
+    }
+
     return Vec;
 }
 
@@ -81,13 +100,12 @@ position_data get_body_position(mdp_api::id pRigidbodyID)
 
     mdp::id ID;
     ID.numeric_id() = pRigidbodyID.numeric_id;
-    ID.name() = pRigidbodyID.name;
 
     Srv.drone_id().numeric_id() = pRigidbodyID.numeric_id;
     Srv.msg_type() = "POSITION";
 
     position_data Data;
-    NodeData.Client.call(Srv_data);
+    NodeData.DataClient.call(Srv_data);
     Data.x = Srv.vec3().x;
     Data.y = Srv.vec3().y;
     Data.z = Srv.vec3().z;
@@ -103,11 +121,10 @@ velocity_data get_body_velocity(mdp_api::id pRigidbodyID)
 
     mdp::id ID;
     ID.numeric_id() = pRigidbodyID.numeric_id;
-    ID.name() = pRigidbodyID.name;
 
     Srv.drone_id().numeric_id() = pRigidbodyID.numeric_id;
     Srv.msg_type() = "VELOCITY";
-    NodeData.Client.call(Srv_data);
+    NodeData.DataClient.call(Srv_data);
 
     velocity_data Data;
     Data.x = Srv.vec3().x;
@@ -185,11 +202,10 @@ position_data get_home(mdp_api::id pDroneID)
 
     mdp::id ID;
     ID.numeric_id() = pDroneID.numeric_id;
-    ID.name() = pDroneID.name;
 
     Srv.drone_id().numeric_id() = pDroneID.numeric_id;
     Srv.msg_type() = "GET_HOME";
-    NodeData.Client.call(Srv_data);
+    NodeData.DataClient.call(Srv_data);
 
     position_data Data;
     Data.x = Srv.vec3().x;

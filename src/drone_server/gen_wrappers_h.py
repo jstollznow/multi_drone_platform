@@ -24,7 +24,7 @@ wrapper_h.write("};\n\n")
 
 # write in the create rigidbody function
 wrapper_h.write("namespace mdp_wrappers{\nbool createNewRigidbody(std::string pTag, rigidBody* &pRigidbodyPtr)\n{\n")
-wrapper_h.write("    std::string DroneType = pTag.substr(0, pTag.find_last_of('_'));\n    switch(drone_type_map[DroneType]) {\n")
+wrapper_h.write("    std::string DroneType = pTag.substr(0, pTag.find_first_of('_'));\n    switch(drone_type_map[DroneType]) {\n")
 for i in range(len(wrapper_files)):
     wrapper_h.write("        case " + str(i+1) + ": {pRigidbodyPtr = (rigidBody*)(new " + wrapper_files[i][:-4] + "(pTag)); return true;}\n")
 wrapper_h.write("        default: {pRigidbodyPtr = nullptr; return false;}\n    }\n}\n}\n")
