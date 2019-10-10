@@ -65,7 +65,6 @@ returnPos rigidBody::getDesPos()
 
 void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
 {
-    ROS_INFO("In RB");
     return;
 }
 

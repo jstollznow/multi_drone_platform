@@ -23,7 +23,7 @@ namespace mdp_api {
 
     typedef position_data velocity_data;
 
-    void initialise(int argc, char **argv);
+    void initialise();
     void terminate();
 
     std::vector<mdp_api::id> get_all_rigidbodies();

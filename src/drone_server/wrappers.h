@@ -1,27 +1,31 @@
 #pragma once
 
 #include <map>
+#include <string>
 #include "../objects/rigidBody.h"
 
 #include "../wrappers/vflie.cpp"
 #include "../wrappers/cflie.cpp"
 #include "../wrappers/tello.cpp"
+#include "../wrappers/testdrone.cpp"
 
-std::map<const char*, unsigned int> drone_type_map = {
-    {"vflie", 0},
-    {"cflie", 1},
-    {"tello", 2}
+std::map<std::string, unsigned int> drone_type_map = {
+    {"vflie", 1},
+    {"cflie", 2},
+    {"tello", 3},
+    {"testdrone", 4}
 };
 
 namespace mdp_wrappers{
-rigidBody* createNewRigidbody(std::string pTag)
+bool createNewRigidbody(std::string pTag, rigidBody* &pRigidbodyPtr)
 {
     std::string DroneType = pTag.substr(0, pTag.find_last_of('_'));
-    switch(drone_type_map[DroneType.c_str()]) {
-        case 0: {return (rigidBody*)(new vflie(pTag));}
-        case 1: {return (rigidBody*)(new cflie(pTag));}
-        case 2: {return (rigidBody*)(new tello(pTag));}
-        default: return nullptr;
+    switch(drone_type_map[DroneType]) {
+        case 1: {pRigidbodyPtr = (rigidBody*)(new vflie(pTag)); return true;}
+        case 2: {pRigidbodyPtr = (rigidBody*)(new cflie(pTag)); return true;}
+        case 3: {pRigidbodyPtr = (rigidBody*)(new tello(pTag)); return true;}
+        case 4: {pRigidbodyPtr = (rigidBody*)(new testdrone(pTag)); return true;}
+        default: {pRigidbodyPtr = nullptr; return false;}
     }
 }
 }

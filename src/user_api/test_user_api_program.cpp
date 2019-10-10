@@ -8,7 +8,7 @@
 
 int main(int argc, char** argv)
 {
-    mdp_api::initialise(argc, argv);
+    mdp_api::initialise();
 
     int a;
     scanf("Enter a number to continue: %d", &a);

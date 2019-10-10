@@ -15,9 +15,10 @@ struct node_data
 
 
 
-void initialise(int argc, char **argv)
+void initialise()
 {
-    ros::init(argc, argv, FRAME_ID);
+    int int_val = 0;
+    ros::init(int_val, (char**)nullptr, FRAME_ID);
 
     NodeData.Node = new ros::NodeHandle();
 
@@ -82,9 +83,9 @@ position_data get_body_position(mdp_api::id pRigidbodyID)
     ID.numeric_id() = pRigidbodyID.numeric_id;
     ID.name() = pRigidbodyID.name;
 
-    Srv.setDroneID(pRigidbodyID.numeric_id);
+    Srv.drone_id().numeric_id() = pRigidbodyID.numeric_id;
     Srv.msg_type() = "POSITION";
-printf("%d, %d\n", pRigidbodyID.numeric_id, Srv.numeric_id());
+
     position_data Data;
     NodeData.Client.call(Srv_data);
     Data.x = Srv.vec3().x;
@@ -104,7 +105,7 @@ velocity_data get_body_velocity(mdp_api::id pRigidbodyID)
     ID.numeric_id() = pRigidbodyID.numeric_id;
     ID.name() = pRigidbodyID.name;
 
-    Srv.setDroneID(pRigidbodyID.numeric_id);
+    Srv.drone_id().numeric_id() = pRigidbodyID.numeric_id;
     Srv.msg_type() = "VELOCITY";
     NodeData.Client.call(Srv_data);
 
@@ -186,7 +187,7 @@ position_data get_home(mdp_api::id pDroneID)
     ID.numeric_id() = pDroneID.numeric_id;
     ID.name() = pDroneID.name;
 
-    Srv.setDroneID(pDroneID.numeric_id);
+    Srv.drone_id().numeric_id() = pDroneID.numeric_id;
     Srv.msg_type() = "GET_HOME";
     NodeData.Client.call(Srv_data);
 

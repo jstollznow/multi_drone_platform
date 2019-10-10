@@ -15,7 +15,11 @@
 #define SUB_TOPIC "mdp_api"
 
 
-typedef std_msgs::Header mdp_id;
+struct mdp_id{
+    std::string name = "";
+    uint32_t numeric_id = 0;
+    bool isValid() const {return (name.length() != 0);}
+};
 
 class drone_server
 {
@@ -57,7 +61,7 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     DataServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIListService, this);
     ListServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIGetDataService, this);
 
-    addNewRigidbody("cflie_00");
+    addNewRigidbody("testdrone_00");
 }
 
 drone_server::~drone_server()
@@ -80,9 +84,19 @@ void drone_server::initialiseRigidbodiesFromVRPN()
 mdp_id drone_server::addNewRigidbody(std::string pTag)
 {
     mdp_id ID;
-    ID.frame_id = pTag.c_str();
-    ID.seq = RigidBodyList.size();
-    RigidBodyList.push_back(mdp_wrappers::createNewRigidbody(pTag));
+    ID.name = pTag.c_str();
+    ID.numeric_id = RigidBodyList.size();
+    rigidBody* RB;
+    if (mdp_wrappers::createNewRigidbody(pTag, RB)) {
+        RigidBodyList.push_back(RB);
+        ID.name = pTag.c_str();
+        ID.numeric_id = RigidBodyList.size();
+        ROS_INFO_STREAM("Successfully added drone with the tag: " << pTag);
+    } else {
+        ID.name = "";
+        ID.numeric_id = 0;
+        ROS_ERROR_STREAM("Unable to add drone with tag: '" << pTag << "', check if drone type naming is correct.");
+    }
     return ID;
     // we link rigidbody to tag, but how do we link drone to rigidbody? <drone_type>_<wrapper specific identifier> 'cflie_E7'
 }
@@ -186,7 +200,7 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
     ROS_INFO_STREAM("Server recieved get data service of type: " << Req.msg_type());
     
     rigidBody* RB;
-    if (!getRigidbodyFromDroneID(Req.drone_id(), RB)) return false;
+    if (!getRigidbodyFromDroneID(Req.drone_id().numeric_id(), RB)) return false;
 
     switch(APIMap[Req.msg_type()]) {
         case 0: {   /* VELOCITY */
