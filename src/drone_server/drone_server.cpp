@@ -46,7 +46,7 @@ class drone_server
 
         void APICallback(const geometry_msgs::TransformStamped::ConstPtr& msg);
         bool APIGetDataService(nav_msgs::GetPlan::Request &Req, nav_msgs::GetPlan::Response &Res);
-        bool APIListService(diagnostic_msgs::AddDiagnostics::Request &Req, diagnostic_msgs::AddDiagnostics::Response &Res);
+        bool APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res);
 
         void run();
 };
@@ -243,15 +243,15 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
     return false;
 }
 
-bool drone_server::APIListService(diagnostic_msgs::AddDiagnostics::Request &Req, diagnostic_msgs::AddDiagnostics::Response &Res)
+bool drone_server::APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res)
 {
     /* encoding for the list service is done here without a helper class */
     /* check API functions documentation for clarity */
-    Res.message = "";
+    Res.frame_yaml = "";
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] == nullptr) continue;
 
-        Res.message += std::to_string(i) + ":" + RigidBodyList[i]->getName() + " ";
+        Res.frame_yaml += std::to_string(i) + ":" + RigidBodyList[i]->getName() + " ";
     }
     return true;
 }

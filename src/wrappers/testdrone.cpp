@@ -13,6 +13,8 @@ public:
         this->currVel.linear.x = 4.0f;
         this->currVel.linear.y = 5.0f;
         this->currVel.linear.z = 6.0f;
+
+        this->homePos.x = 77.0f;
     }
 
     ~testdrone() 

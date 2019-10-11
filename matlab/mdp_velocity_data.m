@@ -1,11 +1,11 @@
 
 classdef mdp_velocity_data
     properties
-        x_dir {mustBeNumeric}
-        y_dir {mustBeNumeric}
-        z_dir {mustBeNumeric}
-        forwardX {mustBeNumeric}
-        forwardY {mustBeNumeric}
-        yaw_rate {mustBeNumeric}
+        X {mustBeNumeric}
+        Y {mustBeNumeric}
+        Z {mustBeNumeric}
+        HeadingX {mustBeNumeric}
+        HeadingY {mustBeNumeric}
+        YawRate {mustBeNumeric}
     end
 end

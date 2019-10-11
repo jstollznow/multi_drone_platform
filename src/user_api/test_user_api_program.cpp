@@ -27,6 +27,8 @@ int main(int argc, char** argv)
         printf("Res DATA: %s %f %f %f %f\n", drones[0].name.c_str(), Res.x, Res.y, Res.z, Res.yaw);
         Res = mdp_api::get_body_velocity(drones[0]);
         printf("Res DATA: %s %f %f %f %f\n", drones[0].name.c_str(), Res.x, Res.y, Res.z, Res.yaw);
+        Res = mdp_api::get_home(drones[0]);
+        printf("Res DATA: %s %f %f %f %f\n", drones[0].name.c_str(), Res.x, Res.y, Res.z, Res.yaw);
     }
 
     mdp_api::terminate();

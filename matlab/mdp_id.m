@@ -1,15 +1,14 @@
 
 classdef mdp_id
     properties
-        numeric_id {mustBeNumeric}
-        drone_name
+        NumericId {mustBeNumeric}
+        Name
     end
     
     methods
-        function id = getRosID(obj)
-            id = rosmessage("multi_drone_platform/mdpID");
-            id.numeric_id = obj.numeric_id;
-            id.name = obj.drone_name;
+        function obj = mdp_id(numeric_id, name)
+            obj.NumericId = numeric_id;
+            obj.Name = name;
         end
     end
 end

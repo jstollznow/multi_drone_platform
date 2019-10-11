@@ -1,7 +1,7 @@
 
 #include "geometry_msgs/TransformStamped.h"
 #include "nav_msgs/GetPlan.h"
-#include "diagnostic_msgs/AddDiagnostics.h"
+#include "tf2_msgs/FrameGraph.h"
 
 namespace mdp {
 
