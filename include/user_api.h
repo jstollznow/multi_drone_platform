@@ -21,6 +21,14 @@ namespace mdp_api {
         std::string name;
     };
 
+    struct timings {
+        float motion_capture_update_rate;
+        float desired_drone_server_update_rate;
+        float achieved_drone_server_update_rate;
+        float time_to_update_drones;
+        float wait_time_per_frame;
+    };
+
     typedef position_data velocity_data;
 
     void initialise();
@@ -42,4 +50,7 @@ namespace mdp_api {
     void set_home(mdp_api::id pDroneID, float pPosX, float pPosY, float pPosZ);
     position_data get_home(mdp_api::id pDroneID);
     void goto_home(mdp_api::id pDroneID);
+
+    void set_drone_server_update_frequency(float pUpdateFrequency);
+    timings get_operating_frequencies();
 }

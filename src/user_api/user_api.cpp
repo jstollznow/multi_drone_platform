@@ -220,5 +220,34 @@ void goto_home(mdp_api::id pDroneID)
     NodeData.Pub.publish(Msg_data);
 }
 
+void set_drone_server_update_frequency(float pUpdateFrequency)
+{
+    geometry_msgs::TransformStamped Msg_data;
+    mdp::input_msg Msg(&Msg_data);
+
+    Msg.msg_type() = "DRONE_SERVER_FREQ";
+    Msg.posvel().x = pUpdateFrequency;
+
+    NodeData.Pub.publish(Msg_data);
+}
+
+timings get_operating_frequencies()
+{
+    nav_msgs::GetPlan Srv_data;
+    mdp::drone_feedback_srv Srv(&Srv_data);
+
+    Srv.msg_type() = "TIME";
+    NodeData.DataClient.call(Srv_data);
+
+    timings Data;
+    Data.desired_drone_server_update_rate = Srv.vec3().x;
+    Data.achieved_drone_server_update_rate = Srv.vec3().y;
+    Data.motion_capture_update_rate = Srv.vec3().z;
+    Data.time_to_update_drones = Srv.forward_x();
+    Data.wait_time_per_frame = Srv.forward_y();
+    
+    return Data;
+}
+
 
 }

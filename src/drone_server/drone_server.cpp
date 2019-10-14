@@ -32,6 +32,11 @@ class drone_server
         ros::ServiceServer DataServer;
 
         ros::Rate LoopRate;
+        float DesiredLoopRate = LOOP_RATE_HZ;
+        float AchievedLoopRate;
+        float MotionCaptureUpdateRate;
+        float TimeToUpdateDrones;
+        float WaitTime;
 
         void initialiseRigidbodiesFromVRPN();
 
@@ -126,16 +131,36 @@ bool drone_server::getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigi
 
 void drone_server::run()
 {
+    ros::Time FrameStart, FrameEnd, RigidBodyStart, RigidBodyEnd, WaitTimeStart, WaitTimeEnd;
     while (ros::ok()) {
+        FrameStart = ros::Time::now();
         /* do all the ros callback event stuff */
         ros::spinOnce();
 
         /* call update on every valid rigidbody */
+        RigidBodyStart = ros::Time::now();
         for (size_t i = 0; i < RigidBodyList.size(); i++) {
             if (RigidBodyList[i] == nullptr) continue;
 
             RigidBodyList[i]->update(RigidBodyList);
         }
+        RigidBodyEnd = ros::Time::now();
+        
+        /* wait remainder of looprate */
+        WaitTimeStart = ros::Time::now();
+        if (DesiredLoopRate > 0.0) {
+            if (!LoopRate.sleep()) {
+                ROS_WARN("Looprate false");
+            }
+        }
+        WaitTimeEnd = ros::Time::now();
+
+        FrameEnd = ros::Time::now();
+
+        /* record timing information */
+        AchievedLoopRate = (1.0 / (FrameEnd.toSec() - FrameStart.toSec()));
+        WaitTime = (WaitTimeEnd.toSec() - WaitTimeStart.toSec());
+        TimeToUpdateDrones = (RigidBodyEnd.toSec() - RigidBodyStart.toSec());
     }
     /* printf a newline to make terminal output better */
     printf("\n");
@@ -144,7 +169,8 @@ void drone_server::run()
 static std::map<std::string, int> APIMap = {
     {"VELOCITY", 0},    {"POSITION", 1},    {"TAKEOFF", 2},
     {"LAND", 3},        {"HOVER", 4},       {"EMERGENCY", 5},
-    {"SET_HOME", 6},    {"GET_HOME", 7},    {"GOTO_HOME", 8}
+    {"SET_HOME", 6},    {"GET_HOME", 7},    {"GOTO_HOME", 8},
+    {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
 };
 
 void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& input)
@@ -154,37 +180,51 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
     ROS_INFO_STREAM("Server recieved set data call of type: " << msg.msg_type());
 
     rigidBody* RB;
-    if (!getRigidbodyFromDroneID(msg.drone_id().numeric_id(), RB)) return;
+    getRigidbodyFromDroneID(msg.drone_id().numeric_id(), RB);
 
     switch(APIMap[msg.msg_type()]) {
         case 0: {   /* VELOCITY */
+            if (RB == nullptr) return;
             RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
         } break;
         case 1: {   /* POSITION */
+            if (RB == nullptr) return;
             RB->setDesPos(msg.posvel(), msg.yaw_rate(), msg.duration());
         } break;
         case 2: {   /* TAKEOFF */
+            if (RB == nullptr) return;
             auto PosData = RB->getCurrPos();
             PosData.position.z = 1;
             RB->setDesPos(PosData.position, PosData.yaw, 0.0f);
         } break;
         case 3: {   /* LAND */
+            if (RB == nullptr) return;
             // @TODO: we need a land command on the rigidbody to make use of the control loop (to soft land)
         } break;
         case 4: {   /* HOVER */
+            if (RB == nullptr) return;
             auto PosData = RB->getCurrPos();
             RB->setDesPos(PosData.position, PosData.yaw, 0.0f);
         } break;
         case 5: {   /* EMERGENCY */
+            if (RB == nullptr) return;
             // @TODO: need an emergency command on the rigidbody
         } break;
         case 6: {   /* SET_HOME */
+            if (RB == nullptr) return;
             geometry_msgs::Vector3 Pos = msg.posvel();
             Pos.z = std::max(Pos.z, 1.0); // make sure the home position is above the ground
             RB->setHomePos(Pos);
         } break;
         case 8: {   /* GOTO_HOME */
+            if (RB == nullptr) return;
             RB->setDesPos(RB->getHomePos(), 0.0f, 0.0f);
+        } break;
+        case 11: {  /* DRONE_SERVER_FREQ */
+            if (msg.posvel().x > 0.0) {
+                this->LoopRate = ros::Rate(msg.posvel().x);
+            }
+            DesiredLoopRate = msg.posvel().x;
         } break;
         default: {
             ROS_ERROR_STREAM("The API command '" << msg.msg_type() << "' is not a valid command for inputAPI");
@@ -232,6 +272,21 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
             Res.vec3().x = Pos.x;
             Res.vec3().y = Pos.y;
             Res.vec3().z = Pos.z;
+            ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
+            return true;
+        } break;
+        case 9: {   /* ORIENTATION */
+            auto RetVel = RB->getCurrVel();
+            auto RetPos = RB->getCurrPos();
+            ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
+            return true;
+        } break;
+        case 10: {  /* TIME */
+            Res.vec3().x = DesiredLoopRate;
+            Res.vec3().y = AchievedLoopRate;
+            Res.vec3().z = MotionCaptureUpdateRate;
+            Res.forward_x() = TimeToUpdateDrones;
+            Res.forward_y() = WaitTime;
             ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
             return true;
         } break;

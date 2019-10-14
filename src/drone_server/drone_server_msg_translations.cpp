@@ -80,6 +80,7 @@ class drone_feedback_srv_res
         drone_feedback_srv_res(nav_msgs::GetPlan::Response* data) {res = data; res->plan.poses.push_back({});}
         ~drone_feedback_srv_res() {}
 
+        std_msgs::Header& time_header() {return res->plan.poses[0].header;}
         geometry_msgs::Point& vec3() {return res->plan.poses[0].pose.position;}
         double& forward_x() {return res->plan.poses[0].pose.orientation.x;}
         double& forward_y() {return res->plan.poses[0].pose.orientation.y;}

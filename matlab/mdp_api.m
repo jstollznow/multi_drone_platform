@@ -12,11 +12,11 @@ classdef mdp_api
     methods (Access = private)
         function msg = genAPImsg(obj, drone_id, msg_type, varargin)
             p = inputParser;
-            p.addOptional('posvel', [0.0, 0.0, 0.0]);
-            p.addOptional('heading', [0.0, 0.0]);
-            p.addOptional('yaw_rate', 0.0);
-            p.addOptional('duration', 0.0);
-            parse(p);
+            p.addParameter('posvel', [0.0, 0.0, 0.0]);
+            p.addParameter('heading', [0.0, 0.0]);
+            p.addParameter('yaw_rate', 0.0);
+            p.addParameter('duration', 0.0);
+            parse(p, varargin{:});
             
             msg = rosmessage(obj.pub);
             
@@ -157,6 +157,26 @@ classdef mdp_api
             send(obj.pub, msg);
         end
         
+        function setdroneserverfrequency(obj, freq)
+            msg = genAPImsg(obj, 0, "DRONE_SERVER_FREQ", 'posvel', [freq, 0.0, 0.0]);
+            send(obj.pub, msg);
+        end
+
+        function Timings = getservertimings(obj)
+            req = rosmessage(obj.data_srv_cli);
+            req.Goal.Header.FrameId = 'TIME';
+            
+            res = call(obj.data_srv_cli, req);
+
+            Timings = mdp_timings;
+
+            Timings.DesiredDroneServerUpdateRate = res.Plan.Poses(1).Pose.Position.X;
+            Timings.AchievedDroneServerUpdateRate = res.Plan.Poses(1).Pose.Position.Y;
+            Timings.MotionCaptureUpdateRate = res.Plan.Poses(1).Pose.Position.Z;
+            Timings.TimeToUpdateDrones = res.Plan.Poses(1).Pose.Orientation.X;
+            Timings.WaitTimePerFrame = res.Plan.Poses(1).Pose.Orientation.Y;
+        end
+
     end
 end
 
