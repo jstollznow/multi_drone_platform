@@ -106,16 +106,6 @@ class rigidBody
         // safeguarding
         void update(std::vector<rigidBody*>& rigidBodies);
 
-
+        
         
 };
-
-// ouir control loop, please run
-// class cflie : public rigidBody
-// {
-
-//     virtual void wrapperControlLoop() override
-//     {
-//         getCurrPos();getDesPos()
-//     }
-// };
