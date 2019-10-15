@@ -10,6 +10,7 @@ protected:
     virtual void wrapperControlLoop() override {};
     virtual void velocity(geometry_msgs::Vector3 vel, float duration) override {}
     virtual void position(geometry_msgs::Point pos, float duration) override {}
+    // virtual void acceleration(geometry_msgs::Vector3 acceleration, float duration)
     void land() override
     {
 
