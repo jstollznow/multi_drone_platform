@@ -109,7 +109,8 @@ mdp_id drone_server::addNewRigidbody(std::string pTag)
         ROS_ERROR_STREAM("Unable to add drone with tag: '" << pTag << "', check if drone type naming is correct.");
     }
     return ID;
-    // we link rigidbody to tag, but how do we link drone to rigidbody? <drone_type>_<wrapper specific identifier> 'cflie_E7'
+    // we link rigidbody to tag, but how do we link drone to rigidbody? 
+    // <drone_type>_<wrapper specific identifier> 'cflie_E7'
 }
 
 void drone_server::removeRigidbody(unsigned int pDroneID)
@@ -206,6 +207,10 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
         case 3: {   /* LAND */
             if (RB == nullptr) return;
             // @TODO: we need a land command on the rigidbody to make use of the control loop (to soft land)
+            // currently this is implemented in the wrapper class
+            auto PosData = RB->getCurrPos();
+            PosData.position.z = 0.0f;
+            RB->setDesPos(PosData.position, PosData.yaw, 0.0f);       
         } break;
         case 4: {   /* HOVER */
             if (RB == nullptr) return;
@@ -227,6 +232,7 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
             RB->setDesPos(RB->getHomePos(), 0.0f, 0.0f);
         } break;
         case 11: {  /* DRONE_SERVER_FREQ */
+            // does this set Hz or secs?
             if (msg.posvel().x > 0.0) {
                 this->LoopRate = ros::Rate(msg.posvel().x);
             }

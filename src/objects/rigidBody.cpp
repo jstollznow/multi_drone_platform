@@ -2,23 +2,49 @@
 #include "ros/ros.h"
 #include "elementConversions.cpp"
 
+
 void rigidBody::initialise()
 {
 
 }
+bool rigidBody::checkTopicValid(std::string topicName)
+{
+    ros::master::V_TopicInfo master_topics;
+    ros::master::getTopics(master_topics);
 
-
+    for (auto it = master_topics.begin() ; it != master_topics.end(); it++) {
+        const ros::master::TopicInfo& info = *it;
+        if (info.name == topicName.c_str())
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 rigidBody::rigidBody(std::string tag, bool controllable)
 {
     this->platform_id = global_id++;
     this->tag = tag;
+    
+    // is it a drone or just a rigid body?
     this->controllable = controllable;
+
+    // look for drone under tag namespace then vrpn output
     std::string optiTop = "/" + tag + "/vrpn_client_node/" + tag;
     
     motionHandle = ros::NodeHandle(tag);
-    motionSub = motionHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
-    ROS_INFO("Subscribing to %s for motion capture", optiTop.c_str());
+    
+    if (checkTopicValid(optiTop))
+    {
+        motionSub = motionHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
+        ROS_INFO("Subscribing to %s for motion capture", optiTop.c_str());
+    }
+    else
+    {
+        ROS_ERROR("Could not find motion capture stream for %s, was expecting VRPN",tag.c_str());
+    }
+    
     
 }
 
@@ -65,6 +91,11 @@ returnPos rigidBody::getDesPos()
 
 void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
 {
+    if (pos.z == 0.0f)
+    {
+        land();
+        return;
+    }
     return;
 }
 

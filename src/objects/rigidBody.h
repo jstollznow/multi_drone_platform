@@ -68,6 +68,7 @@ class rigidBody
 
         ros::NodeHandle droneHandle;
         void initialise();
+        bool checkTopicValid (std::string topicName);
         void calcVel();
         float getYaw(geometry_msgs::Pose& pos);
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
@@ -78,7 +79,12 @@ class rigidBody
         virtual void emergency() = 0;
     public: 
 
-        
+        // static std::map<std::string, int> APIMap = {
+        //     {"VELOCITY", 0},    {"POSITION", 1},    {"TAKEOFF", 2},
+        //     {"LAND", 3},        {"HOVER", 4},       {"EMERGENCY", 5},
+        //     {"SET_HOME", 6},    {"GET_HOME", 7},    {"GOTO_HOME", 8},
+        //     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
+        // };
     
         rigidBody(std::string tag, bool controllable = false);
 

@@ -59,6 +59,7 @@
         "typeinfo": "cpp",
         "string": "cpp",
         "csignal": "cpp",
-        "geometry": "cpp"
+        "geometry": "cpp",
+        "mutex": "cpp"
     }
 }

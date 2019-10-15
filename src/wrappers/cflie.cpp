@@ -85,7 +85,7 @@ public:
     };
     ~cflie() 
     {
-        
+        // use remove service
     }
     
     void velocity(geometry_msgs::Vector3 vel, float duration) override
