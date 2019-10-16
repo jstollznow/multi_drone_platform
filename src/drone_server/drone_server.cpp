@@ -63,8 +63,8 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
 {
     ROS_INFO("Initialising drone server");
     InputAPISub = Node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 10, &drone_server::APICallback, this);
-    DataServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIGetDataService, this);
-    ListServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIListService, this);
+    DataServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIGetDataService, this);
+    ListServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIListService, this);
     std::string droneName;
     ROS_INFO("is this your drone? %s", droneName.c_str());
     if (Node.hasParam("cflie_test"))
@@ -72,6 +72,7 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
         Node.getParam("cflie_test", droneName);
         addNewRigidbody(droneName);
     }
+    //addNewRigidbody("testdrone_00");
 
 }
 
@@ -201,8 +202,8 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
         case 2: {   /* TAKEOFF */
             if (RB == nullptr) return;
             auto PosData = RB->getCurrPos();
-            PosData.position.z = 1;
-            RB->setDesPos(PosData.position, PosData.yaw, 0.0f);
+            PosData.position.z = 1.0f;
+            RB->setDesPos(PosData.position, PosData.yaw, 1.0f);
         } break;
         case 3: {   /* LAND */
             if (RB == nullptr) return;
@@ -210,7 +211,7 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
             // currently this is implemented in the wrapper class
             auto PosData = RB->getCurrPos();
             PosData.position.z = 0.0f;
-            RB->setDesPos(PosData.position, PosData.yaw, 0.0f);       
+            RB->setDesPos(PosData.position, PosData.yaw, 1.0f);       
         } break;
         case 4: {   /* HOVER */
             if (RB == nullptr) return;
@@ -317,7 +318,7 @@ bool drone_server::APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::
     Res.frame_yaml = "";
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] == nullptr) continue;
-
+        printf("adding RB to list: %d, %s\n", i, RigidBodyList[i]->getName().c_str());
         Res.frame_yaml += std::to_string(i) + ":" + RigidBodyList[i]->getName() + " ";
     }
     return true;

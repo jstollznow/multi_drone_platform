@@ -9,16 +9,19 @@
         genericLogTopicFrequencies: [100]
         genericLogTopic_log1_Variables: ["stateEstimate.x", "stateEstimate.y", "stateEstimate.z"]
     </rosparam>
+    
+    
+        <!-- <node 
+            name="pose" 
+            pkg="multi_drone_platform" 
+            type="publish_external_position_vrpn.py" 
+            output="screen">
+            <param name="topic" value="$(arg cflie_test)/vrpn_client_node/$(arg cflie_test)/pose"/>
+        </node> -->
 
-    <node 
-        name="pose" 
-        pkg="multi_drone_platform" 
-        type="publish_external_position_vrpn.py" 
-        output="screen">
-        <param name="topic" value="/$(arg cflie_test)/vrpn_client_node/$(arg cflie_test)/pose"/>
-    </node>
+        <!-- VRPN Server Launch for crazyflie interpretation -->
+    
 
-    <!-- VRPN Server Launch for crazyflie interpretation -->
     <include 
         file="$(find multi_drone_platform)/launch/rigidBodies/vrpn_setFrame.launch">
         <arg name="frame" value="$(arg cflie_test)"/>
@@ -27,5 +30,9 @@
         file="$(find multi_drone_platform)/launch/drone_server/drone_server.launch">
         <arg name="cflie_test" value="$(arg cflie_test)"/>
     </include>
-    
+
+   
+
+
+
 </launch>

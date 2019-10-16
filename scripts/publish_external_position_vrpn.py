@@ -20,6 +20,7 @@ def onNewTransform(pose):
         rospy.set_param("kalman/resetEstimation", 1)
         update_params(["kalman/resetEstimation"]) 
         firstTransform = False
+        # asjxsjxsx
 
     else:
         msg.header.frame_id = pose.header.frame_id
@@ -33,7 +34,7 @@ def onNewTransform(pose):
 
 if __name__ == '__main__':
     rospy.init_node('publish_external_position_vrpn', anonymous=True)
-    topic = rospy.get_param("~topic", "/crazyflie1/vrpn_client_node/crazyflie1/pose")
+    topic = rospy.get_param("~topic", "/vrpn_client_node/cflie_E7/pose")
 
     rospy.wait_for_service('update_params')
     rospy.loginfo("found update_params service")
@@ -45,7 +46,7 @@ if __name__ == '__main__':
     msg.header.seq = 0
     msg.header.stamp = rospy.Time.now()
 
-    pub = rospy.Publisher("external_position", PointStamped, queue_size=1)
-    rospy.Subscriber(topic, PoseStamped, onNewTransform)
+    pub = rospy.Publisher("/cflie_E7/external_position", PointStamped, queue_size=1)
+    rospy.Subscriber("/vrpn_client_node/cflie_E7/pose", PoseStamped, onNewTransform)
 
     rospy.spin()

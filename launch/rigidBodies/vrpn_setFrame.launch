@@ -18,10 +18,10 @@
         </rosparam>
         <!-- <remap from="/vrpn_client_node" to="/optitrack"/>\ -->
     </node>
-    <node 
+    <!-- <node 
         name="rviz" 
         pkg="rviz" 
         type="rviz" 
         args="-f world -d $(find multi_drone_platform)/launch/rigidBodies/rigidBodies.rviz"
-    />
+    /> -->
 </launch>

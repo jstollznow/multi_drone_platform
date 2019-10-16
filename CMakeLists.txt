@@ -193,8 +193,8 @@ add_dependencies(MDP_API multi_drone_platform_generate_messages_cpp)
 #   ${catkin_LIBRARIES}
 # )
 add_executable(script scripts/demoWk10.cpp)
-target_link_libraries(script ${catkin_LIBRARIES} ${PROJECT_NAME})
-
+target_link_libraries(script ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API)
+add_dependencies(script multi_drone_platform_generate_messages_cpp)
 
 add_executable(virtualflie src/virtualflie/virtualflie.cpp)
 target_link_libraries(virtualflie ${catkin_LIBRARIES} ${PROJECT_NAME})

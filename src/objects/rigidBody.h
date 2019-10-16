@@ -4,11 +4,12 @@
 #include "ros/ros.h"
 #include "nodeData.h"
 #include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
 #include "geometry_msgs/Vector3.h"
 #include "sensor_msgs/Imu.h"
 
-
+#define DEFAULT_QUEUE 10
 
 // api structures
 struct returnPos{
@@ -31,11 +32,6 @@ class rigidBody
 
     
     protected:
-        int global_id = 0;
-    
-        // platformID
-        int platform_id;
-    
         //rigid body tag
         std::string tag;
         bool controllable;
@@ -63,8 +59,10 @@ class rigidBody
         
         geometry_msgs::Vector3 homePos;
     
-        ros::NodeHandle motionHandle;
         ros::Subscriber motionSub;
+        ros::Publisher motionPub;
+
+        ros::Publisher external_pose;
 
         ros::NodeHandle droneHandle;
         void initialise();
@@ -108,8 +106,6 @@ class rigidBody
         void addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg);
         geometry_msgs::PoseStamped getMotionCapture();
 
-        // control loop, whatever else needs to be done each time
-        // safeguarding
         void update(std::vector<rigidBody*>& rigidBodies);
 
         

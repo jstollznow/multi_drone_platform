@@ -4,17 +4,16 @@
 int main(int argc, char **argv)
 {
     // stage 1
-    // mdp_api::initialise();
-    // mdp_api::id myDrone = mdp_api::get_all_rigidbodies()[0];
+    mdp_api::initialise();
+
+
+    auto myDrones = mdp_api::get_all_rigidbodies();
     // mdp_api::position_data myDronePos = mdp_api::get_body_position(myDrone);
     // mdp_api::cmd_takeoff(myDrone);
-    // mdp_api::cmd_hover(myDrone);
-    std::cout<<"waiting"<<std::endl;
-    while (std::cin.get() !='l')
-    {
-        std::cout<<"waiting"<<std::endl;
-    }
-    // mdp_api::cmd_land(myDrone);
+    std::cout << "Drone is " << myDrones[0].name.c_str() <<std::endl;
+    mdp_api::cmd_takeoff(myDrones[0]);
+    while (std::cin.get() !='\n');
+    mdp_api::cmd_land(myDrones[0]);
     
 
     // // stage 2
@@ -38,5 +37,6 @@ int main(int argc, char **argv)
     // mdp_api::set_drone_position(myDrone,0,0,1,3);
     // while (std::cin.get() !='/n');
     // mdp_api::cmd_land(myDrone);
+    mdp_api::terminate();
     return 0;
 }
