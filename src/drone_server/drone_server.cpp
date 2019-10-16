@@ -201,26 +201,22 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
         } break;
         case 2: {   /* TAKEOFF */
             if (RB == nullptr) return;
-            auto PosData = RB->getCurrPos();
-            PosData.position.z = 1.0f;
-            RB->setDesPos(PosData.position, PosData.yaw, 1.0f);
+            RB->takeoff();
         } break;
         case 3: {   /* LAND */
             if (RB == nullptr) return;
             // @TODO: we need a land command on the rigidbody to make use of the control loop (to soft land)
             // currently this is implemented in the wrapper class
-            auto PosData = RB->getCurrPos();
-            PosData.position.z = 0.0f;
-            RB->setDesPos(PosData.position, PosData.yaw, 1.0f);       
+            RB->land();       
         } break;
         case 4: {   /* HOVER */
             if (RB == nullptr) return;
             auto PosData = RB->getCurrPos();
-            RB->setDesPos(PosData.position, PosData.yaw, 0.0f);
+            RB->setDesPos(PosData.position, PosData.yaw, msg.duration());
         } break;
         case 5: {   /* EMERGENCY */
             if (RB == nullptr) return;
-            // @TODO: need an emergency command on the rigidbody
+            RB->emergency();
         } break;
         case 6: {   /* SET_HOME */
             if (RB == nullptr) return;
