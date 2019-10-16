@@ -152,13 +152,13 @@ include_directories(
 file(GLOB obj_src
   "${CMAKE_CURRENT_SOURCE_DIR}/src/objects/*.cpp"
 )
-# file(GLOB test_src
-#   "${CMAKE_CURRENT_SOURCE_DIR}/src/testing/*.cpp"
-# )
+file(GLOB test_src
+  "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.cpp"
+)
 # Declare a C++ library
 add_library(${PROJECT_NAME}
   ${CMAKE_CURRENT_SOURCE_DIR}/src/objects/rigidBody.cpp
-  # ${test_src}
+  
 )
 
 add_library(MDP_API
@@ -192,7 +192,9 @@ add_dependencies(MDP_API multi_drone_platform_generate_messages_cpp)
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-
+add_executable(script scripts/demoWk10.cpp)
+target_link_libraries(script ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API)
+add_dependencies(script multi_drone_platform_generate_messages_cpp)
 
 add_executable(virtualflie src/virtualflie/virtualflie.cpp)
 target_link_libraries(virtualflie ${catkin_LIBRARIES} ${PROJECT_NAME})

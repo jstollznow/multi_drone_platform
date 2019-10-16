@@ -44,6 +44,7 @@ std::vector<mdp_api::id> get_all_rigidbodies()
 
     std::vector<std::string> results;
     boost::split(results, Srv_data.response.frame_yaml, [](char c){return c == ' ';});
+    printf("frame_yaml: %s\n", Srv_data.response.frame_yaml.c_str());
 
     std::vector<mdp_api::id> Vec;
     for (std::string& str : results) {

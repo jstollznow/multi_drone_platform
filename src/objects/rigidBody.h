@@ -4,11 +4,12 @@
 #include "ros/ros.h"
 #include "nodeData.h"
 #include "geometry_msgs/PoseStamped.h"
+#include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
 #include "geometry_msgs/Vector3.h"
 #include "sensor_msgs/Imu.h"
 
-
+#define DEFAULT_QUEUE 10
 
 // api structures
 struct returnPos{
@@ -31,11 +32,6 @@ class rigidBody
 
     
     protected:
-        int global_id = 0;
-    
-        // platformID
-        int platform_id;
-    
         //rigid body tag
         std::string tag;
         bool controllable;
@@ -63,11 +59,14 @@ class rigidBody
         
         geometry_msgs::Vector3 homePos;
     
-        ros::NodeHandle motionHandle;
         ros::Subscriber motionSub;
+        ros::Publisher motionPub;
+
+        ros::Publisher external_pose;
 
         ros::NodeHandle droneHandle;
         void initialise();
+        bool checkTopicValid (std::string topicName);
         void calcVel();
         float getYaw(geometry_msgs::Pose& pos);
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
@@ -78,7 +77,12 @@ class rigidBody
         virtual void emergency() = 0;
     public: 
 
-        
+        // static std::map<std::string, int> APIMap = {
+        //     {"VELOCITY", 0},    {"POSITION", 1},    {"TAKEOFF", 2},
+        //     {"LAND", 3},        {"HOVER", 4},       {"EMERGENCY", 5},
+        //     {"SET_HOME", 6},    {"GET_HOME", 7},    {"GOTO_HOME", 8},
+        //     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
+        // };
     
         rigidBody(std::string tag, bool controllable = false);
 
@@ -102,20 +106,8 @@ class rigidBody
         void addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg);
         geometry_msgs::PoseStamped getMotionCapture();
 
-        // control loop, whatever else needs to be done each time
-        // safeguarding
         void update(std::vector<rigidBody*>& rigidBodies);
 
-
+        
         
 };
-
-// ouir control loop, please run
-// class cflie : public rigidBody
-// {
-
-//     virtual void wrapperControlLoop() override
-//     {
-//         getCurrPos();getDesPos()
-//     }
-// };

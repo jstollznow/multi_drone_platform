@@ -62,8 +62,8 @@ void PS4_remote::construct_msg(const sensor_msgs::Joy::ConstPtr& msg)
     else if (msg->axes[0] != 0 || msg->axes[1] != 0 || msg->axes[3] != 0 || msg->axes[4] != 0)
     {
         // LJ (L)
-        // Yaw
-        float yawScale = 400.0f;
+        // Yaw Rate
+        float yawScale = 100.0f;
         float yaw = yawScale*(msg->axes[0]);
         
         // LJ (T)
@@ -74,12 +74,14 @@ void PS4_remote::construct_msg(const sensor_msgs::Joy::ConstPtr& msg)
 
         // RJ (L)
         // Roll
-        float xScale = 90.0f;
+        // limit control to +/- 45 degrees
+        float xScale = 45.0f;
         float x = xScale*(msg->axes[3]);
 
         // RJ (T)
         // Pitch
-        float yScale = 90.0f;
+        // limit control to +/- 45 degrees
+        float yScale = 45.0f;
         float y = yScale*(msg->axes[4]);
 
         sendAPImsg(msg_type, droneID, x, y, z, yaw);

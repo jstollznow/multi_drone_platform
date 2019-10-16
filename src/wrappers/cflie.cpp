@@ -1,9 +1,15 @@
 #include "../objects/rigidBody.h"
 #include "crazyflie_driver/AddCrazyflie.h"
 #include "std_srvs/Empty.h"
+#include "std_msgs/Empty.h"
 #include "crazyflie_driver/Land.h"
 #include "crazyflie_driver/GoTo.h"
-
+#include "crazyflie_driver/Takeoff.h"
+#include "crazyflie_driver/Hover.h"
+#include "crazyflie_driver/Stop.h"
+#include "crazyflie_driver/FullState.h"
+#include "crazyflie_driver/Position.h"
+#include "crazyflie_driver/UpdateParams.h"
 // Possible commands for crazyflie
 
 
@@ -28,28 +34,49 @@
 ***************************************************************************************************************************************/
 
 
-
-
 class cflie : public rigidBody
 {
 private:
     const std::string link_uri = "radio://0/80/2M";
     std::string droneAddress;
+    ros::Publisher cmd_vel;
+    ros::Publisher cmd_full_state;
+    ros::Publisher external_position;
+    ros::ServiceClient emergencyService;
+    ros::Publisher cmd_hover;
+    ros::Publisher cmd_stop;
+    ros::Publisher cmd_position;
+
+    // high level commands
+    ros::ServiceClient takeoffService;
+    ros::ServiceClient landService;
+    ros::ServiceClient stopService;
+    ros::ServiceClient goToService;
+    ros::ServiceClient updateParams;
     ros::Subscriber imuMeasure;
     ros::ServiceClient addCrazyflieService;
-    ros::ServiceClient emergencyService;
-    ros::ServiceClient landService;
-    ros::ServiceClient goToService;
 
+    bool DoOnce = false;
+    
+    void postToCrazyServer()
+    {
+        // geometry_msgs::PointStamped myMsg;
+        // myMsg.point = motionCapture.front().pose.position;
+        // myMsg.header = motionCapture.front().header;
+        // motionPub.publish(myMsg);
+        
+    }
 
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
     {
-        ROS_INFO("Some IMU data: \nAng Vel: %.6f, %.6f, %.6f\n", msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
+        // ROS_INFO("Some IMU data: \nAng Vel: %.6f, %.6f, %.6f\n", msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
     }
 
 public:
     cflie(std::string tag):rigidBody(tag)
     {
+        
+
         ROS_INFO("I am here, its %s", tag.c_str());
         droneAddress = (tag.substr(tag.find_first_of('_')+1, tag.length()));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
@@ -59,8 +86,8 @@ public:
         msg.request.roll_trim = 0.0f;
         msg.request.pitch_trim = 0.0f;
         msg.request.enable_logging = true;
-        msg.request.enable_parameters = false;
-        msg.request.use_ros_time = false;
+        msg.request.enable_parameters = true;
+        msg.request.use_ros_time = true;
         msg.request.enable_logging_imu = true;
         msg.request.enable_logging_temperature = false;
         msg.request.enable_logging_magnetic_field = false;
@@ -68,6 +95,7 @@ public:
         msg.request.enable_logging_battery = false;
         msg.request.enable_logging_pose = false;
         msg.request.enable_logging_packets = false;
+
         if (addCrazyflieService.call(msg)) 
         {
             ROS_INFO("%s launched on Crazyflie Server", tag.c_str());
@@ -76,17 +104,37 @@ public:
         {
             ROS_ERROR("Could not add %s to Crazyflie Server, please check the drone tag", tag.c_str());
         }
+        // droneHandle.setParam( "/" + tag + "/commander/enHighLevel", 1);
+        // droneHandle.setParam("/" + tag + "/stabilizer/estimator", 2);
+        // droneHandle.setParam( "/" + tag + "/stabilizer/controller", 2);
+        // droneHandle.setParam( "/" + tag + "/kalman/resetEstimation", 1);
+        updateParams = droneHandle.serviceClient<crazyflie_driver::UpdateParams>("/cflie_00/update_params");
+        // standard
+        cmd_vel = droneHandle.advertise<geometry_msgs::Twist>("/" + tag + "/cmd_vel", DEFAULT_QUEUE);
+        cmd_full_state = droneHandle.advertise<crazyflie_driver::FullState>("/" + tag + "/cmd_full_state",DEFAULT_QUEUE);
+        external_position = droneHandle.advertise<geometry_msgs::PointStamped>("/" + tag + "/external_position", DEFAULT_QUEUE);
+        emergencyService = droneHandle.serviceClient<std_srvs::Empty>("/" + tag + "/emergency");
+        cmd_hover = droneHandle.advertise<crazyflie_driver::Hover>("/" + tag + "/cmd_hover", DEFAULT_QUEUE);
+        cmd_stop = droneHandle.advertise<std_msgs::Empty>("/" + tag + "/cmd_stop", DEFAULT_QUEUE);
+        cmd_position = droneHandle.advertise<crazyflie_driver::Position>("/" + tag + "/cmd_position", DEFAULT_QUEUE);
 
-        imuMeasure = droneHandle.subscribe<sensor_msgs::Imu>(tag + "/imu", 10, &cflie::imuCallback, this); 
-        emergencyService = droneHandle.serviceClient<std_srvs::Empty>("/emergency");
+        // high level commands
+        takeoffService = droneHandle.serviceClient<crazyflie_driver::Takeoff>("/" + tag + "/takeoff");
+        landService = droneHandle.serviceClient<crazyflie_driver::Land>("/" + tag + "/land");
+        stopService = droneHandle.serviceClient<crazyflie_driver::Stop>("/" + tag + "/stop");
+        goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to");
 
-        landService = droneHandle.serviceClient<crazyflie_driver::Land>("/land");
+        // feedback
+        imuMeasure = droneHandle.subscribe<sensor_msgs::Imu>("/" + tag + "/imu", 10, &cflie::imuCallback, this); 
 
-        goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/go_to");
+        // m_serviceUpdateParams = n.advertiseService(m_tf_prefix + "/update_params", &CrazyflieROS::updateParams, this);
+        // crazyflie_driver::UpdateParams myMsg;
+        // myMsg.request.params = {"/" + tag + "/commander/enHighLevel"};
+
     };
     ~cflie() 
     {
-        
+        // use remove service
     }
     
     void velocity(geometry_msgs::Vector3 vel, float duration) override
@@ -95,17 +143,72 @@ public:
     }
     void position(geometry_msgs::Point pos, float duration) override
     {
-        // m_serviceGoTo = n.advertiseService(m_tf_prefix + "/go_to", &CrazyflieROS::goTo, this);
-        crazyflie_driver::GoTo msg;
-        msg.request.duration = ros::Duration(duration);
-        msg.request.goal = pos;
-        // relative position I think? as in a movement for the drone, not in world coords
-        msg.request.relative = true;
+        geometry_msgs::Twist cmdVelMsg;
+        cmdVelMsg.linear.x = 0;
+        cmdVelMsg.linear.y = 0;
+        cmdVelMsg.linear.z = desPos.position.z;
+        cmdVelMsg.angular.z = 0;
+        cmd_vel.publish(cmdVelMsg);
 
+        // if (desPos.position.z == 0.0f)
+        // {
+        //     // crazyflie_driver::Land landMsg;
+        //     // landMsg.request.height = 0.0;
+        //     // landMsg.request.duration = ros::Duration(2.0);
+        //     // landService.call(landMsg);
+
+            
+        //     cmdVelMsg.linear.x = 0;
+        //     cmdVelMsg.linear.y = 0;
+        //     cmdVelMsg.linear.z = 0;
+        //     cmdVelMsg.angular.z = 0;
+        // }
+        // else if (desPos.position.z >= 1.0f)
+        // {
+            
+
+        //     // crazyflie_driver::Takeoff myMsg;
+        //     // myMsg.request.height = 1;
+        //     // myMsg.request.duration = ros::Duration(4.0f);
+        //     // takeoffService.call(myMsg);
+
+
+        //     // crazyflie_driver::Hover hoverMsg;
+        //     // hoverMsg.vx = 0;
+        //     // hoverMsg.vy = 0;
+        //     // hoverMsg.yawrate = 0;
+        //     // hoverMsg.zDistance = 0.5;
+        //     // // ROS_INFO("Hover published");
+        //     // cmd_hover.publish(hoverMsg);
+        // }
     }
     void wrapperControlLoop() override
     {
-        
+        // if (DoOnce == false) {
+        //     droneHandle.setParam( "/" + tag + "/commander/enHighLevel", 1);
+        //     droneHandle.setParam("/" + tag + "/stabilizer/estimator", 2);
+        //     droneHandle.setParam( "/" + tag + "/stabilizer/controller", 2);
+        //     droneHandle.setParam( "/" + tag + "/kalman/resetEstimation", 1);
+        //     crazyflie_driver::UpdateParams paramsMsg;
+        //     paramsMsg.request.params = {
+        //         "commander/enHighLevel",
+        //         "stabilizer/estimator",
+        //         "stabilizer/controller",
+        //         "kalman/resetEstimation"
+        //     };
+        //     if (updateParams.call(paramsMsg) == true) {
+        //         DoOnce = true;
+        //     }
+        // }
+
+        // postToCrazyServer();
+        // ROS_INFO("dur: %f", commandDuration);
+        position(currPos.position,0);
+        if(commandDuration != 0.0f)
+        {
+            // ROS_INFO("Pos called from wrapper");
+            
+        }
     }
     void land() override
     {
@@ -114,6 +217,8 @@ public:
         msg.request.duration = ros::Duration(1.0f);
         // 5cm above the ground?
         msg.request.height = 0.05f;
+        landService.call(msg);
+
 
     }
     void emergency() override
