@@ -59,6 +59,20 @@ private:
         ROS_INFO("Some IMU data: \nAng Vel: %.6f, %.6f, %.6f\n", msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
     }
 
+    void goTo(float x, float y, float z, float duration)
+    {
+        crazyflie_driver::GoTo goToMsg;
+        goToMsg.request.goal.x = x;
+        goToMsg.request.goal.y = y;
+        goToMsg.request.goal.z = z;
+        goToMsg.request.duration = ros::Duration(duration);
+        goToMsg.request.yaw = 0;
+        goToMsg.request.relative = false;
+        goToService.call(goToMsg);
+
+        resetTimeout(duration - 0.5);
+    }
+
 public:
     cflie(std::string tag):rigidBody(tag)
     {
@@ -90,7 +104,7 @@ public:
             ROS_ERROR("Could not add %s to Crazyflie Server, please check the drone tag", tag.c_str());
         }
 
-        updateParams = droneHandle.serviceClient<crazyflie_driver::UpdateParams>("/" + tag + "/cflie_00/update_params");
+        updateParams = droneHandle.serviceClient<crazyflie_driver::UpdateParams>("/" + tag + "/update_params");
 
         emergencyService = droneHandle.serviceClient<std_srvs::Empty>("/" + tag + "/emergency");        
         external_position = droneHandle.advertise<geometry_msgs::PointStamped>("/" + tag + "/external_position", DEFAULT_QUEUE);
@@ -136,26 +150,46 @@ public:
                 DoOnce = true;
             }
         }
+
+        
+
+    }
+
+    void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) override
+    {
+        geometry_msgs::Point posDiff;
+        posDiff.x = pos.x - currPos.position.x;
+        posDiff.y = pos.y - currPos.position.y;
+        posDiff.z = pos.z - currPos.position.z;
+        goTo(pos.x, pos.y, pos.z, duration);
     }
 
     void onTakeoff(float height) override
     {
-
+        ROS_INFO("Takeoff sent to %s", tag.c_str());
+        crazyflie_driver::Takeoff msg;
+        msg.request.duration = ros::Duration(3.0f);
+        msg.request.height = height;
+        if (!takeoffService.call(msg)) {
+            ROS_ERROR("Takeoff service failed");
+        }
     }
 
     void onLand() override
     {
-        ROS_INFO("Land requested for %s", tag.c_str());
+        ROS_INFO("Land sent to %s", tag.c_str());
         crazyflie_driver::Land msg;
-        msg.request.duration = ros::Duration(1.0f);
+        msg.request.duration = ros::Duration(5.0f);
         // 5cm above the ground?
         msg.request.height = 0.05f;
-        landService.call(msg);
+        if (!landService.call(msg)) {
+            ROS_ERROR("Land service failed");
+        }
     }
 
     void onEmergency() override
     {
-        ROS_INFO("Emergency override requested for %s", tag.c_str());
+        ROS_INFO("Emergency sent to %s", tag.c_str());
         std_srvs::Empty msg;
         if(emergencyService.call(msg))
         {

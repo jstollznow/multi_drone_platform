@@ -72,8 +72,6 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
         Node.getParam("cflie_test", droneName);
         addNewRigidbody(droneName);
     }
-    //addNewRigidbody("testdrone_00");
-
 }
 
 drone_server::~drone_server()
@@ -201,7 +199,7 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
         } break;
         case 2: {   /* TAKEOFF */
             if (RB == nullptr) return;
-            RB->takeoff();
+            RB->takeoff(1);
         } break;
         case 3: {   /* LAND */
             if (RB == nullptr) return;
@@ -226,7 +224,9 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
         } break;
         case 8: {   /* GOTO_HOME */
             if (RB == nullptr) return;
-            RB->setDesPos(RB->getHomePos(), 0.0f, 0.0f);
+            auto PosData = RB->getHomePos();
+            PosData.z = 1.0f;
+            RB->setDesPos(PosData, 0.0f, 5.0f);
         } break;
         case 11: {  /* DRONE_SERVER_FREQ */
             // does this set Hz or secs?

@@ -10,6 +10,9 @@
 #include "sensor_msgs/Imu.h"
 
 #define DEFAULT_QUEUE 10
+#define TIMEOUT_GEN 0.1
+#define TIMEOUT_HOVER 4
+
 
 // api structures
 struct returnPos{
@@ -31,11 +34,14 @@ class rigidBody
         void calcVel();
         float getYaw(geometry_msgs::Pose& pos);
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
-
+        
     protected:
         //rigid body tag
         std::string tag;
         bool controllable;
+
+        bool timeoutStageOne = true;
+        double nextTimeoutGen;
 
         std::vector<geometry_msgs::PoseStamped> motionCapture;
 
@@ -55,7 +61,9 @@ class rigidBody
 
         ros::NodeHandle droneHandle;
 
-             
+        void resetTimeout(float timeout = TIMEOUT_GEN);
+
+        bool noMoreCommands = false;
         // Wrapper Methods
 
         virtual void onUpdate() = 0;
@@ -64,6 +72,7 @@ class rigidBody
         virtual void onLand() = 0;
         virtual void onEmergency() = 0;
 
+        virtual void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) = 0;
 
     public:
 
