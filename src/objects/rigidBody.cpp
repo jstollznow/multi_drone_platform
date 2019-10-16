@@ -1,26 +1,5 @@
 #include "rigidBody.h"
-#include "ros/ros.h"
 #include "elementConversions.cpp"
-
-
-void rigidBody::initialise()
-{
-
-}
-bool rigidBody::checkTopicValid(std::string topicName)
-{
-    ros::master::V_TopicInfo master_topics;
-    ros::master::getTopics(master_topics);
-
-    for (auto it = master_topics.begin() ; it != master_topics.end(); it++) {
-        const ros::master::TopicInfo& info = *it;
-        if (info.name == topicName.c_str())
-        {
-            return true;
-        }
-    }
-    return false;
-}
 
 rigidBody::rigidBody(std::string tag, bool controllable)
 {
@@ -32,18 +11,20 @@ rigidBody::rigidBody(std::string tag, bool controllable)
     // look for drone under tag namespace then vrpn output
     std::string optiTop = "/vrpn_client_node/" + tag + "/pose";
 
-    // the same but in the crazyflie_server namespace
-    std::string crazyflieTopic = "/" + tag + optiTop;
-
     desPos.position.x = 0.0f;
     desPos.position.y = 0.0f;
     desPos.position.z = 0.0f;
-    
+    // private function initialise
+    // set home to be current pos
+    // first time, set home to current
+
+
     commandDuration = 0.0f;
+
     droneHandle = ros::NodeHandle();
+    
     motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
-    external_pose = droneHandle.advertise<geometry_msgs::PoseStamped>("/" + tag + "/external_pose", DEFAULT_QUEUE);
-        
+    
     ROS_INFO("Subscribing to %s for motion capture", optiTop.c_str());   
     
 }
@@ -100,8 +81,7 @@ void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
     desPos.position.z = pos.z;
     commandDuration = duration;
     ROS_INFO("Set z: %f", pos.z);
-    // currently do not manage yaw 
-    desPos.orientation = currPos.orientation;
+    // @TODO: Orientation Data
     return;
 }
 
@@ -141,13 +121,9 @@ void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg
     motionCapture.push_back(*msg);
     if (motionCapture.size() >= 2){calcVel();}
     currPos = motionCapture.front().pose;
-    if (currPos.position.z < 0.05)
-    {
-        // @TODO: set offsets
-        // pitch roll and yaw offset difference between 
-        // optitrack and device
-    }
-    external_pose.publish(msg);
+
+    // @TODO: Orientation implementation
+    this->onMotionCapture(msg);
 }
 
 geometry_msgs::PoseStamped rigidBody::getMotionCapture()
@@ -157,7 +133,7 @@ geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 
 void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 {
-    wrapperControlLoop();
+    this->onUpdate();
 
     // direction
     geometry_msgs::Vector3 direction;
@@ -173,4 +149,19 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
     // z < 0 reduce thrust
     // z > 0 increase thrust
 
+}
+
+void rigidBody::emergency()
+{
+    this->onEmergency();
+}
+
+void rigidBody::land()
+{
+    this->onLand();
+}
+
+void rigidBody::takeoff(float height)
+{
+    this->onTakeoff(height);
 }
