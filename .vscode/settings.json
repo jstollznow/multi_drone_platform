@@ -61,5 +61,8 @@
         "csignal": "cpp",
         "geometry": "cpp",
         "mutex": "cpp"
-    }
+    },
+    "cSpell.words": [
+        "opti"
+    ]
 }
