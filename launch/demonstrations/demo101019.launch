@@ -1,5 +1,5 @@
 <launch>
-    <arg name="cflie_test" default="cflie_00"/>
+    <arg name="cflie_test" default="cflie_E7"/>
     <!-- crazyflie server -->
     <include 
         file="$(find multi_drone_platform)/launch/crazyflie/crazyflie_server.launch">

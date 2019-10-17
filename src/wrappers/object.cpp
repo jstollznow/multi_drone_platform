@@ -14,6 +14,12 @@ public:
     {
 
     }
+
+    void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) override
+    {
+
+    }
+
     void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg)
     {
 

@@ -216,6 +216,10 @@ add_executable(tst_program src/user_api/test_user_api_program.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
 add_dependencies(tst_program multi_drone_platform_generate_messages_cpp)
 
+add_executable(emergency_program src/user_api/emergency_program.cpp)
+target_link_libraries(emergency_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
+add_dependencies(emergency_program multi_drone_platform_generate_messages_cpp)
+
 
 #############
 ## Install ##
