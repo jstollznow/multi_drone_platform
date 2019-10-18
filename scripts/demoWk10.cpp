@@ -4,7 +4,7 @@
 int main(int argc, char **argv)
 {
     // stage 1
-    mdp_api::initialise();
+    mdp_api::initialise(100);
 
 
     auto myDrones = mdp_api::get_all_rigidbodies();

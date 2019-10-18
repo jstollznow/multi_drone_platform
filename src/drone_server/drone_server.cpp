@@ -72,15 +72,15 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
         Node.getParam("cflie_test", droneName);
         addNewRigidbody(droneName);
     }
+
+    addNewRigidbody("object_00");
 }
 
 drone_server::~drone_server()
 {
     /* cleanup all drone pointers in the rigidbody list */
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
-        if (RigidBodyList[i] != nullptr) {
-            delete RigidBodyList[i];
-        }
+        removeRigidbody(i);
     }
     RigidBodyList.clear();
     printf("Shutting down drone server\n");
@@ -98,6 +98,9 @@ mdp_id drone_server::addNewRigidbody(std::string pTag)
     ID.numeric_id = RigidBodyList.size();
     rigidBody* RB;
     if (mdp_wrappers::createNewRigidbody(pTag, RB)) {
+        /* update drone state on param server */
+        Node.setParam("mdp/drone_" + std::to_string(RigidBodyList.size()) + "/state", "IDLE");
+
         RigidBodyList.push_back(RB);
         ID.name = pTag.c_str();
         ID.numeric_id = RigidBodyList.size();
@@ -120,6 +123,9 @@ void drone_server::removeRigidbody(unsigned int pDroneID)
             delete RigidBodyList[pDroneID];
             /* and set to null */
             RigidBodyList[pDroneID] = nullptr;
+            
+            /* update drone state on param server */
+            Node.setParam("mdp/drone_" + std::to_string(pDroneID) + "/state", "DELETED");
         }
     }
 }
@@ -149,6 +155,12 @@ void drone_server::run()
             if (RigidBodyList[i] == nullptr) continue;
 
             RigidBodyList[i]->update(RigidBodyList);
+
+            /* update drone state on param server */
+            if (RigidBodyList[i]->StateIsDirty) {
+                Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
+                RigidBodyList[i]->StateIsDirty = false;
+            }
         }
         RigidBodyEnd = ros::Time::now();
         

@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv)
 {
-    mdp_api::initialise();
+    mdp_api::initialise(100);
 
     int a;
     scanf("%d", &a);

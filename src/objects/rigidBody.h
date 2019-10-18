@@ -34,6 +34,7 @@ class rigidBody
         void calcVel();
         float getYaw(geometry_msgs::Pose& pos);
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
+        void set_state(const std::string& state);
         
     protected:
         //rigid body tag
@@ -75,6 +76,8 @@ class rigidBody
         virtual void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) = 0;
 
     public:
+        std::string State = "IDLE";
+        bool StateIsDirty = true;
 
         rigidBody(std::string tag, bool controllable = false);
 
@@ -105,5 +108,4 @@ class rigidBody
         void land();
 
         void takeoff(float height = 0.25);
-
 };

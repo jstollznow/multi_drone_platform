@@ -5,11 +5,14 @@
 
 #include "../drone_server/drone_server_msg_translations.cpp"
 
+#define FRAME_ID "user_api"
+
 namespace mdp_api {
 
 struct node_data
 {
     ros::NodeHandle* Node;
+    ros::Rate* LoopRate;
     ros::Publisher Pub;
     ros::ServiceClient DataClient;
     ros::ServiceClient ListClient;
@@ -17,22 +20,55 @@ struct node_data
 
 
 
-void initialise()
+void position_msg::set_as_relative(bool pValue)
+{
+    this->relative = {pValue,pValue,pValue};
+}
+void position_msg::set_target(mdp_api::id pTarget)
+{
+    this->target_id = pTarget.numeric_id;
+}
+void position_msg::rem_target()
+{
+    this->target_id = -1;
+}
+void velocity_msg::set_as_relative(bool pValue)
+{
+    this->relative = {pValue,pValue,pValue};
+}
+
+void initialise(unsigned int pUpdateRate)
 {
     int int_val = 0;
     ros::init(int_val, (char**)nullptr, FRAME_ID);
 
-    NodeData.Node = new ros::NodeHandle("");
+    ROS_INFO("Initialising Client API Connection");
+
+    NodeData.Node = new ros::NodeHandle();
+
+    NodeData.LoopRate = new ros::Rate(pUpdateRate);
 
     NodeData.Pub = NodeData.Node->advertise<geometry_msgs::TransformStamped> ("mdp_api", 10);
     NodeData.DataClient = NodeData.Node->serviceClient<nav_msgs::GetPlan> ("mdp_api_data_srv");
     NodeData.ListClient = NodeData.Node->serviceClient<tf2_msgs::FrameGraph> ("mdp_api_list_srv");
+
+    sleep(1);
 
     ROS_INFO("Initialised Client API Connection");
 }
 
 void terminate()
 {
+    // land all active drones
+    auto drones = get_all_rigidbodies();
+    for (size_t i = 0; i < drones.size(); i++) {
+        cmd_land(drones[i]);
+    }
+    for (size_t i = 0; i < drones.size(); i++) {
+        //sleep_until_idle(drones[i]);
+    }
+
+    delete NodeData.LoopRate;
     delete NodeData.Node;
     ROS_INFO("Shutting Down Client API Connection");
 }
@@ -40,22 +76,25 @@ void terminate()
 std::vector<mdp_api::id> get_all_rigidbodies()
 {
     tf2_msgs::FrameGraph Srv_data;
-    NodeData.ListClient.call(Srv_data);
-
-    std::vector<std::string> results;
-    boost::split(results, Srv_data.response.frame_yaml, [](char c){return c == ' ';});
-    printf("frame_yaml: %s\n", Srv_data.response.frame_yaml.c_str());
 
     std::vector<mdp_api::id> Vec;
-    for (std::string& str : results) {
-        if (str.length() > 0) {
-            std::vector<std::string> id_str;
-            boost::split(id_str, str, [](char c){return c == ':';});
-            mdp_api::id ID;
-            ID.numeric_id = atoi(id_str[0].c_str());
-            ID.name = id_str[1];
-            Vec.push_back(ID);
+    if (NodeData.ListClient.call(Srv_data)) {
+        std::vector<std::string> results;
+        boost::split(results, Srv_data.response.frame_yaml, [](char c){return c == ' ';});
+        printf("frame_yaml: %s\n", Srv_data.response.frame_yaml.c_str());
+
+        for (std::string& str : results) {
+            if (str.length() > 0) {
+                std::vector<std::string> id_str;
+                boost::split(id_str, str, [](char c){return c == ':';});
+                mdp_api::id ID;
+                ID.numeric_id = atoi(id_str[0].c_str());
+                ID.name = id_str[1];
+                Vec.push_back(ID);
+            }
         }
+    } else {
+        ROS_WARN("Failed to call api list service");
     }
 
     return Vec;
@@ -103,11 +142,14 @@ position_data get_body_position(mdp_api::id pRigidbodyID)
     Srv.msg_type() = "POSITION";
 
     position_data Data;
-    NodeData.DataClient.call(Srv_data);
-    Data.x = Srv.vec3().x;
-    Data.y = Srv.vec3().y;
-    Data.z = Srv.vec3().z;
-    Data.yaw = Srv.yaw_rate();
+    if (NodeData.DataClient.call(Srv_data)) {
+        Data.x = Srv.vec3().x;
+        Data.y = Srv.vec3().y;
+        Data.z = Srv.vec3().z;
+        Data.yaw = Srv.yaw_rate();
+    } else {
+        ROS_WARN("Failed to call api data service");
+    }
 
     return Data;
 }
@@ -119,13 +161,15 @@ velocity_data get_body_velocity(mdp_api::id pRigidbodyID)
 
     Srv.drone_id().numeric_id() = pRigidbodyID.numeric_id;
     Srv.msg_type() = "VELOCITY";
-    NodeData.DataClient.call(Srv_data);
-
     velocity_data Data;
-    Data.x = Srv.vec3().x;
-    Data.y = Srv.vec3().y;
-    Data.z = Srv.vec3().z;
-    Data.yaw = Srv.yaw_rate();
+    if (NodeData.DataClient.call(Srv_data)) {
+        Data.x = Srv.vec3().x;
+        Data.y = Srv.vec3().y;
+        Data.z = Srv.vec3().z;
+        Data.yaw = Srv.yaw_rate();
+    } else {
+        ROS_WARN("Failed to call api data service");
+    }
     
     return Data;
 }
@@ -200,12 +244,15 @@ position_data get_home(mdp_api::id pDroneID)
 
     Srv.drone_id().numeric_id() = pDroneID.numeric_id;
     Srv.msg_type() = "GET_HOME";
-    NodeData.DataClient.call(Srv_data);
 
     position_data Data;
-    Data.x = Srv.vec3().x;
-    Data.y = Srv.vec3().y;
-    Data.z = Srv.vec3().z;
+    if (NodeData.DataClient.call(Srv_data)) {
+        Data.x = Srv.vec3().x;
+        Data.y = Srv.vec3().y;
+        Data.z = Srv.vec3().z;
+    } else {
+        ROS_WARN("Failed to call api data service");
+    }
     
     return Data;
 }
@@ -238,16 +285,24 @@ timings get_operating_frequencies()
     mdp::drone_feedback_srv Srv(&Srv_data);
 
     Srv.msg_type() = "TIME";
-    NodeData.DataClient.call(Srv_data);
 
     timings Data;
-    Data.desired_drone_server_update_rate = Srv.vec3().x;
-    Data.achieved_drone_server_update_rate = Srv.vec3().y;
-    Data.motion_capture_update_rate = Srv.vec3().z;
-    Data.time_to_update_drones = Srv.forward_x();
-    Data.wait_time_per_frame = Srv.forward_y();
+    if (NodeData.DataClient.call(Srv_data)) {
+        Data.desired_drone_server_update_rate = Srv.vec3().x;
+        Data.achieved_drone_server_update_rate = Srv.vec3().y;
+        Data.motion_capture_update_rate = Srv.vec3().z;
+        Data.time_to_update_drones = Srv.forward_x();
+        Data.wait_time_per_frame = Srv.forward_y();
+    } else {
+        ROS_WARN("Failed to call api data service");
+    }
     
     return Data;
+}
+
+void spin_once()
+{
+    NodeData.LoopRate->sleep();
 }
 
 

@@ -2,6 +2,7 @@
 #include "elementConversions.cpp"
 
 
+
 rigidBody::rigidBody(std::string tag, bool controllable)
 {
     this->tag = tag;
@@ -30,6 +31,13 @@ rigidBody::rigidBody(std::string tag, bool controllable)
 rigidBody::~rigidBody()
 {
     ROS_INFO("Shutting down rigid body %s", tag.c_str());
+}
+
+void rigidBody::set_state(const std::string& state)
+{
+    ROS_INFO("%s: %s", this->tag.c_str(), state.c_str());
+    this->State = state;
+    this->StateIsDirty = true;
 }
 
 bool rigidBody::getControllable()
@@ -148,7 +156,7 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
         if (ros::Time::now().toSec() >= nextTimeoutGen) {
             if (timeoutStageOne) {
                 /* Go to hover */
-                ROS_WARN("Timeout stage 1");
+                ROS_INFO_STREAM(this->tag << ": idle");
                 geometry_msgs::Vector3 currPosVec;
                 currPosVec.x = currPos.position.x;
                 currPosVec.y = currPos.position.y;
