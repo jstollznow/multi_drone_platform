@@ -25,7 +25,6 @@ rigidBody::rigidBody(std::string tag, bool controllable)
     motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
     
     ROS_INFO("Subscribing to %s for motion capture", optiTop.c_str());   
-    
 }
 
 rigidBody::~rigidBody()
@@ -35,9 +34,11 @@ rigidBody::~rigidBody()
 
 void rigidBody::set_state(const std::string& state)
 {
-    ROS_INFO("%s: %s", this->tag.c_str(), state.c_str());
-    this->State = state;
-    this->StateIsDirty = true;
+    if (this->State != state) {
+        ROS_INFO("%s: %s", this->tag.c_str(), state.c_str());
+        this->State = state;
+        this->StateIsDirty = true;
+    }
 }
 
 bool rigidBody::getControllable()
@@ -82,16 +83,15 @@ returnPos rigidBody::getDesPos()
 
 void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
 {
-    if (!noMoreCommands) {
-        this->onSetPosition(pos, yaw, duration);
-        desPos.position.x = pos.x;
-        desPos.position.y = pos.y;
-        desPos.position.z = pos.z;
-        commandDuration = duration;
-        ROS_INFO("Set z: %f", pos.z);
-        // @TODO: Orientation Data
-        // resetTimeout(duration - 0.1);
-    }
+    set_state("MOVING");
+    this->onSetPosition(pos, yaw, duration);
+    desPos.position.x = pos.x;
+    desPos.position.y = pos.y;
+    desPos.position.z = pos.z;
+    commandDuration = duration;
+    ROS_INFO("Set z: %f", pos.z);
+    // @TODO: Orientation Data
+    resetTimeout(duration - 0.1f);
 }
 
 returnVel rigidBody::getDesVel()
@@ -101,12 +101,11 @@ returnVel rigidBody::getDesVel()
 
 void rigidBody::setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration)
 {
-    if (!noMoreCommands) {
-        desVel.linear = vel;
-        desVel.angular.z = yawRate;
-        commandDuration = duration;
-        resetTimeout();
-    }
+    set_state("MOVING");
+    desVel.linear = vel;
+    desVel.angular.z = yawRate;
+    commandDuration = duration;
+    resetTimeout();
 }
 
 geometry_msgs::Vector3 rigidBody::getHomePos()
@@ -152,11 +151,14 @@ geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 
 void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 {
-    if (!noMoreCommands) {
-        if (ros::Time::now().toSec() >= nextTimeoutGen) {
+    if (ros::Time::now().toSec() >= nextTimeoutGen) {
+        if (State == "LANDING" || State == "LANDED") {
+            set_state("LANDED");
+            resetTimeout(100);
+        } else {
             if (timeoutStageOne) {
                 /* Go to hover */
-                ROS_INFO_STREAM(this->tag << ": idle");
+                set_state("IDLE");
                 geometry_msgs::Vector3 currPosVec;
                 currPosVec.x = currPos.position.x;
                 currPosVec.y = currPos.position.y;
@@ -170,46 +172,34 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
                 this->land();
             }
         }
-
-        this->onUpdate();
-
-        // direction
-        geometry_msgs::Vector3 direction;
-
-        // x change translates to roll
-        direction.x = desPos.position.x - currPos.position.x;
-        
-        // y change translates to pitch
-        direction.y = desPos.position.y - currPos.position.y;
-        
-        // z change translates to thrust
-        direction.z = desPos.position.z - currPos.position.z;
-        // z < 0 reduce thrust
-        // z > 0 increase thrust
     }
+
+    this->onUpdate();
 }
 
 void rigidBody::emergency()
 {
+    this->set_state("EMERGENCY");
     this->onEmergency();
 }
 
 void rigidBody::land()
 {
-    this->onLand();
-    noMoreCommands = true;
+    this->set_state("LANDING");
+    this->onLand(5.0f);
+    resetTimeout(5.0f);
 }
 
 void rigidBody::takeoff(float height)
 {
-    if (!noMoreCommands) {
-        this->onTakeoff(height);
-        resetTimeout(1.0f);
-    }
+    this->set_state("TAKING OFF");
+    this->onTakeoff(height, 3.0f);
+    resetTimeout(2.8f);
 }
 
 void rigidBody::resetTimeout(float timeout)
 {
+    timeout = std::max(timeout, 0.0f);
     nextTimeoutGen = ros::Time::now().toSec() + timeout;
     timeoutStageOne = true;
     ROS_INFO("Reset timer to %f seconds", timeout);

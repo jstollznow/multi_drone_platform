@@ -30,6 +30,7 @@ namespace mdp_api {
             void set_as_relative(bool pValue);
             void set_target(mdp_api::id pTarget);
             void rem_target();
+            int get_target_id() const;
     };
 
     struct velocity_msg {
@@ -57,23 +58,26 @@ namespace mdp_api {
 
     std::vector<mdp_api::id> get_all_rigidbodies();
 
-    void set_drone_velocity(mdp_api::id pDroneID, float pVelX, float pVelY, float pVelZ, float pYawRate = 0.0f);
+    void set_drone_velocity(mdp_api::id pDroneID, mdp_api::velocity_msg pMsg);
     velocity_data get_body_velocity(mdp_api::id pRigidbodyID);
 
-    void set_drone_position(mdp_api::id pDroneID, float pPosX, float pPosY, float pPosZ, float pDuration = 0.0f, float pYaw = 0.0f);
+    void set_drone_position(mdp_api::id pDroneID, mdp_api::position_msg pMsg);
     position_data get_body_position(mdp_api::id pRigidbodyID);
 
-    void cmd_takeoff(mdp_api::id pDroneID);
+    void cmd_takeoff(mdp_api::id pDroneID, float pHeight = 0.5f, float pDuration = 2.0f);
     void cmd_land(mdp_api::id pDroneID);
     void cmd_emergency(mdp_api::id pDroneID);
     void cmd_hover(mdp_api::id pDroneID);
 
     void set_home(mdp_api::id pDroneID, float pPosX, float pPosY, float pPosZ);
     position_data get_home(mdp_api::id pDroneID);
-    void goto_home(mdp_api::id pDroneID);
+    void goto_home(mdp_api::id pDroneID, float pHeight = -1.0f);
 
     void set_drone_server_update_frequency(float pUpdateFrequency);
     timings get_operating_frequencies();
 
     void spin_once();
+    int rate();
+    void sleep_until_idle(mdp_api::id pDroneID);
+    std::string get_state(mdp_api::id pDroneID);
 }

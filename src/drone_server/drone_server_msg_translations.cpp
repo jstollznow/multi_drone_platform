@@ -34,10 +34,11 @@ class input_msg
         id drone_id() { return id(&data->header); }
         std::string& msg_type() { return data->child_frame_id; }
         geometry_msgs::Vector3& posvel() { return data->transform.translation; }
-        double& forward_x() { return data->transform.rotation.x; }
-        double& forward_y() { return data->transform.rotation.y; }
+        double& relative()  { return data->transform.rotation.x; }
+        double& target()    { return data->transform.rotation.y; }
         double& yaw_rate()  { return data->transform.rotation.z; }
-        double& duration() { return data->transform.rotation.w; }
+        double& yaw()       { return data->transform.rotation.z; }
+        double& duration()  { return data->transform.rotation.w; }
 
 };
 

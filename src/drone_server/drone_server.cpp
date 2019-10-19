@@ -191,6 +191,16 @@ static std::map<std::string, int> APIMap = {
     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
 };
 
+std::array<bool, 3> dencoded_relative(double pEncoded)
+{
+    uint32_t pEncodedInt = (uint32_t)pEncoded;
+    std::array<bool, 3> ret_arr;
+    ret_arr[0] = (pEncodedInt & 0x00000001) > 0;
+    ret_arr[1] = (pEncodedInt & 0x00000002) > 0;
+    ret_arr[2] = (pEncodedInt & 0x00000004) > 0;
+    return ret_arr;
+}
+
 void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& input)
 {
     mdp::input_msg msg((geometry_msgs::TransformStamped*)input.get());
@@ -203,6 +213,7 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
     switch(APIMap[msg.msg_type()]) {
         case 0: {   /* VELOCITY */
             if (RB == nullptr) return;
+            // @TODO do all the relative and target stuff for velocity and position
             RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
         } break;
         case 1: {   /* POSITION */
@@ -211,12 +222,11 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
         } break;
         case 2: {   /* TAKEOFF */
             if (RB == nullptr) return;
-            RB->takeoff(1);
+            // @TODO add duration and height
+            RB->takeoff(1.0f);
         } break;
         case 3: {   /* LAND */
             if (RB == nullptr) return;
-            // @TODO: we need a land command on the rigidbody to make use of the control loop (to soft land)
-            // currently this is implemented in the wrapper class
             RB->land();       
         } break;
         case 4: {   /* HOVER */
@@ -227,6 +237,8 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
         case 5: {   /* EMERGENCY */
             if (RB == nullptr) return;
             RB->emergency();
+            RB->emergency();
+            removeRigidbody(msg.drone_id().numeric_id());
         } break;
         case 6: {   /* SET_HOME */
             if (RB == nullptr) return;
@@ -236,6 +248,7 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
         } break;
         case 8: {   /* GOTO_HOME */
             if (RB == nullptr) return;
+            // @TODO @FIX using relative commands
             auto PosData = RB->getHomePos();
             PosData.z = 1.0f;
             RB->setDesPos(PosData, 0.0f, 5.0f);

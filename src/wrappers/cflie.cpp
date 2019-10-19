@@ -150,9 +150,6 @@ public:
                 DoOnce = true;
             }
         }
-
-        
-
     }
 
     void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) override
@@ -164,22 +161,22 @@ public:
         goTo(pos.x, pos.y, pos.z, duration);
     }
 
-    void onTakeoff(float height) override
+    void onTakeoff(float height, float duration) override
     {
         ROS_INFO("Takeoff sent to %s", tag.c_str());
         crazyflie_driver::Takeoff msg;
-        msg.request.duration = ros::Duration(3.0f);
+        msg.request.duration = ros::Duration(duration);
         msg.request.height = height;
         if (!takeoffService.call(msg)) {
             ROS_ERROR("Takeoff service failed");
         }
     }
 
-    void onLand() override
+    void onLand(float duration) override
     {
         ROS_INFO("Land sent to %s", tag.c_str());
         crazyflie_driver::Land msg;
-        msg.request.duration = ros::Duration(5.0f);
+        msg.request.duration = ros::Duration(duration);
         // 5cm above the ground?
         msg.request.height = 0.05f;
         if (!landService.call(msg)) {

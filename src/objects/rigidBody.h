@@ -64,19 +64,18 @@ class rigidBody
 
         void resetTimeout(float timeout = TIMEOUT_GEN);
 
-        bool noMoreCommands = false;
         // Wrapper Methods
 
         virtual void onUpdate() = 0;
         virtual void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};
-        virtual void onTakeoff(float height) = 0;
-        virtual void onLand() = 0;
+        virtual void onTakeoff(float height, float duration) = 0;
+        virtual void onLand(float duration) = 0;
         virtual void onEmergency() = 0;
 
         virtual void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) = 0;
 
     public:
-        std::string State = "IDLE";
+        std::string State = "LANDED";
         bool StateIsDirty = true;
 
         rigidBody(std::string tag, bool controllable = false);

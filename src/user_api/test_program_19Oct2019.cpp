@@ -23,7 +23,7 @@ void do_drone_flight_test(mdp_api::id drone)
 
     mdp_api::goto_home(drone, 0.0);     // tell drone to go home and land (as height is set to 0.0)
 
-    mdp_api::sleep_until_idle(drones[0]);
+    mdp_api::sleep_until_idle(drone);
 }
 
 void do_baseball_base_run(std::vector<std::array<double, 3>> positions)
@@ -42,25 +42,25 @@ void do_baseball_base_run(std::vector<std::array<double, 3>> positions)
     msg.duration = 4.0;
     msg.yaw = 0.0;
 
-    mdp_api::set_drone_position(drones[0], msg);
+    mdp_api::set_drone_position(drones[0], msg);    // tell drone 0 to go to first position
 
-    mdp_api::sleep_until_idle(drone[0]);
+    mdp_api::sleep_until_idle(drones[0]);
 
-    for (size_t i = 1; i < positions.size(); i++) {
-        mdp_api::set_drone_position(drones[1], msg);
+    for (size_t i = 1; i < positions.size(); i++) {     // for all positions in positions array
+        mdp_api::set_drone_position(drones[1], msg);    // tell drone 1 to go to position i-1
         msg.position = positions[i];
-        mdp_api::set_drone_position(drones[0], msg);
+        mdp_api::set_drone_position(drones[0], msg);    // tell drone 0 to go to position i
         mdp_api::sleep_until_idle(drones[0]);
     }
 
-    mdp_api::set_drone_position(drones[1], msg);
-    mdp_api::goto_home(drones[0]);  // no height set so goto home position at current height
+    mdp_api::set_drone_position(drones[1], msg);    // send drone 1 to final position and drone 0 to home
+    mdp_api::goto_home(drones[0]);                  // no height set so goto home position at current height
     mdp_api::sleep_until_idle(drones[1]);
 
-    mdp_api::goto_home(drones[1]);
+    mdp_api::goto_home(drones[1]);                  // send drone 1 to home
     mdp_api::sleep_until_idle(drones[1]);
 
-    mdp_api::cmd_land(drones[0]);
+    mdp_api::cmd_land(drones[0]);                   // land both drones
     mdp_api::cmd_land(drones[1]);
 
     mdp_api::sleep_until_idle(drones[0]);
@@ -107,9 +107,9 @@ void do_figure_eight_with_follower()
     vel_msg.yaw_rate = 180.0;   // 360 degrees in 2 seconds
 
     // loop for 10 seconds
-    int frames_every_two_seconds = (mdp_api::loop_rate() * 2);
+    int frames_every_two_seconds = (mdp_api::rate() * 2);
     float seconds_to_run_for = 10.0f;
-    int frames = seconds_to_run_for * mdp_api::loop_rate();
+    int frames = seconds_to_run_for * mdp_api::rate();
 
     mdp_api::spin_once();   // reset loop rate before beginning loop dependant code
 
@@ -142,7 +142,7 @@ void do_figure_eight_with_follower()
 
 int main(int argc, char** argv)
 {
-    mdp_api::initialise(100); // update rate of 100Hz
+    mdp_api::initialise(10); // update rate of 10Hz
 
     #if (DO_FLIGHT_TEST == 1)
         auto drones = mdp_api::get_all_rigidbodies();
