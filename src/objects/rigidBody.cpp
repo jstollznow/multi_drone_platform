@@ -91,7 +91,7 @@ void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
     commandDuration = duration;
     ROS_INFO("Set z: %f", pos.z);
     // @TODO: Orientation Data
-    resetTimeout(duration - 0.1f);
+    resetTimeout(duration);
 }
 
 returnVel rigidBody::getDesVel()
@@ -105,7 +105,7 @@ void rigidBody::setDesVel(geometry_msgs::Vector3 vel, float yawRate, float durat
     desVel.linear = vel;
     desVel.angular.z = yawRate;
     commandDuration = duration;
-    resetTimeout();
+    resetTimeout(duration);
 }
 
 geometry_msgs::Vector3 rigidBody::getHomePos()
@@ -156,14 +156,14 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
             set_state("LANDED");
             resetTimeout(100);
         } else {
-            if (timeoutStageOne) {
+            if (State != "IDLE") {
                 /* Go to hover */
-                set_state("IDLE");
                 geometry_msgs::Vector3 currPosVec;
                 currPosVec.x = currPos.position.x;
                 currPosVec.y = currPos.position.y;
                 currPosVec.z = 1;
                 setDesPos(currPosVec, 0.0, TIMEOUT_HOVER + 1.0);
+                set_state("IDLE");
                 timeoutStageOne = false;
                 nextTimeoutGen = ros::Time::now().toSec() + TIMEOUT_HOVER;
             } else {
@@ -187,20 +187,21 @@ void rigidBody::land()
 {
     this->set_state("LANDING");
     this->onLand(5.0f);
-    resetTimeout(5.0f);
+    resetTimeout(5.5f);
 }
 
-void rigidBody::takeoff(float height)
+void rigidBody::takeoff(float height, float duration)
 {
     this->set_state("TAKING OFF");
-    this->onTakeoff(height, 3.0f);
-    resetTimeout(2.8f);
+    this->onTakeoff(height, duration);
+    resetTimeout(duration);
 }
 
 void rigidBody::resetTimeout(float timeout)
 {
+    ROS_INFO("Reset timer to ~%f seconds", timeout);
+    timeout = timeout - 0.2f;
     timeout = std::max(timeout, 0.0f);
     nextTimeoutGen = ros::Time::now().toSec() + timeout;
     timeoutStageOne = true;
-    ROS_INFO("Reset timer to %f seconds", timeout);
 }

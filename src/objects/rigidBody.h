@@ -106,5 +106,5 @@ class rigidBody
 
         void land();
 
-        void takeoff(float height = 0.25);
+        void takeoff(float height = 0.25, float duration = 2.0);
 };

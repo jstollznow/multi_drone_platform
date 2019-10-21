@@ -1,28 +1,19 @@
-#include "../../include/user_api.h"
-
-
+#include "ros/ros.h"
+#include "std_msgs/Empty.h"
 
 int main(int argc, char** argv)
 {
-    mdp_api::initialise(100);
+    ros::init(argc, argv, "mdp_emergency_program");
+    ros::NodeHandle Node;
+    ROS_INFO("Calling emergency on drone server");
 
-    int a;
-    scanf("%d", &a);
-    while(a!=0)
-    {
-        scanf("%d", &a);
-    }
+    ros::Duration D(1.0);
+    ros::Publisher Pub = Node.advertise<std_msgs::Empty> ("mdp_api_emergency", 10);
+    std_msgs::Empty msg;
+    D.sleep();
+    Pub.publish(msg);
+    D.sleep();
+    Pub.publish(msg);
 
-    auto drones = mdp_api::get_all_rigidbodies();
-    for (size_t i = 0; i < drones.size(); i++) {
-        mdp_api::cmd_emergency(drones[i]);
-    }
-
-    scanf("%d", &a);
-    while(a!=9)
-    {
-        scanf("%d", &a);
-    }
-    
-    mdp_api::terminate();
+    ros::shutdown();
 }

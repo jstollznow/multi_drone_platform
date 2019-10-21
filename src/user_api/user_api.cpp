@@ -190,7 +190,7 @@ velocity_data get_body_velocity(mdp_api::id pRigidbodyID)
     return Data;
 }
 
-void cmd_takeoff(mdp_api::id pDroneID, float pHeight = 0.5f, float pDuration = 2.0f)
+void cmd_takeoff(mdp_api::id pDroneID, float pHeight, float pDuration)
 {
     geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
@@ -237,7 +237,7 @@ void cmd_hover(mdp_api::id pDroneID)
 }
 
 
-void set_home(mdp_api::id pDroneID, float pPosX, float pPosY, float pPosZ)
+void set_home(mdp_api::id pDroneID, mdp_api::position_msg pMsg)
 {
     geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
@@ -245,9 +245,12 @@ void set_home(mdp_api::id pDroneID, float pPosX, float pPosY, float pPosZ)
     Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "SET_HOME";
 
-    Msg.posvel().x = pPosX;
-    Msg.posvel().y = pPosY;
-    Msg.posvel().z = pPosZ;
+    Msg.posvel().x = pMsg.position[0];
+    Msg.posvel().y = pMsg.position[1];
+    Msg.posvel().z = pMsg.position[2];
+
+    Msg.relative() = encode_relative_array_to_double(pMsg.relative);
+    Msg.yaw() = pMsg.yaw;
 
     NodeData.Pub.publish(Msg_data);
 }
@@ -275,7 +278,7 @@ position_data get_home(mdp_api::id pDroneID)
     return Data;
 }
 
-void goto_home(mdp_api::id pDroneID, float pHeight = -1.0f)
+void goto_home(mdp_api::id pDroneID, float pHeight)
 {
     geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
@@ -332,6 +335,8 @@ int rate()
 void sleep_until_idle(mdp_api::id pDroneID)
 {
     ROS_INFO("Sleeping until drone '%s' goes idle", pDroneID.name.c_str());
+    NodeData.LoopRate->sleep();
+    NodeData.LoopRate->sleep();
     std::string state_param = "mdp/drone_" + std::to_string(pDroneID.numeric_id) + "/state";
     std::string drone_state = "";
     if (!ros::param::get(state_param, drone_state)) {

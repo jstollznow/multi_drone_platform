@@ -69,7 +69,7 @@ namespace mdp_api {
     void cmd_emergency(mdp_api::id pDroneID);
     void cmd_hover(mdp_api::id pDroneID);
 
-    void set_home(mdp_api::id pDroneID, float pPosX, float pPosY, float pPosZ);
+    void set_home(mdp_api::id pDroneID, mdp_api::position_msg pMsg);
     position_data get_home(mdp_api::id pDroneID);
     void goto_home(mdp_api::id pDroneID, float pHeight = -1.0f);
 

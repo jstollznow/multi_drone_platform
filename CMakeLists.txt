@@ -212,7 +212,7 @@ add_executable(drone_server src/drone_server/drone_server.cpp)
 target_link_libraries(drone_server ${catkin_LIBRARIES} ${PROJECT_NAME}) 
 add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
-add_executable(tst_program src/user_api/test_user_api_program.cpp)
+add_executable(tst_program src/user_api/test_program_19Oct2019.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
 add_dependencies(tst_program multi_drone_platform_generate_messages_cpp)
 

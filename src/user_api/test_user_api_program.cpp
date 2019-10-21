@@ -32,14 +32,14 @@ int main(int argc, char** argv)
     
         // mdp_api::cmd_land(drones[0]);
         // mdp_api::set_drone_position(drones[0], myData.x + 0.5, myData.y - 0.5, myData.z - 0.7, 5.0f);
-        mdp_api::set_drone_position(drones[0], 0.0f, 0.0f, 1.45f, 5.0f);
+        //mdp_api::set_drone_position(drones[0], 0.0f, 0.0f, 1.45f, 5.0f);
         scanf("%d", &a);
         while(a!=0)
         {
             scanf("%d", &a);
         }
         mdp_api::position_data myData = mdp_api::get_body_position(drones[0]);
-        mdp_api::set_drone_position(drones[0], myData.x + 2, myData.y, 1.45f, 5.0f);
+        //mdp_api::set_drone_position(drones[0], myData.x + 2, myData.y, 1.45f, 5.0f);
         scanf("%d", &a);
         while(a!=9)
         {
