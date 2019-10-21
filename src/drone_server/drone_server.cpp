@@ -13,6 +13,7 @@
 #define SRV_TOPIC "mdp_api_data_srv"
 #define LIST_SRV_TOPIC "mdp_api_list_srv"
 #define SUB_TOPIC "mdp_api"
+#define EMERGENCY_TOPIC "mdp_api_emergency"
 
 
 struct mdp_id{
@@ -28,6 +29,7 @@ class drone_server
 
         ros::NodeHandle Node;
         ros::Subscriber InputAPISub;
+        ros::Subscriber EmergencySub;
         ros::ServiceServer ListServer;
         ros::ServiceServer DataServer;
 
@@ -44,12 +46,15 @@ class drone_server
         void removeRigidbody(unsigned int pDroneID);
 
         bool getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigidbody);
+        void setVelocityOnDrone(rigidBody* RB, mdp::input_msg& msg);
+        void setPositionOnDrone(rigidBody* RB, mdp::input_msg& msg);
 
     public:
         drone_server();
         ~drone_server();
 
         void APICallback(const geometry_msgs::TransformStamped::ConstPtr& msg);
+        void EmergencyCallback(const std_msgs::Empty::ConstPtr& msg);
         bool APIGetDataService(nav_msgs::GetPlan::Request &Req, nav_msgs::GetPlan::Response &Res);
         bool APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res);
 
@@ -63,6 +68,7 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
 {
     ROS_INFO("Initialising drone server");
     InputAPISub = Node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 10, &drone_server::APICallback, this);
+    EmergencySub = Node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::EmergencyCallback, this);
     DataServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIGetDataService, this);
     ListServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIListService, this);
     std::string droneName;
@@ -72,15 +78,15 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
         Node.getParam("cflie_test", droneName);
         addNewRigidbody(droneName);
     }
+
+    addNewRigidbody("object_00");
 }
 
 drone_server::~drone_server()
 {
     /* cleanup all drone pointers in the rigidbody list */
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
-        if (RigidBodyList[i] != nullptr) {
-            delete RigidBodyList[i];
-        }
+        removeRigidbody(i);
     }
     RigidBodyList.clear();
     printf("Shutting down drone server\n");
@@ -98,6 +104,9 @@ mdp_id drone_server::addNewRigidbody(std::string pTag)
     ID.numeric_id = RigidBodyList.size();
     rigidBody* RB;
     if (mdp_wrappers::createNewRigidbody(pTag, RB)) {
+        /* update drone state on param server */
+        Node.setParam("mdp/drone_" + std::to_string(RigidBodyList.size()) + "/state", "IDLE");
+
         RigidBodyList.push_back(RB);
         ID.name = pTag.c_str();
         ID.numeric_id = RigidBodyList.size();
@@ -120,6 +129,9 @@ void drone_server::removeRigidbody(unsigned int pDroneID)
             delete RigidBodyList[pDroneID];
             /* and set to null */
             RigidBodyList[pDroneID] = nullptr;
+            
+            /* update drone state on param server */
+            Node.setParam("mdp/drone_" + std::to_string(pDroneID) + "/state", "DELETED");
         }
     }
 }
@@ -149,6 +161,12 @@ void drone_server::run()
             if (RigidBodyList[i] == nullptr) continue;
 
             RigidBodyList[i]->update(RigidBodyList);
+
+            /* update drone state on param server */
+            if (RigidBodyList[i]->StateIsDirty) {
+                Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
+                RigidBodyList[i]->StateIsDirty = false;
+            }
         }
         RigidBodyEnd = ros::Time::now();
         
@@ -179,6 +197,51 @@ static std::map<std::string, int> APIMap = {
     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
 };
 
+void drone_server::EmergencyCallback(const std_msgs::Empty::ConstPtr& msg)
+{
+    ROS_ERROR("EMERGENCY CALLED ON DRONE SERVER");
+    for (size_t i = 0; i < RigidBodyList.size(); i++) {
+        if (RigidBodyList[i] != nullptr) {
+            RigidBodyList[i]->emergency();
+            RigidBodyList[i]->emergency();
+        }
+    }
+}
+
+std::array<bool, 3> dencoded_relative(double pEncoded)
+{
+    uint32_t pEncodedInt = (uint32_t)pEncoded;
+    std::array<bool, 3> ret_arr;
+    ret_arr[0] = (pEncodedInt & 0x00000001) > 0;
+    ret_arr[1] = (pEncodedInt & 0x00000002) > 0;
+    ret_arr[2] = (pEncodedInt & 0x00000004) > 0;
+    return ret_arr;
+}
+
+void drone_server::setPositionOnDrone(rigidBody* RB, mdp::input_msg& msg)
+{
+    // @TODO do all the relative and target stuff for velocity and position
+
+    // id drone_id() { return id(&data->header); }
+    // std::string& msg_type() { return data->child_frame_id; }
+    // geometry_msgs::Vector3& posvel() { return data->transform.translation; }
+    // double& relative()  { return data->transform.rotation.x; }
+    // double& target()    { return data->transform.rotation.y; }
+    // double& yaw_rate()  { return data->transform.rotation.z; }
+    // double& yaw()       { return data->transform.rotation.z; }
+    // double& duration()  { return data->transform.rotation.w; }
+
+
+
+    RB->setDesPos(msg.posvel(), msg.yaw_rate(), msg.duration());
+}
+
+void drone_server::setVelocityOnDrone(rigidBody* RB, mdp::input_msg& msg)
+{
+    // @TODO do all the relative and target stuff for velocity and position
+    RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
+}
+
 void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& input)
 {
     mdp::input_msg msg((geometry_msgs::TransformStamped*)input.get());
@@ -191,21 +254,20 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
     switch(APIMap[msg.msg_type()]) {
         case 0: {   /* VELOCITY */
             if (RB == nullptr) return;
-            RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
+            setVelocityOnDrone(RB, msg);
         } break;
         case 1: {   /* POSITION */
             if (RB == nullptr) return;
-            RB->setDesPos(msg.posvel(), msg.yaw_rate(), msg.duration());
+            setPositionOnDrone(RB, msg);
         } break;
         case 2: {   /* TAKEOFF */
             if (RB == nullptr) return;
-            RB->takeoff(1);
+            // @TODO add duration and height
+            RB->takeoff(msg.posvel().z, msg.duration());
         } break;
         case 3: {   /* LAND */
             if (RB == nullptr) return;
-            // @TODO: we need a land command on the rigidbody to make use of the control loop (to soft land)
-            // currently this is implemented in the wrapper class
-            RB->land();       
+            RB->land();
         } break;
         case 4: {   /* HOVER */
             if (RB == nullptr) return;
@@ -215,21 +277,34 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
         case 5: {   /* EMERGENCY */
             if (RB == nullptr) return;
             RB->emergency();
+            RB->emergency();
+            removeRigidbody(msg.drone_id().numeric_id());
         } break;
         case 6: {   /* SET_HOME */
             if (RB == nullptr) return;
             geometry_msgs::Vector3 Pos = msg.posvel();
-            Pos.z = std::max(Pos.z, 1.0); // make sure the home position is above the ground
             RB->setHomePos(Pos);
         } break;
         case 8: {   /* GOTO_HOME */
             if (RB == nullptr) return;
+            // @TODO @FIX using relative commands
             auto PosData = RB->getHomePos();
+            if (msg.posvel().z != 0.0f) {
+                if (msg.posvel().z > 0.0f) {
+                    PosData.z = msg.posvel().z;
+                } else {
+                    PosData.z = RB->getCurrPos().position.z;
+                }
+            } else {
+                // == 0.0f 
+                // @TODO: add a command queue on rigidbodies
+                // this should go to home position retaining height and then land
+            }
             PosData.z = 1.0f;
             RB->setDesPos(PosData, 0.0f, 5.0f);
         } break;
         case 11: {  /* DRONE_SERVER_FREQ */
-            // does this set Hz or secs?
+            // Hz
             if (msg.posvel().x > 0.0) {
                 this->LoopRate = ros::Rate(msg.posvel().x);
             }

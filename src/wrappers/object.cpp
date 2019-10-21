@@ -30,12 +30,12 @@ public:
 
     }
 
-    void onTakeoff(float height) override
+    void onTakeoff(float height, float duration) override
     {
 
     }
 
-    void onLand() override
+    void onLand(float duration) override
     {
 
     }

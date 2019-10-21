@@ -34,6 +34,7 @@ class rigidBody
         void calcVel();
         float getYaw(geometry_msgs::Pose& pos);
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
+        void set_state(const std::string& state);
         
     protected:
         //rigid body tag
@@ -63,18 +64,19 @@ class rigidBody
 
         void resetTimeout(float timeout = TIMEOUT_GEN);
 
-        bool noMoreCommands = false;
         // Wrapper Methods
 
         virtual void onUpdate() = 0;
         virtual void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};
-        virtual void onTakeoff(float height) = 0;
-        virtual void onLand() = 0;
+        virtual void onTakeoff(float height, float duration) = 0;
+        virtual void onLand(float duration) = 0;
         virtual void onEmergency() = 0;
 
         virtual void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) = 0;
 
     public:
+        std::string State = "LANDED";
+        bool StateIsDirty = true;
 
         rigidBody(std::string tag, bool controllable = false);
 
@@ -104,6 +106,5 @@ class rigidBody
 
         void land();
 
-        void takeoff(float height = 0.25);
-
+        void takeoff(float height = 0.25, float duration = 2.0);
 };
