@@ -194,6 +194,11 @@ void drone_server::setVelocityOnDrone(rigidBody* RB, mdp::input_msg& msg)
     RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
 }
 
+void drone_server::NewAPICallback(const geometry_msgs::TransformStamped::ConstPtr& msg)
+{
+    
+}
+
 void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& input)
 {
     mdp::input_msg msg((geometry_msgs::TransformStamped*)input.get());
