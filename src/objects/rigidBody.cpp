@@ -21,7 +21,7 @@ rigidBody::rigidBody(std::string tag):mySpin(1,&myQueue)
 
     std::string ApiTopic = tag + "/apiUpdate";
     ApiPublisher = droneHandle.advertise<multi_drone_platform::apiUpdate> (ApiTopic, 20);
-    ApiSubscriber = droneHandle.subscribe<multi_drone_platform::apiUpdate> (ApiTopic, 20, &rigidBody::apiUpdate, this);
+    ApiSubscriber = droneHandle.subscribe(ApiTopic, 20, &rigidBody::apiCallback, this);
 
     droneHandle.setCallbackQueue(&myQueue);
     
