@@ -3,7 +3,7 @@
 
 
 
-rigidBody::rigidBody(std::string tag, bool controllable)
+rigidBody::rigidBody(std::string tag, bool controllable):mySpin(1,&myQueue)
 {
     this->tag = tag;
     // drone or obstacle
@@ -16,11 +16,13 @@ rigidBody::rigidBody(std::string tag, bool controllable)
     // set home to be current pos
     // first time, set home to current
 
+    // 1000 seconds on ground before timeout engaged 
     resetTimeout(1000.0f);
     
     commandDuration = 0.0f;
-
     droneHandle = ros::NodeHandle();
+
+    droneHandle.setCallbackQueue(&myQueue);
     
     motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
     
@@ -37,6 +39,7 @@ void rigidBody::set_state(const std::string& state)
     if (this->State != state) {
         ROS_INFO("%s: %s", this->tag.c_str(), state.c_str());
         this->State = state;
+        // what is state dirty?
         this->StateIsDirty = true;
     }
 }
@@ -67,18 +70,18 @@ returnPos rigidBody::getCurrPos()
 {
     // returns 0 duration
     float duration = 0;
-    return {vec3PosConvert(currPos), getYaw(currPos), duration};
+    return {lastUpdate, vec3PosConvert(currPos), getYaw(currPos), duration};
 }
 
 returnVel rigidBody::getCurrVel()
 {
     float duration = 0;
-    return {currVel.linear, currVel.angular.z, duration};
+    return {lastUpdate, currVel.linear, currVel.angular.z, duration};
 }
 
 returnPos rigidBody::getDesPos()
 {
-    return {vec3PosConvert(desPos), getYaw(desPos), commandDuration};
+    return {lastUpdate, vec3PosConvert(desPos), getYaw(desPos), commandDuration};
 }
 
 void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
@@ -96,7 +99,7 @@ void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
 
 returnVel rigidBody::getDesVel()
 {
-    return {desVel.linear, desVel.angular.z, commandDuration};
+    return {lastCommandSet, desVel.linear, desVel.angular.z, commandDuration};
 }
 
 void rigidBody::setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration)
@@ -141,6 +144,8 @@ void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg
     currPos = motionCapture.front().pose;
     // ROS_INFO("Current Position: x: %f, y: %f, z: %f",currPos.position.x, currPos.position.y, currPos.position.z);
     // @TODO: Orientation implementation
+
+    this->lastUpdate = ros::Time::now();
     this->onMotionCapture(msg);
 }
 
@@ -151,6 +156,7 @@ geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 
 void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 {
+    // myQueue.callAvailable();
     if (ros::Time::now().toSec() >= nextTimeoutGen) {
         if (State == "LANDING" || State == "LANDED") {
             set_state("LANDED");
@@ -183,11 +189,11 @@ void rigidBody::emergency()
     this->onEmergency();
 }
 
-void rigidBody::land()
+void rigidBody::land(float duration)
 {
     this->set_state("LANDING");
-    this->onLand(5.0f);
-    resetTimeout(5.5f);
+    this->onLand(duration);
+    resetTimeout(duration);
 }
 
 void rigidBody::takeoff(float height, float duration)

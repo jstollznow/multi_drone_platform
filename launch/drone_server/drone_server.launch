@@ -1,7 +1,7 @@
 <launch>
 
     <arg name="cflie_test" default="cflie_00"/>
-    <param name="cflie_test" value="$(arg cflie_test)"/>
+    
     <node name="drone_server" pkg="multi_drone_platform" type="drone_server" output="screen">
      </node>
 

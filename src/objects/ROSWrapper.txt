@@ -1,5 +1,0 @@
-Will implement the most basic functions for all the different rigidBody types
-- crazyflie
-- tello 
-- obstacle
-- virtualflie
