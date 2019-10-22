@@ -22,6 +22,10 @@ rigidBody::rigidBody(std::string tag, bool controllable):mySpin(1,&myQueue)
     commandDuration = 0.0f;
     droneHandle = ros::NodeHandle();
 
+    std::string ApiTopic = tag + "/apiUpdate";
+    ApiPublisher = droneHandle.advertise<multi_drone_platform::apiUpdate> (ApiTopic, 20);
+    ApiSubscriber = droneHandle.subscribe<multi_drone_platform::apiUpdate> (ApiTopic, 20, &rigidBody::apiUpdate, this);
+
     droneHandle.setCallbackQueue(&myQueue);
     
     motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);

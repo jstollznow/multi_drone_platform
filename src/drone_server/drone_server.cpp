@@ -1,4 +1,5 @@
 #include "drone_server.h"
+#include "multi_drone_platform/apiUpdate.h"
 
 // constructor
 drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
@@ -178,49 +179,40 @@ void drone_server::EmergencyCallback(const std_msgs::Empty::ConstPtr& msg)
     }
 }
 
-// can you explain this to me?
-std::array<bool, 3> dencoded_relative(double pEncoded)
+std::array<bool, 2> dencoded_relative(double pEncoded)
 {
     uint32_t pEncodedInt = (uint32_t)pEncoded;
-    std::array<bool, 3> ret_arr;
+    std::array<bool, 2> ret_arr;
     ret_arr[0] = (pEncodedInt & 0x00000001) > 0;
     ret_arr[1] = (pEncodedInt & 0x00000002) > 0;
-    ret_arr[2] = (pEncodedInt & 0x00000004) > 0;
     return ret_arr;
-}
-
-void drone_server::setPositionOnDrone(rigidBody* RB, mdp::input_msg& msg)
-{
-    // @TODO do all the relative and target stuff for velocity and position
-
-    // id drone_id() { return id(&data->header); }
-    // std::string& msg_type() { return data->child_frame_id; }
-    // geometry_msgs::Vector3& posvel() { return data->transform.translation; }
-    // double& relative()  { return data->transform.rotation.x; }
-    // double& target()    { return data->transform.rotation.y; }
-    // double& yaw_rate()  { return data->transform.rotation.z; }
-    // double& yaw()       { return data->transform.rotation.z; }
-    // double& duration()  { return data->transform.rotation.w; }
-
-
-
-    RB->setDesPos(msg.posvel(), msg.yaw_rate(), msg.duration());
-}
-
-void drone_server::setVelocityOnDrone(rigidBody* RB, mdp::input_msg& msg)
-{
-    // @TODO do all the relative and target stuff for velocity and position
-    RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
-}
-
-void drone_server::NewAPICallback(const geometry_msgs::TransformStamped::ConstPtr& msg)
-{
-    
 }
 
 void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& input)
 {
+    mdp::input_msg Input((geometry_msgs::TransformStamped*)input.get());
+    multi_drone_platform::apiUpdate msg;
+
+    rigidBody* RB;
+    if (!getRigidbodyFromDroneID(Input.drone_id().numeric_id(), RB)) {
+        return;
+    }
+
+    msg.msg_type = Input.msg_type();
     
+    msg.posvel.x   = Input.posvel().x;
+    msg.posvel.y   = Input.posvel().y;
+    msg.posvel.z   = Input.posvel().z;
+
+    msg.yawVal = Input.yaw();
+    msg.duration = Input.duration();
+    
+    auto RelativeArr = dencoded_relative(Input.relative());
+    msg.relative = RelativeArr[0];
+    msg.constHeight = RelativeArr[1];
+
+    RB->ApiPublisher.publish(msg);    
+    // send the message off to the relevant rigidbody
 }
 
 bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs::GetPlan::Response &pRes)

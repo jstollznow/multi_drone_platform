@@ -47,15 +47,12 @@ class drone_server
         void removeRigidbody(unsigned int pDroneID);
 
         bool getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigidbody);
-        void setVelocityOnDrone(rigidBody* RB, mdp::input_msg& msg);
-        void setPositionOnDrone(rigidBody* RB, mdp::input_msg& msg);
 
     public:
         drone_server();
         ~drone_server();
 
         void APICallback(const geometry_msgs::TransformStamped::ConstPtr& msg);
-        void NewAPICallback(const geometry_msgs::TransformStamped::ConstPtr& msg);
         void EmergencyCallback(const std_msgs::Empty::ConstPtr& msg);
         bool APIGetDataService(nav_msgs::GetPlan::Request &Req, nav_msgs::GetPlan::Response &Res);
         bool APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res);

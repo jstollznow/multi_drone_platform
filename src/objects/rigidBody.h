@@ -44,6 +44,10 @@ class rigidBody
         float getYaw(geometry_msgs::Pose& pos);
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
         void set_state(const std::string& state);
+
+        ros::Publisher ApiPublisher;
+        ros::Subscriber ApiSubscriber;
+        friend class drone_server;
         
     protected:
 
