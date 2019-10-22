@@ -7,14 +7,16 @@ classdef mdp_api
         pub
         data_srv_cli
         list_srv_cli
+        loop_rate_value
+        loop_rate
     end
     
     methods (Access = private)
         function msg = genAPImsg(obj, drone_id, msg_type, varargin)
             p = inputParser;
             p.addParameter('posvel', [0.0, 0.0, 0.0]);
-            p.addParameter('heading', [0.0, 0.0]);
-            p.addParameter('yaw_rate', 0.0);
+            p.addParameter('relative', 0.0);
+            p.addParameter('yaw', 0.0);
             p.addParameter('duration', 0.0);
             parse(p, varargin{:});
             
@@ -27,26 +29,45 @@ classdef mdp_api
             msg.Transform.Translation.Y = p.Results.posvel(2);
             msg.Transform.Translation.Z = p.Results.posvel(3);
             
-            msg.Transform.Rotation.X = p.Results.heading(1);
-            msg.Transform.Rotation.Y = p.Results.heading(2);
+            msg.Transform.Rotation.X = p.Results.relative;
             msg.Transform.Rotation.Z = p.Results.yaw_rate;
             msg.Transform.Rotation.W = p.Results.duration;
+        end
+
+        function Encoded = encoderelative(obj, relative, keep_height)
+            Encoded = ((1.0 * relative) + (2.0 * keep_height));
         end
     end
     
     methods
-        function obj = mdp_api()
+        function obj = mdp_api(UpdateRate)
             %MDP_API Construct an instance of this class
             %   Detailed explanation goes here
             rosinit();
+            fprintf("Initialising Client API Connection\n");
             obj.pub = rospublisher('/mdp_api', 'geometry_msgs/TransformStamped');
             obj.list_srv_cli = rossvcclient('/mdp_api_list_srv');
             obj.data_srv_cli = rossvcclient('/mdp_api_data_srv');
-            % pause for 2 seconds to ensure the publisher has initialised
+
+            obj.loop_rate_value = UpdateRate;
+            obj.loop_rate = rosrate(UpdateRate);
+
+            pause(1.0);
+            fprintf("Initialised Client API Connection\n");
+            % pause for 1 seconds to ensure the publisher has initialised
         end
         
         function delete(obj)
+            fprintf("Shutting Down Client API Connection\n");
+            Drones = getalldrones(obj);
+            for i = 1 : size(Drones)
+                cmdland(obj, Drones(i));
+            end
+            for i = 1 : size(Drones)
+                sleeptillidle(obj, Drones(i));
+            end
             rosshutdown();
+            fprintf("Finished Client API Connection\n");
         end
 
         function DroneList = getalldrones(obj)
@@ -84,8 +105,11 @@ classdef mdp_api
             Pos.HeadingY = res.Plan.Poses(1).Pose.Orientation.Y;
         end
 
-        function setposition(obj, drone_id, pos_x, pos_y, pos_z, duration)
-            msg = genAPImsg(obj, drone_id.NumericId, "POSITION", 'posvel', [pos_x, pos_y, pos_z], 'duration', duration);
+        function setposition(obj, drone_id, position_msg)
+            EncodedRel = obj.encoderelative(position_msg.Relative, position_msg.KeepHeight);
+            
+            msg = genAPImsg(obj, drone_id.NumericId, "POSITION", 'posvel', position_msg.Position, 'duration', position_msg.Duration, 'yaw', position_msg.Yaw, 'relative', EncodedRel);
+            
             send(obj.pub, msg);
         end    
         
@@ -106,13 +130,16 @@ classdef mdp_api
             Vel.YawRate = res.Plan.Poses(1).Pose.Orientation.Z;
         end
 
-        function setvelocity(obj, drone_id, vel_x, vel_y, vel_z, yaw_rate, duration)
-            msg = genAPImsg(obj, drone_id.NumericId, "VELOCITY", 'posvel', [vel_x, vel_y, vel_z], 'yaw_rate', yaw_rate, 'duration', duration);
+        function setvelocity(obj, drone_id, velocity_msg)
+            EncodedRel = obj.encoderelative(velocity_msg.Relative, velocity_msg.KeepHeight);
+            
+            msg = genAPImsg(obj, drone_id.NumericId, "VELOCITY", 'posvel', velocity_msg.Velocity, 'duration', velocity_msg.Duration, 'yaw', velocity_msg.YawRate, 'relative', EncodedRel);
+
             send(obj.pub, msg);
         end
         
-        function cmdtakeoff(obj, drone_id)
-            msg = genAPImsg(obj, drone_id.NumericId, "TAKE_OFF");
+        function cmdtakeoff(obj, drone_id, height, duration)
+            msg = genAPImsg(obj, drone_id.NumericId, "TAKE_OFF", 'posvel', [0.0, 0.0, height], 'duration', duration);
             send(obj.pub, msg);
         end
         
@@ -131,8 +158,9 @@ classdef mdp_api
             send(obj.pub, msg);
         end
         
-        function sethomeposition(obj, drone_id, pos_x, pos_y, pos_z, heading_x, heading_y)
-            msg = genAPImsg(obj, drone_id.NumericId, "SET_HOME", 'posvel', [pos_x, pos_y, pos_z], 'heading', [heading_x, heading_y]);
+        function sethomeposition(obj, drone_id, position_msg)
+            EncodedRel = obj.encoderelative(position_msg.Relative, position_msg.KeepHeight);
+            msg = genAPImsg(obj, drone_id.NumericId, "SET_HOME", 'posvel', position_msg.Position, 'yaw', position_msg.Yaw, 'relative', EncodedRel);
             send(obj.pub, msg);
         end
         
@@ -152,8 +180,8 @@ classdef mdp_api
             Pos.HeadingY = res.Plan.Poses(1).Pose.Orientation.Y;
         end
         
-        function cmdgohome(obj, drone_id)
-            msg = genAPImsg(obj, drone_id.NumericId, "GOTO_HOME");
+        function cmdgohome(obj, drone_id, height)
+            msg = genAPImsg(obj, drone_id.NumericId, "GOTO_HOME", 'posvel', [0.0, 0.0, height]);
             send(obj.pub, msg);
         end
         
@@ -177,6 +205,37 @@ classdef mdp_api
             Timings.WaitTimePerFrame = res.Plan.Poses(1).Pose.Orientation.Y;
         end
 
+        function spinonce(obj)
+            obj.loop_rate.waitfor();
+        end
+
+        function Rate = rate(obj)
+            Rate = obj.loop_rate_value;
+        end
+
+        function sleeptillidle(obj, drone)
+            fprintf("Sleeping until drone '%s' goes idle", drone.Name);
+            obj.loop_rate.reset();
+            obj.loop_rate.waitfor();
+            StateParam = strcat("mdp/drone_", num2str(drone.NumericId), "/state");
+            DroneState = "";
+            Ptree = rosparam();
+            DroneState = Ptree.get(StateParam);
+            while true
+                if (DroneState == "DELETED" || DroneState == "LANDED" || DroneState == "IDLE" || DroneState == "")
+                    break;
+                end
+
+                obj.spinonce();
+                DroneState = Ptree.get(StateParam);
+            end
+        end
+
+        function State = getstate(obj, drone)
+            StateParam = strcat("mdp/drone_", num2str(drone.NumericId), "/state");
+            Ptree = rosparam();
+            State = Ptree.get(StateParam);
+        end
     end
 end
 

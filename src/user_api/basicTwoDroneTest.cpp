@@ -12,7 +12,7 @@ void do_drone_flight_test(mdp_api::id drone)
     mdp_api::sleep_until_idle(drone);        // sleep api program until drone is idle (takeoff command has finished)
 
     mdp_api::position_msg msg = {};         // construct a position msg
-    msg.relative = false;
+    msg.set_as_relative(false);
     msg.position = {0.0, 0.0, 0.5};
     msg.duration = 4.0;
     msg.yaw = 0.0;
@@ -21,11 +21,7 @@ void do_drone_flight_test(mdp_api::id drone)
 
     mdp_api::sleep_until_idle(drone);    // sleep api program until drone is idle
 
-    mdp_api::goto_home(drone);     // tell drone to go home and land (as height is set to 0.0)
-
-    mdp_api::sleep_until_idle(drone);
-
-    mdp_api::cmd_land(drone);
+    mdp_api::goto_home(drone, 0.0);     // tell drone to go home and land (as height is set to 0.0)
 
     mdp_api::sleep_until_idle(drone);
 }
@@ -41,7 +37,7 @@ void do_baseball_base_run(std::vector<std::array<double, 3>> positions)
     mdp_api::cmd_takeoff(drones[1], 0.2);
 
     mdp_api::position_msg msg = {};
-    msg.relative = false;
+    msg.set_as_relative(false);
     msg.position = positions[0];
     msg.duration = 4.0;
     msg.yaw = 0.0;
@@ -86,7 +82,7 @@ void do_figure_eight_with_follower()
     mdp_api::cmd_takeoff(drones[1], 0.4);
 
     mdp_api::position_msg msg = {};
-    msg.relative = false;
+    msg.set_as_relative(false);
     msg.position = {0.0, 0.0, 0.5};
     msg.yaw = 0.0;
     msg.duration = 2.0;
@@ -99,12 +95,13 @@ void do_figure_eight_with_follower()
     mdp_api::set_drone_position(drones[1], msg);
 
     // set position message to target drones[0] at offset of 10cm behind relative to drones[1]
-    msg.relative = false;
+    msg.set_as_relative(true);
+    msg.set_target(drones[0]);
     msg.position = {0.1, 0.0, 0.0};
 
     // create velocity message for drones[0]
     mdp_api::velocity_msg vel_msg = {};
-    vel_msg.relative = true;
+    vel_msg.set_as_relative(true);
     vel_msg.velocity = {1.0, 0.0, 0.0};
     vel_msg.duration = 0.2;
     vel_msg.yaw_rate = 180.0;   // 360 degrees in 2 seconds
@@ -128,9 +125,9 @@ void do_figure_eight_with_follower()
         mdp_api::spin_once();
     }
 
-    // set drones[1] height to just under drones[0] (so they dont crash into each other going home
-    msg.relative = true;
-    msg.keep_height = false;
+    // set drones[1] height to just under drones[0] (so they dont crash into each other going home)
+    msg.rem_target();
+    msg.relative = {true, true, false};
     msg.position = {0.0, 0.0, 0.25};
     mdp_api::set_drone_position(drones[1], msg);
     mdp_api::sleep_until_idle(drones[1]);
@@ -147,14 +144,14 @@ int main(int argc, char** argv)
 {
     mdp_api::initialise(10); // update rate of 10Hz
 
-    #if (DO_FLIGHT_TEST)
+    #if (DO_FLIGHT_TEST == 1)
         auto drones = mdp_api::get_all_rigidbodies();
         if (drones.size() > 0) {
             do_drone_flight_test(drones[0]);
         }
     #endif /* DO_FLIGHT_TEST */
 
-    #if (DO_BASEBALL_RUN)
+    #if (DO_BASEBALL_RUN == 1)
         do_baseball_base_run({
             {0.0, 0.0, 1.0},
             {1.0, 0.0, 1.0},
@@ -164,7 +161,7 @@ int main(int argc, char** argv)
         });
     #endif /* DO_BASEBALL_RUN */
 
-    #if (DO_FIGURE_EIGHT)
+    #if (DO_FIGURE_EIGHT == 1)
         do_figure_eight_with_follower();
     #endif /* DO_FIGURE_EIGHT */
 

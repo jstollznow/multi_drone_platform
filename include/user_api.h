@@ -13,34 +13,24 @@ namespace mdp_api {
     };
 
     struct position_data {
-        public:
-            float x, y, z;
-            float yaw;
+        float x, y, z;
+        float yaw;
     };
 
     struct position_msg {
-        private:
-            int target_id = -1;
-        public:
-            std::array<double, 3> position = {{0.0, 0.0, 0.0}};
-            std::array<bool, 3> relative = {{false,false,false}};
-            double duration = 0.0;
-            double yaw = 0.0;
-
-            void set_as_relative(bool pValue);
-            void set_target(mdp_api::id pTarget);
-            void rem_target();
-            int get_target_id() const;
+        std::array<double, 3> position = {{0.0, 0.0, 0.0}};
+        bool relative = false;
+        bool keep_height = false;
+        double duration = 0.0;
+        double yaw = 0.0;
     };
 
     struct velocity_msg {
-        public:
-            std::array<double, 3> velocity = {{0.0, 0.0, 0.0}};
-            std::array<bool, 3> relative = {{false,false,false}};
-            double duration = 0.0;
-            double yaw_rate = 0.0;
-
-            void set_as_relative(bool pValue);
+        std::array<double, 3> velocity = {{0.0, 0.0, 0.0}};
+        bool relative = false;
+        bool keep_height = false;
+        double duration = 0.0;
+        double yaw_rate = 0.0;
     };
 
     struct timings {

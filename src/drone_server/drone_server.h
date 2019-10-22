@@ -8,6 +8,7 @@
 #include "wrappers.h"
 
 #define LOOP_RATE_HZ 100
+#define TIMING_UPDATE 5
 
 #define NODE_NAME "mdp_drone_server"
 #define SRV_TOPIC "mdp_api_data_srv"
@@ -46,8 +47,6 @@ class drone_server
         void removeRigidbody(unsigned int pDroneID);
 
         bool getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigidbody);
-        void setVelocityOnDrone(rigidBody* RB, mdp::input_msg& msg);
-        void setPositionOnDrone(rigidBody* RB, mdp::input_msg& msg);
 
     public:
         drone_server();

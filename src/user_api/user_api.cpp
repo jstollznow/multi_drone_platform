@@ -21,27 +21,6 @@ struct node_data
 
 
 
-void position_msg::set_as_relative(bool pValue)
-{
-    this->relative = {pValue,pValue,pValue};
-}
-void position_msg::set_target(mdp_api::id pTarget)
-{
-    this->target_id = pTarget.numeric_id;
-}
-void position_msg::rem_target()
-{
-    this->target_id = -1;
-}
-int position_msg::get_target_id() const
-{
-    return this->target_id;
-}
-void velocity_msg::set_as_relative(bool pValue)
-{
-    this->relative = {pValue,pValue,pValue};
-}
-
 void initialise(unsigned int pUpdateRate)
 {
     int int_val = 0;
@@ -107,9 +86,9 @@ std::vector<mdp_api::id> get_all_rigidbodies()
     return Vec;
 }
 
-double encode_relative_array_to_double(std::array<bool, 3> pArray)
+double encode_relative_array_to_double(bool relative, bool keepHeight)
 {
-    return ((1.0 * pArray[0]) + (2.0 * pArray[1]) + (4.0 * pArray[2]));
+    return ((1.0 * relative) + (2.0 * keepHeight));
 }
 
 void set_drone_velocity(mdp_api::id pDroneID, mdp_api::velocity_msg pMsg)
@@ -125,7 +104,7 @@ void set_drone_velocity(mdp_api::id pDroneID, mdp_api::velocity_msg pMsg)
     Msg.posvel().z = pMsg.velocity[2];
     Msg.yaw_rate() = pMsg.yaw_rate;
     Msg.duration() = pMsg.duration;
-    Msg.relative() = encode_relative_array_to_double(pMsg.relative);
+    Msg.relative() = encode_relative_array_to_double(pMsg.relative, pMsg.keep_height);
 
     NodeData.Pub.publish(Msg_data);
 }
@@ -143,8 +122,7 @@ void set_drone_position(mdp_api::id pDroneID, mdp_api::position_msg pMsg)
     Msg.posvel().z  = pMsg.position[2];
     Msg.duration()  = pMsg.duration;
     Msg.yaw()       = pMsg.yaw;
-    Msg.relative()  = encode_relative_array_to_double(pMsg.relative);
-    Msg.target()    = (double)pMsg.get_target_id();
+    Msg.relative()  = encode_relative_array_to_double(pMsg.relative, pMsg.keep_height);
 
     NodeData.Pub.publish(Msg_data);
 }
@@ -249,7 +227,7 @@ void set_home(mdp_api::id pDroneID, mdp_api::position_msg pMsg)
     Msg.posvel().y = pMsg.position[1];
     Msg.posvel().z = pMsg.position[2];
 
-    Msg.relative() = encode_relative_array_to_double(pMsg.relative);
+    Msg.relative() = encode_relative_array_to_double(pMsg.relative, pMsg.keep_height);
     Msg.yaw() = pMsg.yaw;
 
     NodeData.Pub.publish(Msg_data);
@@ -286,6 +264,8 @@ void goto_home(mdp_api::id pDroneID, float pHeight)
     Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "GOTO_HOME";
     Msg.posvel().z = pHeight;
+
+    Msg.relative = encode_relative_array_to_double(false, (pHeight < 0.0f));
 
     NodeData.Pub.publish(Msg_data);
 }
@@ -336,6 +316,7 @@ void sleep_until_idle(mdp_api::id pDroneID)
 {
     ROS_INFO("Sleeping until drone '%s' goes idle", pDroneID.name.c_str());
     NodeData.LoopRate->sleep();
+    // why two?
     NodeData.LoopRate->sleep();
     std::string state_param = "mdp/drone_" + std::to_string(pDroneID.numeric_id) + "/state";
     std::string drone_state = "";

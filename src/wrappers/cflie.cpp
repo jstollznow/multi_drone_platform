@@ -59,14 +59,12 @@ private:
         ROS_INFO("Some IMU data: \nAng Vel: %.6f, %.6f, %.6f\n", msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
     }
 
-    void goTo(float x, float y, float z, float duration)
+    void goTo(geometry_msgs::Point goal, float yaw, float duration)
     {
         crazyflie_driver::GoTo goToMsg;
-        goToMsg.request.goal.x = x;
-        goToMsg.request.goal.y = y;
-        goToMsg.request.goal.z = z;
+        goToMsg.request.goal = goal;
         goToMsg.request.duration = ros::Duration(duration);
-        goToMsg.request.yaw = 0;
+        goToMsg.request.yaw = yaw;
         goToMsg.request.relative = false;
         goToService.call(goToMsg);
 
@@ -153,13 +151,19 @@ public:
         
     }
 
-    void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) override
+    void onSetPosition(geometry_msgs::Pose pos, float yaw, float duration) override
     {
-        geometry_msgs::Point posDiff;
-        posDiff.x = pos.x - currPos.position.x;
-        posDiff.y = pos.y - currPos.position.y;
-        posDiff.z = pos.z - currPos.position.z;
-        goTo(pos.x, pos.y, pos.z, duration);
+        goTo(pos.position, yaw, duration);
+    }
+
+    void onSetVelocity(geometry_msgs::Twist vel, float duration) override
+    {
+        geometry_msgs::Point positionGoal;
+        positionGoal.x = vel.linear.x * duration;
+        positionGoal.y = vel.linear.y * duration;
+        positionGoal.z = vel.linear.z * duration;
+        // @TODO: need to configure yaw rate
+        goTo(positionGoal, 0.0f, duration);
     }
 
     void onTakeoff(float height, float duration) override

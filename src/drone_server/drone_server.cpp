@@ -1,4 +1,5 @@
 #include "drone_server.h"
+#include "multi_drone_platform/apiUpdate.h"
 
 // constructor
 drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
@@ -98,7 +99,7 @@ bool drone_server::getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigi
 void drone_server::run()
 {
     ros::Time FrameStart, FrameEnd, RigidBodyStart, RigidBodyEnd, WaitTimeStart, WaitTimeEnd;
-
+    int timingPrint = 0;
     while (ros::ok()) {
         FrameStart = ros::Time::now();
         /* do all the ros callback event stuff */
@@ -112,10 +113,10 @@ void drone_server::run()
             RigidBodyList[i]->update(RigidBodyList);
 
             /* update drone state on param server */
-            if (RigidBodyList[i]->StateIsDirty) {
-                Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
-                RigidBodyList[i]->StateIsDirty = false;
-            }
+            // if (RigidBodyList[i]->StateIsDirty) {
+            //     Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
+            //     RigidBodyList[i]->StateIsDirty = false;
+            // }
         }
         RigidBodyEnd = ros::Time::now();
         
@@ -131,21 +132,35 @@ void drone_server::run()
         FrameEnd = ros::Time::now();
 
         /* record timing information */
-        // we should print this every few updates, once a second maybe?
-        AchievedLoopRate = (1.0 / (FrameEnd.toSec() - FrameStart.toSec()));
-        WaitTime = (WaitTimeEnd.toSec() - WaitTimeStart.toSec());
-        TimeToUpdateDrones = (RigidBodyEnd.toSec() - RigidBodyStart.toSec());
+        AchievedLoopRate += (1.0 / (FrameEnd.toSec() - FrameStart.toSec()));
+        WaitTime += (WaitTimeEnd.toSec() - WaitTimeStart.toSec());
+        TimeToUpdateDrones += (RigidBodyEnd.toSec() - RigidBodyStart.toSec());
+
+
+        if (timingPrint >= TIMING_UPDATE*LOOP_RATE_HZ) // 5 seconds
+        {
+            float avgLoopRate = AchievedLoopRate/timingPrint;
+            float avgWaitTime = WaitTime/timingPrint;
+            float avgDroneUpdate = TimeToUpdateDrones/timingPrint;
+            timingPrint = 0;
+            ROS_INFO("Avg. Loop Info--");
+            ROS_INFO("Actual [Hz]: %.2f, Wait [s]: %.4f, Drones [s]: %.4f",avgLoopRate, avgWaitTime, avgDroneUpdate);
+            AchievedLoopRate = 0.0f;
+            WaitTime = 0.0f;
+            TimeToUpdateDrones = 0.0f;
+        }
+        timingPrint++;
     }
     // for formatting
     printf("\n");
 }
 
-static std::map<std::string, int> APIMap = {
-    {"VELOCITY", 0},    {"POSITION", 1},    {"TAKEOFF", 2},
-    {"LAND", 3},        {"HOVER", 4},       {"EMERGENCY", 5},
-    {"SET_HOME", 6},    {"GET_HOME", 7},    {"GOTO_HOME", 8},
-    {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
-};
+// static std::map<std::string, int> APIMap = {
+//     {"VELOCITY", 0},    {"POSITION", 1},    {"TAKEOFF", 2},
+//     {"LAND", 3},        {"HOVER", 4},       {"EMERGENCY", 5},
+//     {"SET_HOME", 6},    {"GET_HOME", 7},    {"GOTO_HOME", 8},
+//     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
+// };
 
 void drone_server::EmergencyCallback(const std_msgs::Empty::ConstPtr& msg)
 {
@@ -153,120 +168,51 @@ void drone_server::EmergencyCallback(const std_msgs::Empty::ConstPtr& msg)
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] != nullptr) {
             // is there any reason why this is called twice?
-            // RigidBodyList[i]->emergency();
+            RigidBodyList[i]->emergency();
+        }
+    }
+    for (size_t i = 0; i < RigidBodyList.size(); i++) {
+        if (RigidBodyList[i] != nullptr) {
+            // is there any reason why this is called twice?
             RigidBodyList[i]->emergency();
         }
     }
 }
 
-// can you explain this to me?
-std::array<bool, 3> dencoded_relative(double pEncoded)
+std::array<bool, 2> dencoded_relative(double pEncoded)
 {
     uint32_t pEncodedInt = (uint32_t)pEncoded;
-    std::array<bool, 3> ret_arr;
+    std::array<bool, 2> ret_arr;
     ret_arr[0] = (pEncodedInt & 0x00000001) > 0;
     ret_arr[1] = (pEncodedInt & 0x00000002) > 0;
-    ret_arr[2] = (pEncodedInt & 0x00000004) > 0;
     return ret_arr;
-}
-
-void drone_server::setPositionOnDrone(rigidBody* RB, mdp::input_msg& msg)
-{
-    // @TODO do all the relative and target stuff for velocity and position
-
-    // id drone_id() { return id(&data->header); }
-    // std::string& msg_type() { return data->child_frame_id; }
-    // geometry_msgs::Vector3& posvel() { return data->transform.translation; }
-    // double& relative()  { return data->transform.rotation.x; }
-    // double& target()    { return data->transform.rotation.y; }
-    // double& yaw_rate()  { return data->transform.rotation.z; }
-    // double& yaw()       { return data->transform.rotation.z; }
-    // double& duration()  { return data->transform.rotation.w; }
-
-
-
-    RB->setDesPos(msg.posvel(), msg.yaw_rate(), msg.duration());
-}
-
-void drone_server::setVelocityOnDrone(rigidBody* RB, mdp::input_msg& msg)
-{
-    // @TODO do all the relative and target stuff for velocity and position
-    RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
 }
 
 void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& input)
 {
-    mdp::input_msg msg((geometry_msgs::TransformStamped*)input.get());
-
-    ROS_INFO_STREAM("Server recieved set data call of type: " << msg.msg_type());
+    mdp::input_msg Input((geometry_msgs::TransformStamped*)input.get());
+    multi_drone_platform::apiUpdate msg;
 
     rigidBody* RB;
-    getRigidbodyFromDroneID(msg.drone_id().numeric_id(), RB);
-
-    switch(APIMap[msg.msg_type()]) {
-        case 0: {   /* VELOCITY */
-            if (RB == nullptr) return;
-            setVelocityOnDrone(RB, msg);
-        } break;
-        case 1: {   /* POSITION */
-            if (RB == nullptr) return;
-            setPositionOnDrone(RB, msg);
-        } break;
-        case 2: {   /* TAKEOFF */
-            if (RB == nullptr) return;
-            // @TODO add duration and height
-            RB->takeoff(msg.posvel().z, msg.duration());
-        } break;
-        case 3: {   /* LAND */
-            if (RB == nullptr) return;
-            RB->land();
-        } break;
-        case 4: {   /* HOVER */
-            if (RB == nullptr) return;
-            auto PosData = RB->getCurrPos();
-            RB->setDesPos(PosData.position, PosData.yaw, msg.duration());
-        } break;
-        case 5: {   /* EMERGENCY */
-            if (RB == nullptr) return;
-            RB->emergency();
-            RB->emergency();
-            removeRigidbody(msg.drone_id().numeric_id());
-        } break;
-        case 6: {   /* SET_HOME */
-            if (RB == nullptr) return;
-            geometry_msgs::Vector3 Pos = msg.posvel();
-            RB->setHomePos(Pos);
-        } break;
-        case 8: {   /* GOTO_HOME */
-            if (RB == nullptr) return;
-            // @TODO @FIX using relative commands
-            auto PosData = RB->getHomePos();
-            if (msg.posvel().z != 0.0f) {
-                if (msg.posvel().z > 0.0f) {
-                    PosData.z = msg.posvel().z;
-                } else {
-                    PosData.z = RB->getCurrPos().position.z;
-                }
-            } else {
-                // == 0.0f 
-                // @TODO: add a command queue on rigidbodies
-                // this should go to home position retaining height and then land
-            }
-            PosData.z = 1.0f;
-            RB->setDesPos(PosData, 0.0f, 5.0f);
-        } break;
-        case 11: {  /* DRONE_SERVER_FREQ */
-            // Hz
-            if (msg.posvel().x > 0.0) {
-                this->LoopRate = ros::Rate(msg.posvel().x);
-            }
-            DesiredLoopRate = msg.posvel().x;
-        } break;
-        default: {
-            ROS_ERROR_STREAM("The API command '" << msg.msg_type() << "' is not a valid command for inputAPI");
-        } break;
+    if (!getRigidbodyFromDroneID(Input.drone_id().numeric_id(), RB)) {
+        return;
     }
-    ROS_INFO_STREAM("Server completed the set data call of type: " << msg.msg_type());
+
+    msg.msg_type = Input.msg_type();
+    
+    msg.posvel.x   = Input.posvel().x;
+    msg.posvel.y   = Input.posvel().y;
+    msg.posvel.z   = Input.posvel().z;
+
+    msg.yawVal = Input.yaw();
+    msg.duration = Input.duration();
+    
+    auto RelativeArr = dencoded_relative(Input.relative());
+    msg.relative = RelativeArr[0];
+    msg.constHeight = RelativeArr[1];
+
+    RB->ApiPublisher.publish(msg);    
+    // send the message off to the relevant rigidbody
 }
 
 bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs::GetPlan::Response &pRes)
