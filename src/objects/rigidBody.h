@@ -7,6 +7,7 @@
 #include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
 #include "geometry_msgs/Vector3.h"
+#include "std_msgs/Header.h"
 #include "sensor_msgs/Imu.h"
 
 #define DEFAULT_QUEUE 10
@@ -16,13 +17,13 @@
 
 // api structures
 struct returnPos{
-    // std_msgs::Header stamp;
+    ros::Time lastUpdate;
     geometry_msgs::Vector3 position;
     float yaw;
     float duration;
 };
 struct returnVel{
-    // std_msgs::Header stamp;
+    ros::Time lastUpdate;
     geometry_msgs::Vector3 velocity;
     float yawRate;
     float duration;
@@ -37,12 +38,15 @@ class rigidBody
         void set_state(const std::string& state);
         
     protected:
-        //rigid body tag
+
         std::string tag;
         bool controllable;
 
         bool timeoutStageOne = true;
         double nextTimeoutGen;
+
+        ros::Time lastUpdate;
+        ros::Time lastCommandSet;
 
         std::vector<geometry_msgs::PoseStamped> motionCapture;
 
@@ -71,12 +75,13 @@ class rigidBody
         virtual void onTakeoff(float height, float duration) = 0;
         virtual void onLand(float duration) = 0;
         virtual void onEmergency() = 0;
-
         virtual void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) = 0;
 
     public:
         std::string State = "LANDED";
         bool StateIsDirty = true;
+
+        ros::CallbackQueue myQueue;
 
         rigidBody(std::string tag, bool controllable = false);
 
@@ -104,7 +109,7 @@ class rigidBody
 
         void emergency();
 
-        void land();
+        void land(float duration = 5.0);
 
         void takeoff(float height = 0.25, float duration = 2.0);
 };

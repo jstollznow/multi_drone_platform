@@ -1,69 +1,6 @@
-#include "ros/ros.h"
-#include <vector>
-#include <memory>
+#include "drone_server.h"
 
-#include "drone_server_msg_translations.cpp"
-
-#include "../objects/rigidBody.h"
-#include "wrappers.h"
-
-#define LOOP_RATE_HZ 100
-
-#define NODE_NAME "mdp_drone_server"
-#define SRV_TOPIC "mdp_api_data_srv"
-#define LIST_SRV_TOPIC "mdp_api_list_srv"
-#define SUB_TOPIC "mdp_api"
-#define EMERGENCY_TOPIC "mdp_api_emergency"
-
-
-struct mdp_id{
-    std::string name = "";
-    uint32_t numeric_id = 0;
-    bool isValid() const {return (name.length() != 0);}
-};
-
-class drone_server
-{
-    private:
-        std::vector<rigidBody*> RigidBodyList;
-
-        ros::NodeHandle Node;
-        ros::Subscriber InputAPISub;
-        ros::Subscriber EmergencySub;
-        ros::ServiceServer ListServer;
-        ros::ServiceServer DataServer;
-
-        ros::Rate LoopRate;
-        float DesiredLoopRate = LOOP_RATE_HZ;
-        float AchievedLoopRate;
-        float MotionCaptureUpdateRate;
-        float TimeToUpdateDrones;
-        float WaitTime;
-
-        void initialiseRigidbodiesFromVRPN();
-
-        mdp_id addNewRigidbody(std::string pTag);
-        void removeRigidbody(unsigned int pDroneID);
-
-        bool getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigidbody);
-        void setVelocityOnDrone(rigidBody* RB, mdp::input_msg& msg);
-        void setPositionOnDrone(rigidBody* RB, mdp::input_msg& msg);
-
-    public:
-        drone_server();
-        ~drone_server();
-
-        void APICallback(const geometry_msgs::TransformStamped::ConstPtr& msg);
-        void EmergencyCallback(const std_msgs::Empty::ConstPtr& msg);
-        bool APIGetDataService(nav_msgs::GetPlan::Request &Req, nav_msgs::GetPlan::Response &Res);
-        bool APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res);
-
-        void run();
-};
-
-
-
-
+// constructor
 drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
 {
     ROS_INFO("Initialising drone server");
@@ -82,6 +19,7 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     addNewRigidbody("object_00");
 }
 
+// deconstructor
 drone_server::~drone_server()
 {
     /* cleanup all drone pointers in the rigidbody list */
@@ -92,16 +30,18 @@ drone_server::~drone_server()
     printf("Shutting down drone server\n");
 }
 
+// @TODO: implementation task on Trello
 void drone_server::initialiseRigidbodiesFromVRPN()
 {
     ROS_WARN("Initialising drones from vrpn is currently not supported, please add drones manually");
 }
 
+
 mdp_id drone_server::addNewRigidbody(std::string pTag)
 {
     mdp_id ID;
-    ID.name = pTag.c_str();
-    ID.numeric_id = RigidBodyList.size();
+    ID.name = "";
+    ID.numeric_id = 0;
     rigidBody* RB;
     if (mdp_wrappers::createNewRigidbody(pTag, RB)) {
         /* update drone state on param server */
@@ -112,18 +52,14 @@ mdp_id drone_server::addNewRigidbody(std::string pTag)
         ID.numeric_id = RigidBodyList.size();
         ROS_INFO_STREAM("Successfully added drone with the tag: " << pTag);
     } else {
-        ID.name = "";
-        ID.numeric_id = 0;
         ROS_ERROR_STREAM("Unable to add drone with tag: '" << pTag << "', check if drone type naming is correct.");
     }
     return ID;
-    // we link rigidbody to tag, but how do we link drone to rigidbody? 
-    // <drone_type>_<wrapper specific identifier> 'cflie_E7'
 }
 
 void drone_server::removeRigidbody(unsigned int pDroneID)
 {
-    /* if pDroneID is a valid index and the objectat that location is not null, delete */
+    /* if pDroneID is a valid index and the object at that location is not null, delete */
     if (pDroneID < RigidBodyList.size()) {
         if (RigidBodyList[pDroneID] != nullptr) {
             delete RigidBodyList[pDroneID];
@@ -131,6 +67,8 @@ void drone_server::removeRigidbody(unsigned int pDroneID)
             RigidBodyList[pDroneID] = nullptr;
             
             /* update drone state on param server */
+            // @FIX: shoudn't we just remove the parameter?
+            // Node.param.deleteParam?
             Node.setParam("mdp/drone_" + std::to_string(pDroneID) + "/state", "DELETED");
         }
     }
@@ -150,6 +88,7 @@ bool drone_server::getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigi
 void drone_server::run()
 {
     ros::Time FrameStart, FrameEnd, RigidBodyStart, RigidBodyEnd, WaitTimeStart, WaitTimeEnd;
+
     while (ros::ok()) {
         FrameStart = ros::Time::now();
         /* do all the ros callback event stuff */
@@ -182,11 +121,12 @@ void drone_server::run()
         FrameEnd = ros::Time::now();
 
         /* record timing information */
+        // we should print this every few updates, once a second maybe?
         AchievedLoopRate = (1.0 / (FrameEnd.toSec() - FrameStart.toSec()));
         WaitTime = (WaitTimeEnd.toSec() - WaitTimeStart.toSec());
         TimeToUpdateDrones = (RigidBodyEnd.toSec() - RigidBodyStart.toSec());
     }
-    /* printf a newline to make terminal output better */
+    // for formatting
     printf("\n");
 }
 
@@ -202,12 +142,14 @@ void drone_server::EmergencyCallback(const std_msgs::Empty::ConstPtr& msg)
     ROS_ERROR("EMERGENCY CALLED ON DRONE SERVER");
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] != nullptr) {
-            RigidBodyList[i]->emergency();
+            // is there any reason why this is called twice?
+            // RigidBodyList[i]->emergency();
             RigidBodyList[i]->emergency();
         }
     }
 }
 
+// can you explain this to me?
 std::array<bool, 3> dencoded_relative(double pEncoded)
 {
     uint32_t pEncodedInt = (uint32_t)pEncoded;
@@ -328,8 +270,10 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
 
     switch(APIMap[Req.msg_type()]) {
         case 0: {   /* VELOCITY */
+        // RB SIDE
             auto RetVel = RB->getCurrVel();
             auto RetPos = RB->getCurrPos();
+            // can get a ros::Time back from these messages now
             Res.vec3().x = RetVel.velocity.x;
             Res.vec3().y = RetVel.velocity.y;
             Res.vec3().z = RetVel.velocity.z;
@@ -340,8 +284,10 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
             return true;
         } break;
         case 1: {   /* POSITION */
+        // RB SIDE
             auto RetVel = RB->getCurrVel();
             auto RetPos = RB->getCurrPos();
+            // can get a ros::Time back from these messages now
             Res.vec3().x = RetPos.position.x;
             Res.vec3().y = RetPos.position.y;
             Res.vec3().z = RetPos.position.z;
@@ -352,6 +298,7 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
             return true;
         } break;
         case 7: {   /* GET_HOME */
+        // RB SIDE
             geometry_msgs::Vector3 Pos = RB->getHomePos();
             Res.vec3().x = Pos.x;
             Res.vec3().y = Pos.y;
@@ -360,12 +307,14 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
             return true;
         } break;
         case 9: {   /* ORIENTATION */
+        // RB SIDE
             auto RetVel = RB->getCurrVel();
             auto RetPos = RB->getCurrPos();
             ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
             return true;
         } break;
         case 10: {  /* TIME */
+        // SERVER SIDE
             Res.vec3().x = DesiredLoopRate;
             Res.vec3().y = AchievedLoopRate;
             Res.vec3().z = MotionCaptureUpdateRate;
