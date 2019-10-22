@@ -12,7 +12,6 @@
 #include "sensor_msgs/Imu.h"
 
 #define DEFAULT_QUEUE 10
-#define TIMEOUT_GEN 0.1
 #define TIMEOUT_HOVER 4
 
 // api structures
@@ -28,33 +27,32 @@ struct returnPos{
     ros::Time lastUpdate;
     geometry_msgs::Vector3 position;
     float yaw;
-    float duration;
 };
 struct returnVel{
     ros::Time lastUpdate;
     geometry_msgs::Vector3 velocity;
     float yawRate;
-    float duration;
 };
-
 class rigidBody
-{
+{   
     private:
         void calcVel();
         float getYaw(geometry_msgs::Pose& pos);
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
         void set_state(const std::string& state);
 
-        ros::Publisher ApiPublisher;
         ros::Subscriber ApiSubscriber;
-        friend class drone_server;
         
     protected:
 
+        std::vector<multi_drone_platform::apiUpdate> commandQueue;
+        void handleCommand();
+        void enqueueCommand(multi_drone_platform::apiUpdate command);
+        void dequeueCommand();
+    protected:
         std::string tag;
         bool controllable;
 
-        bool timeoutStageOne = true;
         double nextTimeoutGen;
 
         ros::Time lastUpdate;
@@ -62,9 +60,7 @@ class rigidBody
 
         std::vector<geometry_msgs::PoseStamped> motionCapture;
 
-        // duration of command
-        float commandDuration;
-
+        // velocity handles
         geometry_msgs::Twist desVel;
         geometry_msgs::Twist currVel;
 
@@ -78,7 +74,7 @@ class rigidBody
 
         ros::NodeHandle droneHandle;
 
-        void resetTimeout(float timeout = TIMEOUT_GEN);
+        void resetTimeout(float timeout);
 
         // Wrapper Methods
 
@@ -87,16 +83,17 @@ class rigidBody
         virtual void onTakeoff(float height, float duration) = 0;
         virtual void onLand(float duration) = 0;
         virtual void onEmergency() = 0;
-        virtual void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) = 0;
+        virtual void onSetPosition(geometry_msgs::Pose pos, float yaw, float duration) = 0;
+        virtual void onSetVelocity(geometry_msgs::Twist vel, float duration) = 0;
 
     public:
         std::string State = "LANDED";
-        bool StateIsDirty = true;
 
         ros::AsyncSpinner mySpin;
         ros::CallbackQueue myQueue;
+        ros::Publisher ApiPublisher;
 
-        rigidBody(std::string tag, bool controllable = false);
+        rigidBody(std::string tag);
 
         virtual ~rigidBody();
         
@@ -107,13 +104,13 @@ class rigidBody
         returnVel getCurrVel();
 
         returnPos getDesPos();
-        void setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration);
+        void setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration, bool relative, bool constHeight);
 
         returnVel getDesVel();
-        void setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration);
+        void setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relative, bool constHeight);
 
         geometry_msgs::Vector3 getHomePos();
-        void setHomePos(geometry_msgs::Vector3 pos);
+        void setHomePos(geometry_msgs::Vector3 pos, bool relative);
 
         void addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg);
         geometry_msgs::PoseStamped getMotionCapture();

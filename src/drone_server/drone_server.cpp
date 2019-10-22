@@ -113,10 +113,10 @@ void drone_server::run()
             RigidBodyList[i]->update(RigidBodyList);
 
             /* update drone state on param server */
-            if (RigidBodyList[i]->StateIsDirty) {
-                Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
-                RigidBodyList[i]->StateIsDirty = false;
-            }
+            // if (RigidBodyList[i]->StateIsDirty) {
+            //     Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
+            //     RigidBodyList[i]->StateIsDirty = false;
+            // }
         }
         RigidBodyEnd = ros::Time::now();
         
