@@ -3,6 +3,7 @@
 #include <vector>
 #include "nodeData.h"
 #include "ros/callback_queue.h"
+#include "multi_drone_platform/apiUpdate.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
@@ -14,8 +15,15 @@
 #define TIMEOUT_GEN 0.1
 #define TIMEOUT_HOVER 4
 
-
 // api structures
+
+static std::map<std::string, int> APIMap = {
+    {"VELOCITY", 0},    {"POSITION", 1},    {"TAKEOFF", 2},
+    {"LAND", 3},        {"HOVER", 4},       {"EMERGENCY", 5},
+    {"SET_HOME", 6},    {"GET_HOME", 7},    {"GOTO_HOME", 8},
+    {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
+};
+
 struct returnPos{
     ros::Time lastUpdate;
     geometry_msgs::Vector3 position;
@@ -41,8 +49,6 @@ class rigidBody
 
         std::string tag;
         bool controllable;
-
-        
 
         bool timeoutStageOne = true;
         double nextTimeoutGen;
@@ -109,6 +115,8 @@ class rigidBody
         geometry_msgs::PoseStamped getMotionCapture();
 
         void update(std::vector<rigidBody*>& rigidBodies);
+
+        void apiCallback(const multi_drone_platform::apiUpdate& msg);
 
         void emergency();
 
