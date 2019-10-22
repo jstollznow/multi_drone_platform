@@ -8,15 +8,21 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     EmergencySub = Node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::EmergencyCallback, this);
     DataServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIGetDataService, this);
     ListServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIListService, this);
-    std::string droneName;
-    ROS_INFO("is this your drone? %s", droneName.c_str());
+    std::string droneName1;
+    std::string droneName2;
     if (Node.hasParam("cflie_test"))
     {
-        Node.getParam("cflie_test", droneName);
-        addNewRigidbody(droneName);
+        Node.getParam("cflie_test", droneName1);
+        ROS_INFO("Adding %s", droneName1.c_str());
+        addNewRigidbody(droneName1);
     }
-
-    addNewRigidbody("object_00");
+    ROS_INFO("Adding next drone");
+    if (Node.hasParam("cflie_test1"))
+    {
+        Node.getParam("cflie_test1", droneName2);
+        ROS_INFO("Adding %s", droneName2.c_str());
+        addNewRigidbody(droneName2);
+    }
 }
 
 // deconstructor
@@ -50,6 +56,10 @@ mdp_id drone_server::addNewRigidbody(std::string pTag)
         RigidBodyList.push_back(RB);
         ID.name = pTag.c_str();
         ID.numeric_id = RigidBodyList.size();
+        
+        // setup VRPN Callback Queue
+        RB->mySpin.start();
+
         ROS_INFO_STREAM("Successfully added drone with the tag: " << pTag);
     } else {
         ROS_ERROR_STREAM("Unable to add drone with tag: '" << pTag << "', check if drone type naming is correct.");

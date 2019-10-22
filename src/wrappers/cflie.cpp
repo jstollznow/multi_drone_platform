@@ -150,6 +150,7 @@ public:
                 DoOnce = true;
             }
         }
+        
     }
 
     void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration) override

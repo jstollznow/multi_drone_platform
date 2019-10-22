@@ -1,8 +1,8 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "ros/ros.h"
 #include "nodeData.h"
+#include "ros/callback_queue.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
@@ -41,6 +41,8 @@ class rigidBody
 
         std::string tag;
         bool controllable;
+
+        
 
         bool timeoutStageOne = true;
         double nextTimeoutGen;
@@ -81,6 +83,7 @@ class rigidBody
         std::string State = "LANDED";
         bool StateIsDirty = true;
 
+        ros::AsyncSpinner mySpin;
         ros::CallbackQueue myQueue;
 
         rigidBody(std::string tag, bool controllable = false);
@@ -112,4 +115,6 @@ class rigidBody
         void land(float duration = 5.0);
 
         void takeoff(float height = 0.25, float duration = 2.0);
+
+        void addToQueue();
 };

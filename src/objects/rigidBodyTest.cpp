@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     
     // ros::Rate LoopRate(LOOP_RATE_HZ);
     rigidBody cf1 = rigidBody("cflie1");
-    std::cout<<cf1.getCurrPos();
+    std::cout>>cf1.getCurrPos();
     // while (ros::ok())
     // {
     //     ros::spinOnce();

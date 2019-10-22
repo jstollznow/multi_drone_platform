@@ -3,7 +3,7 @@
 
 
 
-rigidBody::rigidBody(std::string tag, bool controllable)
+rigidBody::rigidBody(std::string tag, bool controllable):mySpin(1,&myQueue)
 {
     this->tag = tag;
     // drone or obstacle
@@ -20,8 +20,9 @@ rigidBody::rigidBody(std::string tag, bool controllable)
     resetTimeout(1000.0f);
     
     commandDuration = 0.0f;
+    droneHandle = ros::NodeHandle();
 
-    droneHandle = ros::NodeHandle(myQueue);
+    droneHandle.setCallbackQueue(&myQueue);
     
     motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
     
@@ -155,6 +156,7 @@ geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 
 void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 {
+    // myQueue.callAvailable();
     if (ros::Time::now().toSec() >= nextTimeoutGen) {
         if (State == "LANDING" || State == "LANDED") {
             set_state("LANDED");
