@@ -167,7 +167,7 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
                 geometry_msgs::Vector3 currPosVec;
                 currPosVec.x = currPos.position.x;
                 currPosVec.y = currPos.position.y;
-                currPosVec.z = 1;
+                currPosVec.z = 1.0f;
                 setDesPos(currPosVec, 0.0, TIMEOUT_HOVER + 1.0);
                 set_state("IDLE");
                 timeoutStageOne = false;
@@ -181,6 +181,77 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
     }
 
     this->onUpdate();
+}
+
+void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)
+{
+
+    ROS_INFO_STREAM("%s API Callback" << tag.c_str());
+
+    switch(APIMap[msg.msg_type()]) {
+        case 0: {   /* VELOCITY */
+            if (RB == nullptr) return;
+            setVelocityOnDrone(RB, msg);
+        } break;
+        case 1: {   /* POSITION */
+            if (RB == nullptr) return;
+            setPositionOnDrone(RB, msg);
+        } break;
+        case 2: {   /* TAKEOFF */
+            if (RB == nullptr) return;
+            // @TODO add duration and height
+            RB->takeoff(msg.posvel().z, msg.duration());
+        } break;
+        case 3: {   /* LAND */
+            if (RB == nullptr) return;
+            RB->land();
+        } break;
+        case 4: {   /* HOVER */
+            if (RB == nullptr) return;
+            auto PosData = RB->getCurrPos();
+            RB->setDesPos(PosData.position, PosData.yaw, msg.duration());
+        } break;
+        case 5: {   /* EMERGENCY */
+            if (RB == nullptr) return;
+            RB->emergency();
+            RB->emergency();
+            removeRigidbody(msg.drone_id().numeric_id());
+        } break;
+        case 6: {   /* SET_HOME */
+            if (RB == nullptr) return;
+            geometry_msgs::Vector3 Pos = msg.posvel();
+            RB->setHomePos(Pos);
+        } break;
+        case 8: {   /* GOTO_HOME */
+            if (RB == nullptr) return;
+            // @TODO @FIX using relative commands
+            auto PosData = RB->getHomePos();
+            if (msg.posvel().z != 0.0f) {
+                if (msg.posvel().z > 0.0f) {
+                    PosData.z = msg.posvel().z;
+                } else {
+                    PosData.z = RB->getCurrPos().position.z;
+                }
+            } else {
+                // == 0.0f 
+                // @TODO: add a command queue on rigidbodies
+                // this should go to home position retaining height and then land
+            }
+            PosData.z = 1.0f;
+            RB->setDesPos(PosData, 0.0f, 5.0f);
+        } break;
+        case 11: {  /* DRONE_SERVER_FREQ */
+            // Hz
+            if (msg.posvel().x > 0.0) {
+                this->LoopRate = ros::Rate(msg.posvel().x);
+            }
+            DesiredLoopRate = msg.posvel().x;
+        } break;
+        default: {
+            ROS_ERROR_STREAM("The API command '" << msg.msg_type() << "' is not a valid command for inputAPI");
+        } break;
+    }
+    ROS_INFO_STREAM("Server completed the set data call of type: " << msg.msg_type());
 }
 
 void rigidBody::emergency()

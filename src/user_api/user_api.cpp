@@ -336,6 +336,7 @@ void sleep_until_idle(mdp_api::id pDroneID)
 {
     ROS_INFO("Sleeping until drone '%s' goes idle", pDroneID.name.c_str());
     NodeData.LoopRate->sleep();
+    // why two?
     NodeData.LoopRate->sleep();
     std::string state_param = "mdp/drone_" + std::to_string(pDroneID.numeric_id) + "/state";
     std::string drone_state = "";

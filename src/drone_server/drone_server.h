@@ -8,6 +8,7 @@
 #include "wrappers.h"
 
 #define LOOP_RATE_HZ 100
+#define TIMING_UPDATE 5
 
 #define NODE_NAME "mdp_drone_server"
 #define SRV_TOPIC "mdp_api_data_srv"

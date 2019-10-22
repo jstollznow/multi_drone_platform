@@ -21,11 +21,7 @@ void do_drone_flight_test(mdp_api::id drone)
 
     mdp_api::sleep_until_idle(drone);    // sleep api program until drone is idle
 
-    mdp_api::goto_home(drone);     // tell drone to go home and land (as height is set to 0.0)
-
-    mdp_api::sleep_until_idle(drone);
-
-    mdp_api::cmd_land(drone);
+    mdp_api::goto_home(drone, 0.0);     // tell drone to go home and land (as height is set to 0.0)
 
     mdp_api::sleep_until_idle(drone);
 }
@@ -148,14 +144,14 @@ int main(int argc, char** argv)
 {
     mdp_api::initialise(10); // update rate of 10Hz
 
-    #if (DO_FLIGHT_TEST)
+    #if (DO_FLIGHT_TEST == 1)
         auto drones = mdp_api::get_all_rigidbodies();
         if (drones.size() > 0) {
             do_drone_flight_test(drones[0]);
         }
     #endif /* DO_FLIGHT_TEST */
 
-    #if (DO_BASEBALL_RUN)
+    #if (DO_BASEBALL_RUN == 1)
         do_baseball_base_run({
             {0.0, 0.0, 1.0},
             {1.0, 0.0, 1.0},
@@ -165,7 +161,7 @@ int main(int argc, char** argv)
         });
     #endif /* DO_BASEBALL_RUN */
 
-    #if (DO_FIGURE_EIGHT)
+    #if (DO_FIGURE_EIGHT == 1)
         do_figure_eight_with_follower();
     #endif /* DO_FIGURE_EIGHT */
 
