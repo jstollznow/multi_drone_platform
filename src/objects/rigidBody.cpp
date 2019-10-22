@@ -3,23 +3,20 @@
 
 
 
-rigidBody::rigidBody(std::string tag, bool controllable):mySpin(1,&myQueue)
+rigidBody::rigidBody(std::string tag):mySpin(1,&myQueue)
 {
     this->tag = tag;
     // drone or obstacle
-    this->controllable = controllable;
+    this->controllable = true;
 
     // look for drone under tag namespace then vrpn output
     std::string optiTop = "/vrpn_client_node/" + tag + "/pose";
 
-    // private function initialise
-    // set home to be current pos
-    // first time, set home to current
+    
 
     // 1000 seconds on ground before timeout engaged 
     resetTimeout(1000.0f);
-    
-    commandDuration = 0.0f;
+
     droneHandle = ros::NodeHandle();
 
     droneHandle.setCallbackQueue(&myQueue);
@@ -36,12 +33,8 @@ rigidBody::~rigidBody()
 
 void rigidBody::set_state(const std::string& state)
 {
-    if (this->State != state) {
-        ROS_INFO("%s: %s", this->tag.c_str(), state.c_str());
-        this->State = state;
-        // what is state dirty?
-        this->StateIsDirty = true;
-    }
+    this->State = state;
+    droneHandle.setParam("mdp/" + this->tag + "/", state);
 }
 
 bool rigidBody::getControllable()
@@ -70,45 +63,90 @@ returnPos rigidBody::getCurrPos()
 {
     // returns 0 duration
     float duration = 0;
-    return {lastUpdate, vec3PosConvert(currPos), getYaw(currPos), duration};
+    return {lastUpdate, vec3PosConvert(currPos), getYaw(currPos)};
 }
 
 returnVel rigidBody::getCurrVel()
 {
     float duration = 0;
-    return {lastUpdate, currVel.linear, currVel.angular.z, duration};
+    return {lastUpdate, currVel.linear, currVel.angular.z};
 }
 
 returnPos rigidBody::getDesPos()
 {
-    return {lastUpdate, vec3PosConvert(desPos), getYaw(desPos), commandDuration};
+    return {lastUpdate, vec3PosConvert(desPos), getYaw(desPos)};
 }
 
-void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration)
+void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw,
+float duration, bool relative, bool constHeight)
 {
     set_state("MOVING");
-    this->onSetPosition(pos, yaw, duration);
-    desPos.position.x = pos.x;
-    desPos.position.y = pos.y;
-    desPos.position.z = pos.z;
-    commandDuration = duration;
-    ROS_INFO("Set z: %f", pos.z);
-    // @TODO: Orientation Data
+    // manage relative x, y values 
+    if (relative)
+    {
+        desPos.position.x = currPos.position.x + pos.x;
+        desPos.position.y = currPos.position.y + pos.y;
+    }
+    else
+    {
+        desPos.position.x = pos.x;
+        desPos.position.y = pos.y;
+    }
+
+    // manage relative z values 
+    if(constHeight)
+    {
+        desPos.position.z = currPos.position.z + pos.z;
+    }
+    else
+    {
+        desPos.position.z = pos.z;
+    }
+    
+    // @TODO: need to manage orientation
+    this->onSetPosition(desPos, yaw, duration);
+    
+    ROS_INFO("Set height: %f", pos.z);
     resetTimeout(duration);
 }
 
 returnVel rigidBody::getDesVel()
 {
-    return {lastCommandSet, desVel.linear, desVel.angular.z, commandDuration};
+    return {lastCommandSet, desVel.linear, desVel.angular.z};
 }
 
-void rigidBody::setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration)
+void rigidBody::setDesVel(geometry_msgs::Vector3 vel, float yawRate, 
+float duration, bool relative, bool constHeight)
 {
     set_state("MOVING");
-    desVel.linear = vel;
+    // manage relative x, y values 
+    if (relative)
+    {
+        desVel.linear.x = currVel.linear.x + vel.x;
+        desVel.linear.y = currVel.linear.y + vel.y;
+    }
+    else
+    {
+        desVel.linear.x = vel.x;
+        desVel.linear.y = vel.y;
+    }
+
+    // manage relative z values 
+    if(constHeight)
+    {
+        desVel.linear.z = currVel.linear.z + vel.z;
+    }
+    else
+    {
+        desVel.linear.z = vel.z;
+    }
+
     desVel.angular.z = yawRate;
-    commandDuration = duration;
-    resetTimeout(duration);
+    
+    // onVelocity command
+    this->onSetVelocity(desVel, duration);
+
+    this->resetTimeout(duration);
 }
 
 geometry_msgs::Vector3 rigidBody::getHomePos()
@@ -116,9 +154,20 @@ geometry_msgs::Vector3 rigidBody::getHomePos()
     return homePos;
 }   
 
-void rigidBody::setHomePos(geometry_msgs::Vector3 pos)
+void rigidBody::setHomePos(geometry_msgs::Vector3 pos, bool relative)
 {
-    homePos = pos;
+    // z coord does not matter for home position, will be set in each case
+    if (relative)
+    {
+        homePos.x = currPos.position.x + pos.x;
+        homePos.y = currPos.position.y + pos.y;
+    }
+    else
+    {
+        homePos.x = pos.x;
+        homePos.y = pos.y;
+    }
+    homePos.z = 0.0f;
 }
 
 void rigidBody::calcVel()
@@ -156,7 +205,8 @@ geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 
 void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 {
-    // myQueue.callAvailable();
+    
+
     if (ros::Time::now().toSec() >= nextTimeoutGen) {
         if (State == "LANDING" || State == "LANDED") {
             set_state("LANDED");
@@ -167,10 +217,10 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
                 geometry_msgs::Vector3 currPosVec;
                 currPosVec.x = currPos.position.x;
                 currPosVec.y = currPos.position.y;
-                currPosVec.z = 1.0f;
-                setDesPos(currPosVec, 0.0, TIMEOUT_HOVER + 1.0);
+                currPosVec.z = 0.0f;
+                // currPosVec.z = currPos.position.z;
+                setDesPos(currPosVec, 0.0, TIMEOUT_HOVER + 1.0, false, true);
                 set_state("IDLE");
-                timeoutStageOne = false;
                 nextTimeoutGen = ros::Time::now().toSec() + TIMEOUT_HOVER;
             } else {
                 /* land drone because timeout */
@@ -179,79 +229,83 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
             }
         }
     }
+    if (State == "IDLE")
+    {
+        handleCommand();
+    }
+
 
     this->onUpdate();
 }
 
 void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)
 {
+    this->commandQueue.clear();
+    this->commandQueue.push_back(msg);
+}
 
+void rigidBody::handleCommand(){
     ROS_INFO_STREAM("%s API Callback" << tag.c_str());
-
-    switch(APIMap[msg.msg_type()]) {
-        case 0: {   /* VELOCITY */
-            if (RB == nullptr) return;
-            setVelocityOnDrone(RB, msg);
-        } break;
-        case 1: {   /* POSITION */
-            if (RB == nullptr) return;
-            setPositionOnDrone(RB, msg);
-        } break;
-        case 2: {   /* TAKEOFF */
-            if (RB == nullptr) return;
-            // @TODO add duration and height
-            RB->takeoff(msg.posvel().z, msg.duration());
-        } break;
-        case 3: {   /* LAND */
-            if (RB == nullptr) return;
-            RB->land();
-        } break;
-        case 4: {   /* HOVER */
-            if (RB == nullptr) return;
-            auto PosData = RB->getCurrPos();
-            RB->setDesPos(PosData.position, PosData.yaw, msg.duration());
-        } break;
-        case 5: {   /* EMERGENCY */
-            if (RB == nullptr) return;
-            RB->emergency();
-            RB->emergency();
-            removeRigidbody(msg.drone_id().numeric_id());
-        } break;
-        case 6: {   /* SET_HOME */
-            if (RB == nullptr) return;
-            geometry_msgs::Vector3 Pos = msg.posvel();
-            RB->setHomePos(Pos);
-        } break;
-        case 8: {   /* GOTO_HOME */
-            if (RB == nullptr) return;
-            // @TODO @FIX using relative commands
-            auto PosData = RB->getHomePos();
-            if (msg.posvel().z != 0.0f) {
-                if (msg.posvel().z > 0.0f) {
-                    PosData.z = msg.posvel().z;
-                } else {
-                    PosData.z = RB->getCurrPos().position.z;
-                }
-            } else {
-                // == 0.0f 
-                // @TODO: add a command queue on rigidbodies
-                // this should go to home position retaining height and then land
-            }
-            PosData.z = 1.0f;
-            RB->setDesPos(PosData, 0.0f, 5.0f);
-        } break;
-        case 11: {  /* DRONE_SERVER_FREQ */
-            // Hz
-            if (msg.posvel().x > 0.0) {
-                this->LoopRate = ros::Rate(msg.posvel().x);
-            }
-            DesiredLoopRate = msg.posvel().x;
-        } break;
-        default: {
-            ROS_ERROR_STREAM("The API command '" << msg.msg_type() << "' is not a valid command for inputAPI");
-        } break;
+    
+    if (commandQueue.size() > 0)
+    {
+        multi_drone_platform::apiUpdate msg = this->commandQueue.front();
+        multi_drone_platform::apiUpdate landMsg;
+        switch(APIMap[msg.msg_type]) {
+            /* VELOCITY */
+            case 0:
+                setDesVel(msg.posvel, msg.yawVal, msg.duration, msg.relative, msg.constHeight);
+                break;
+            /* POSITION */
+            case 1:  
+                setDesPos(msg.posvel, msg.yawVal, msg.duration, msg.relative, msg.constHeight);
+                break;
+            /* TAKEOFF */
+            case 2:
+                takeoff(msg.posvel.z, msg.duration);
+                break;
+            /* LAND */
+            case 3: 
+                if (msg.duration != 0.0f){ land(msg.duration); }
+                else { land(); }
+                break;
+            /* HOVER */
+            case 4:
+                setDesPos(msg.posvel, msg.yawVal, msg.duration, msg.relative, true);
+                break;
+            /* EMERGENCY */
+            case 5: 
+                emergency();
+                break;
+            /* SET_HOME */
+            case 6:
+                setHomePos(msg.posvel, msg.relative);
+                break;
+            /* GOTO_HOME */
+            case 8:
+                setDesPos(homePos, msg.yawVal,msg.duration, false, true);
+                landMsg.msg_type = "LAND";
+                landMsg.duration = 2.0f;
+                enqueueCommand(landMsg);
+                break;
+            default:
+                ROS_ERROR_STREAM("The API command, '" << msg.msg_type << "' is not valid.");
+            break;
+        }
+        dequeueCommand();
     }
-    ROS_INFO_STREAM("Server completed the set data call of type: " << msg.msg_type());
+    
+}
+
+void rigidBody::enqueueCommand(multi_drone_platform::apiUpdate command)
+{
+    commandQueue.push_back(command);
+}
+
+void rigidBody::dequeueCommand()
+{
+    auto it = commandQueue.begin(); 
+    commandQueue.erase(it);
 }
 
 void rigidBody::emergency()
@@ -280,5 +334,5 @@ void rigidBody::resetTimeout(float timeout)
     timeout = timeout - 0.2f;
     timeout = std::max(timeout, 0.0f);
     nextTimeoutGen = ros::Time::now().toSec() + timeout;
-    timeoutStageOne = true;
+    lastCommandSet = ros::Time::now();
 }

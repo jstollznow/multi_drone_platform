@@ -112,10 +112,10 @@ void drone_server::run()
             RigidBodyList[i]->update(RigidBodyList);
 
             /* update drone state on param server */
-            if (RigidBodyList[i]->StateIsDirty) {
-                Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
-                RigidBodyList[i]->StateIsDirty = false;
-            }
+            // if (RigidBodyList[i]->StateIsDirty) {
+            //     Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
+            //     RigidBodyList[i]->StateIsDirty = false;
+            // }
         }
         RigidBodyEnd = ros::Time::now();
         
@@ -204,13 +204,13 @@ void drone_server::setPositionOnDrone(rigidBody* RB, mdp::input_msg& msg)
 
 
 
-    RB->setDesPos(msg.posvel(), msg.yaw_rate(), msg.duration());
+    // RB->setDesPos(msg.posvel(), msg.yaw_rate(), msg.duration());
 }
 
 void drone_server::setVelocityOnDrone(rigidBody* RB, mdp::input_msg& msg)
 {
     // @TODO do all the relative and target stuff for velocity and position
-    RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
+    // RB->setDesVel(msg.posvel(), msg.yaw_rate(), msg.duration());
 }
 
 void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& input)
