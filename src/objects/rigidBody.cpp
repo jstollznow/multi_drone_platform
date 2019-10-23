@@ -15,6 +15,7 @@ rigidBody::rigidBody(std::string tag):mySpin(1,&myQueue)
     
 
     // 1000 seconds on ground before timeout engaged 
+    set_state("LANDED");
     resetTimeout(1000.0f);
 
     droneHandle = ros::NodeHandle();
@@ -35,10 +36,16 @@ rigidBody::~rigidBody()
     ROS_INFO("Shutting down rigid body %s", tag.c_str());
 }
 
+void rigidBody::setID(uint32_t id)
+{
+    this->id = id;
+}
+
 void rigidBody::set_state(const std::string& state)
 {
+    ROS_INFO("Setting state to %s", state.c_str());
     this->State = state;
-    droneHandle.setParam("mdp/" + this->tag + "/", state);
+    droneHandle.setParam("mdp/drone_" + std::to_string(id) + "/state", state);
 }
 
 bool rigidBody::getControllable()
@@ -218,14 +225,15 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
         } else {
             if (State != "IDLE") {
                 /* Go to hover */
+                ROS_WARN("Timeout stage 1");
                 geometry_msgs::Vector3 currPosVec;
                 currPosVec.x = currPos.position.x;
                 currPosVec.y = currPos.position.y;
-                currPosVec.z = 0.0f;
-                // currPosVec.z = currPos.position.z;
-                setDesPos(currPosVec, 0.0, TIMEOUT_HOVER + 1.0, false, true);
+                // currPosVec.z = 0.0f;
+                currPosVec.z = currPos.position.z;
+                setDesPos(currPosVec, 0.0, TIMEOUT_HOVER, false, false);
                 set_state("IDLE");
-                nextTimeoutGen = ros::Time::now().toSec() + TIMEOUT_HOVER;
+                //nextTimeoutGen = ros::Time::now().toSec() + TIMEOUT_HOVER;
             } else {
                 /* land drone because timeout */
                 ROS_WARN("Timeout stage 2");
@@ -233,7 +241,8 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
             }
         }
     }
-    if (State == "IDLE")
+
+    if (State == "IDLE" || State == "LANDED")
     {
         handleCommand();
     }
@@ -244,12 +253,14 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 
 void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)
 {
+    ROS_INFO("%s recieved msg %s", tag.c_str(),msg.msg_type.c_str());
     this->commandQueue.clear();
     this->commandQueue.push_back(msg);
+    handleCommand();
 }
 
 void rigidBody::handleCommand(){
-    ROS_INFO_STREAM("%s API Callback" << tag.c_str());
+    //ROS_INFO("%s: %s",tag.c_str(),State.c_str());
     
     if (commandQueue.size() > 0)
     {
@@ -258,10 +269,12 @@ void rigidBody::handleCommand(){
         switch(APIMap[msg.msg_type]) {
             /* VELOCITY */
             case 0:
+                ROS_INFO("VEL: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relative, msg.constHeight);
                 setDesVel(msg.posvel, msg.yawVal, msg.duration, msg.relative, msg.constHeight);
                 break;
             /* POSITION */
-            case 1:  
+            case 1:
+                ROS_INFO("POS: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relative, msg.constHeight);
                 setDesPos(msg.posvel, msg.yawVal, msg.duration, msg.relative, msg.constHeight);
                 break;
             /* TAKEOFF */
@@ -287,10 +300,14 @@ void rigidBody::handleCommand(){
                 break;
             /* GOTO_HOME */
             case 8:
+                ROS_INFO("message duration on goto home %f", msg.duration);
                 setDesPos(homePos, msg.yawVal,msg.duration, false, true);
-                landMsg.msg_type = "LAND";
-                landMsg.duration = 2.0f;
-                enqueueCommand(landMsg);
+                if (msg.posvel.z <= 0.0f)
+                {
+                    landMsg.msg_type = "LAND";
+                    landMsg.duration = 2.0f;
+                    enqueueCommand(landMsg);
+                }
                 break;
             default:
                 ROS_ERROR_STREAM("The API command, '" << msg.msg_type << "' is not valid.");

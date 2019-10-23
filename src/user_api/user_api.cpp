@@ -256,7 +256,7 @@ position_data get_home(mdp_api::id pDroneID)
     return Data;
 }
 
-void goto_home(mdp_api::id pDroneID, float pHeight)
+void goto_home(mdp_api::id pDroneID, float duration, float pHeight)
 {
     geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
@@ -264,8 +264,9 @@ void goto_home(mdp_api::id pDroneID, float pHeight)
     Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "GOTO_HOME";
     Msg.posvel().z = pHeight;
+    Msg.duration() = duration;
 
-    Msg.relative = encode_relative_array_to_double(false, (pHeight < 0.0f));
+    Msg.relative() = encode_relative_array_to_double(false, (pHeight < 0.0f));
 
     NodeData.Pub.publish(Msg_data);
 }
