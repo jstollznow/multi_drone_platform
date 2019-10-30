@@ -202,7 +202,7 @@ target_link_libraries(joyflie ${catkin_LIBRARIES} ${PROJECT_NAME})
 #add_dependencies(joyflie multi_drone_platform_generate_messages_cpp)
 
 add_executable(ps4teleop src/PS4_control/ps4teleop.cpp)
-target_link_libraries(ps4teleop ${catkin_LIBRARIES} ${PROJECT_NAME}) 
+target_link_libraries(ps4teleop ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
 add_dependencies(ps4teleop multi_drone_platform_generate_messages_cpp)
 
 add_executable(drone_server src/drone_server/drone_server.cpp)

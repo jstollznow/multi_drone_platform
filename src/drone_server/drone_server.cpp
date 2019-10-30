@@ -24,7 +24,7 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     //     ROS_INFO("Adding %s", droneName2.c_str());
     //     addNewRigidbody(droneName2);
     // }
-    // addNewRigidbody("object_00");
+    addNewRigidbody("object_00");
 
     addNewRigidbody("cflie_00");
     ros::Duration d(2.0);
@@ -129,7 +129,7 @@ void drone_server::run()
         WaitTimeStart = ros::Time::now();
         if (DesiredLoopRate > 0.0) {
             if (!LoopRate.sleep()) {
-                ROS_WARN("Looprate false");
+                // ROS_WARN("Looprate false");
             }
         }
         WaitTimeEnd = ros::Time::now();

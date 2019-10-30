@@ -19,8 +19,6 @@ struct node_data
     ros::ServiceClient ListClient;
 } NodeData;
 
-
-
 void initialise(unsigned int pUpdateRate)
 {
     int int_val = 0;
@@ -29,7 +27,6 @@ void initialise(unsigned int pUpdateRate)
     ROS_INFO("Initialising Client API Connection");
 
     NodeData.Node = new ros::NodeHandle();
-
     NodeData.LoopRate = new ros::Rate(pUpdateRate);
     NodeData.LoopRateValue = pUpdateRate;
 
@@ -347,5 +344,12 @@ std::string get_state(mdp_api::id pDroneID)
     }
 }
 
+// BOOST_PYTHON_MODULE(user_api)
+// {
+//     using namespace boost::python;
+    
+
+
+// }
 
 }
