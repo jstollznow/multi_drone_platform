@@ -11,7 +11,7 @@
 #define TAKEOFF_TIME 3.0f
 #define GOTO_HOME 4.0f
 
-#define max_yaw 0.0f
+#define max_yaw 10.0f
 #define max_x 1.0f
 #define max_y 1.0f
 #define max_z 1.0f
@@ -206,7 +206,7 @@ void PS4_remote::controlUpdate()
     }
     else
     {
-        mdp_api::cmd_hover(drones[droneID]);
+        // mdp_api::cmd_hover(drones[droneID]);
     }
 }
 
