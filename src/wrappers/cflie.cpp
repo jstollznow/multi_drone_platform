@@ -63,12 +63,13 @@ private:
     {
         crazyflie_driver::GoTo goToMsg;
         goToMsg.request.goal = goal;
+        ROS_INFO("GOTO: [%f, %f, %f] in %f", goal.x, goal.y, goal.z, duration);
         goToMsg.request.duration = ros::Duration(duration);
         goToMsg.request.yaw = yaw;
         goToMsg.request.relative = false;
         goToService.call(goToMsg);
 
-        resetTimeout(duration - 0.5);
+        resetTimeout(duration);
     }
 
 public:

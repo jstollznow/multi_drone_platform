@@ -27,9 +27,9 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     addNewRigidbody("object_00");
 
     addNewRigidbody("cflie_00");
-    ros::Duration d(2.0);
-    d.sleep();
-    addNewRigidbody("cflie_E7");
+    // ros::Duration d(2.0);
+    // d.sleep();
+    // addNewRigidbody("cflie_E7");
 }
 
 // deconstructor
@@ -117,11 +117,6 @@ void drone_server::run()
 
             RigidBodyList[i]->update(RigidBodyList);
 
-            /* update drone state on param server */
-            // if (RigidBodyList[i]->StateIsDirty) {
-            //     Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
-            //     RigidBodyList[i]->StateIsDirty = false;
-            // }
         }
         RigidBodyEnd = ros::Time::now();
         
@@ -302,7 +297,7 @@ bool drone_server::APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::
     Res.frame_yaml = "";
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] == nullptr) continue;
-        printf("adding RB to list: %d, %s\n", i, RigidBodyList[i]->getName().c_str());
+        // printf("adding RB to list: %d, %s\n", i, RigidBodyList[i]->getName().c_str());
         Res.frame_yaml += std::to_string(i) + ":" + RigidBodyList[i]->getName() + " ";
     }
     return true;

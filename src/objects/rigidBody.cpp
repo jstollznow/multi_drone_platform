@@ -92,14 +92,18 @@ void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw,
 float duration, bool relative, bool constHeight)
 {
     set_state("MOVING");
+    ROS_INFO("Current:");
+    ROS_INFO("x: %f, y: %f, z: %f", currPos.position.x, currPos.position.y, currPos.position.z);
+    ROS_INFO("Relative: %d", relative);
     // manage relative x, y values 
-    if (relative)
+    if (relative == true)
     {
-        desPos.position.x = currPos.position.x + pos.x;
-        desPos.position.y = currPos.position.y + pos.y;
+        desPos.position.x = (double)currPos.position.x + (double)pos.x;
+        desPos.position.y = (double)currPos.position.y + (double)pos.y;
     }
     else
     {
+        ROS_INFO("Why?");
         desPos.position.x = pos.x;
         desPos.position.y = pos.y;
     }
@@ -107,7 +111,7 @@ float duration, bool relative, bool constHeight)
     // manage relative z values 
     if(constHeight)
     {
-        desPos.position.z = currPos.position.z + pos.z;
+        desPos.position.z = (double)currPos.position.z + (double)pos.z;
     }
     else
     {
@@ -115,9 +119,10 @@ float duration, bool relative, bool constHeight)
     }
     
     // @TODO: need to manage orientation
+    ROS_INFO("Desired:");
+    ROS_INFO("x: %f, y: %f, z: %f", desPos.position.x, desPos.position.y, desPos.position.z);
+    ROS_INFO("Duration: %f", duration);
     this->onSetPosition(desPos, yaw, duration);
-    
-    ROS_INFO("Set height: %f", pos.z);
     resetTimeout(duration);
 }
 
@@ -226,12 +231,13 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
             if (State != "IDLE") {
                 /* Go to hover */
                 ROS_WARN("Timeout stage 1");
-                geometry_msgs::Vector3 currPosVec;
-                currPosVec.x = currPos.position.x;
-                currPosVec.y = currPos.position.y;
-                // currPosVec.z = 0.0f;
-                currPosVec.z = currPos.position.z;
-                setDesPos(currPosVec, 0.0, TIMEOUT_HOVER, false, false);
+
+                geometry_msgs::Vector3 dummyVec;
+                dummyVec.x = 0.0f;
+                dummyVec.y = 0.0f;
+                dummyVec.z = 0.0f;
+                ROS_INFO("Timeout Hover");
+                setDesPos(dummyVec, 0.0f, TIMEOUT_HOVER, true, true);
                 set_state("IDLE");
                 //nextTimeoutGen = ros::Time::now().toSec() + TIMEOUT_HOVER;
             } else {
@@ -261,7 +267,9 @@ void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)
 
 void rigidBody::handleCommand(){
     //ROS_INFO("%s: %s",tag.c_str(),State.c_str());
-    
+    geometry_msgs::Vector3 noMove;
+    noMove.x = noMove.y = noMove.z = 0.0f;
+
     if (commandQueue.size() > 0)
     {
         multi_drone_platform::apiUpdate msg = this->commandQueue.front();
@@ -288,7 +296,10 @@ void rigidBody::handleCommand(){
                 break;
             /* HOVER */
             case 4:
-                setDesPos(msg.posvel, msg.yawVal, msg.duration, msg.relative, true);
+                ROS_INFO("message duration on hover %f", msg.duration);
+                if (msg.duration == 0.0f) msg.duration = 2.0f;
+                
+                setDesPos(noMove, msg.yawVal, msg.duration, true, true);
                 break;
             /* EMERGENCY */
             case 5: 

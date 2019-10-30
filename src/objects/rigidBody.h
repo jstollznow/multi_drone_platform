@@ -124,9 +124,9 @@ class rigidBody
 
         void emergency();
 
-        void land(float duration = 5.0);
+        void land(float duration = 5.0f);
 
-        void takeoff(float height = 0.25, float duration = 2.0);
+        void takeoff(float height = 0.25f, float duration = 2.0f);
 
         void addToQueue();
 };
