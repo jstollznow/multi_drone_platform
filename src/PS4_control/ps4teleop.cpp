@@ -81,8 +81,8 @@ void PS4_remote::commandHandle(const sensor_msgs::Joy::ConstPtr& msg)
     if (msg->axes[7] != 0)
     {
         ROS_INFO("ID Change butt");
-        ROS_INFO("%s: Land", drones[droneID].name.c_str());
-        mdp_api::cmd_land(drones[droneID]);
+        ROS_INFO("%s: Hover", drones[droneID].name.c_str());
+        mdp_api::cmd_hover(drones[droneID]);
         float dPadInput = msg->axes[7];
         droneID+= dPadInput;
         if (droneID < 0) droneID = drones.size() - 1;
@@ -204,6 +204,10 @@ void PS4_remote::controlUpdate()
             mdp_api::set_drone_position(drones[droneID],posMsg);
         }
     }
+    else
+    {
+        mdp_api::cmd_hover(drones[droneID]);
+    }
 }
 
 void PS4_remote::input_callback(const sensor_msgs::Joy::ConstPtr& msg)
@@ -223,7 +227,6 @@ void PS4_remote::run(int argc, char **argv)
     while (ros::ok())
     {
         ros::spinOnce();
-        // ROS_INFO("NORMAL LOOP");
         controlUpdate();
         loop_rate.sleep();
         ++count;
