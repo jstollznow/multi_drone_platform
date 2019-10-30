@@ -117,7 +117,11 @@ float duration, bool relative, bool constHeight)
     {
         desPos.position.z = pos.z;
     }
-    
+    // static safeguarding
+    desPos.position.x = std::min(std::max(-1.8f, (float)desPos.position.x), 2.8f);
+    desPos.position.y = std::min(std::max(-1.4f, (float)desPos.position.y), 1.4f);
+    desPos.position.z = std::min(std::max(0.0f, (float)desPos.position.z), 2.0f);
+
     // @TODO: need to manage orientation
     ROS_INFO("Desired:");
     ROS_INFO("x: %f, y: %f, z: %f", desPos.position.x, desPos.position.y, desPos.position.z);
