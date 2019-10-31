@@ -291,6 +291,7 @@ void rigidBody::handleCommand(){
                 break;
             /* TAKEOFF */
             case 2:
+                ROS_INFO("Height: %f", msg.posvel.z);
                 takeoff(msg.posvel.z, msg.duration);
                 break;
             /* LAND */

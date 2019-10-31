@@ -141,7 +141,7 @@ classdef mdp_api
         end
         
         function cmdtakeoff(obj, drone_id, height, duration)
-            msg = genAPImsg(obj, drone_id.NumericId, "TAKE_OFF", 'posvel', [0.0, 0.0, height], 'duration', duration);
+            msg = genAPImsg(obj, drone_id.NumericId, "TAKEOFF", 'posvel', [0.0, 0.0, height], 'duration', duration);
             send(obj.pub, msg);
         end
         
@@ -182,8 +182,8 @@ classdef mdp_api
             Pos.HeadingY = res.Plan.Poses(1).Pose.Orientation.Y;
         end
         
-        function cmdgohome(obj, drone_id, height)
-            msg = genAPImsg(obj, drone_id.NumericId, "GOTO_HOME", 'posvel', [0.0, 0.0, height]);
+        function cmdgohome(obj, drone_id, height, duration)
+            msg = genAPImsg(obj, drone_id.NumericId, "GOTO_HOME", 'posvel', [0.0, 0.0, height],'duration', duration);
             send(obj.pub, msg);
         end
         
