@@ -30,7 +30,7 @@ classdef mdp_api
             msg.Transform.Translation.Z = p.Results.posvel(3);
             
             msg.Transform.Rotation.X = p.Results.relative;
-            msg.Transform.Rotation.Z = p.Results.yaw_rate;
+            msg.Transform.Rotation.Z = p.Results.yaw;
             msg.Transform.Rotation.W = p.Results.duration;
         end
 
@@ -43,6 +43,7 @@ classdef mdp_api
         function obj = mdp_api(UpdateRate)
             %MDP_API Construct an instance of this class
             %   Detailed explanation goes here
+            rosshutdown();
             rosinit();
             fprintf("Initialising Client API Connection\n");
             obj.pub = rospublisher('/mdp_api', 'geometry_msgs/TransformStamped');
@@ -64,7 +65,7 @@ classdef mdp_api
                 cmdland(obj, Drones(i));
             end
             for i = 1 : size(Drones)
-                sleeptillidle(obj, Drones(i));
+                sleepuntilidle(obj, Drones(i));
             end
             rosshutdown();
             fprintf("Finished Client API Connection\n");
@@ -84,7 +85,8 @@ classdef mdp_api
                 id_arr = split(drones_str(i), ':');
                 id = mdp_id(0, '');
                 id.NumericId = str2double(id_arr(1));
-                id.Name = id_arr(2);
+                CellArr = id_arr(2);
+                id.Name = CellArr{:};
                 DroneList = [DroneList id];
             end
         end
@@ -213,8 +215,8 @@ classdef mdp_api
             Rate = obj.loop_rate_value;
         end
 
-        function sleeptillidle(obj, drone)
-            fprintf("Sleeping until drone '%s' goes idle", drone.Name);
+        function sleepuntilidle(obj, drone)
+            fprintf("Sleeping until drone '%s' goes idle\n", drone.Name);
             obj.loop_rate.reset();
             obj.loop_rate.waitfor();
             StateParam = strcat("mdp/drone_", num2str(drone.NumericId), "/state");
