@@ -165,6 +165,13 @@ add_library(MDP_API
 target_link_libraries(MDP_API ${catkin_LIBRARIES})
 add_dependencies(MDP_API multi_drone_platform_generate_messages_cpp)
 
+# for Commander
+find_package(PkgConfig)
+pkg_check_modules(GTKMM gtkmm-3.0)
+
+link_directories(${GTKMM_LIBRARY_DIRS})
+include_directories(include ${GTKMM_INCLUDE_DIRS})
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -216,6 +223,10 @@ add_dependencies(tst_program multi_drone_platform_generate_messages_cpp)
 add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
 add_dependencies(emergency_program multi_drone_platform_generate_messages_cpp)
+
+add_executable(Commander GUI/base.cpp)
+target_link_libraries(Commander ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API ${GTKMM_LIBRARIES}) 
+add_dependencies(Commander multi_drone_platform_generate_messages_cpp)
 
 
 #############
