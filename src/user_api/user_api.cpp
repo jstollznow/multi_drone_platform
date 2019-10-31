@@ -19,8 +19,6 @@ struct node_data
     ros::ServiceClient ListClient;
 } NodeData;
 
-
-
 void initialise(unsigned int pUpdateRate)
 {
     int int_val = 0;
@@ -29,7 +27,6 @@ void initialise(unsigned int pUpdateRate)
     ROS_INFO("Initialising Client API Connection");
 
     NodeData.Node = new ros::NodeHandle();
-
     NodeData.LoopRate = new ros::Rate(pUpdateRate);
     NodeData.LoopRateValue = pUpdateRate;
 
@@ -256,7 +253,7 @@ position_data get_home(mdp_api::id pDroneID)
     return Data;
 }
 
-void goto_home(mdp_api::id pDroneID, float pHeight)
+void goto_home(mdp_api::id pDroneID, float duration, float pHeight)
 {
     geometry_msgs::TransformStamped Msg_data;
     mdp::input_msg Msg(&Msg_data);
@@ -264,8 +261,9 @@ void goto_home(mdp_api::id pDroneID, float pHeight)
     Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "GOTO_HOME";
     Msg.posvel().z = pHeight;
+    Msg.duration() = duration;
 
-    Msg.relative = encode_relative_array_to_double(false, (pHeight < 0.0f));
+    Msg.relative() = encode_relative_array_to_double(false, (pHeight < 0.0f));
 
     NodeData.Pub.publish(Msg_data);
 }
@@ -346,5 +344,12 @@ std::string get_state(mdp_api::id pDroneID)
     }
 }
 
+// BOOST_PYTHON_MODULE(user_api)
+// {
+//     using namespace boost::python;
+    
+
+
+// }
 
 }

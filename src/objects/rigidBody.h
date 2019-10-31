@@ -42,6 +42,7 @@ class rigidBody
         void set_state(const std::string& state);
 
         ros::Subscriber ApiSubscriber;
+        uint32_t id;
         
     protected:
 
@@ -74,7 +75,7 @@ class rigidBody
 
         ros::NodeHandle droneHandle;
 
-        void resetTimeout(float timeout);
+        void resetTimeout(float timeout = 1.0f);
 
         // Wrapper Methods
 
@@ -94,6 +95,8 @@ class rigidBody
         ros::Publisher ApiPublisher;
 
         rigidBody(std::string tag);
+        
+        void setID(uint32_t id);
 
         virtual ~rigidBody();
         
@@ -121,9 +124,9 @@ class rigidBody
 
         void emergency();
 
-        void land(float duration = 5.0);
+        void land(float duration = 5.0f);
 
-        void takeoff(float height = 0.25, float duration = 2.0);
+        void takeoff(float height = 0.25f, float duration = 2.0f);
 
         void addToQueue();
 };

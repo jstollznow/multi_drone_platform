@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 #include <array>
+// #include <boost/python.hpp>
+
+
 
 namespace mdp_api {
 
@@ -61,7 +64,7 @@ namespace mdp_api {
 
     void set_home(mdp_api::id pDroneID, mdp_api::position_msg pMsg);
     position_data get_home(mdp_api::id pDroneID);
-    void goto_home(mdp_api::id pDroneID, float pHeight = -1.0f);
+    void goto_home(mdp_api::id pDroneID, float duration = 2.0f, float pHeight = -1.0f);
 
     void set_drone_server_update_frequency(float pUpdateFrequency);
     timings get_operating_frequencies();
@@ -70,4 +73,7 @@ namespace mdp_api {
     int rate();
     void sleep_until_idle(mdp_api::id pDroneID);
     std::string get_state(mdp_api::id pDroneID);
+
+
 }
+

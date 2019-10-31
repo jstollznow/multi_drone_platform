@@ -11,19 +11,25 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     ListServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIListService, this);
     std::string droneName1;
     std::string droneName2;
-    if (Node.hasParam("cflie_test"))
-    {
-        Node.getParam("cflie_test", droneName1);
-        ROS_INFO("Adding %s", droneName1.c_str());
-        addNewRigidbody(droneName1);
-    }
-    ROS_INFO("Adding next drone");
-    if (Node.hasParam("cflie_test1"))
-    {
-        Node.getParam("cflie_test1", droneName2);
-        ROS_INFO("Adding %s", droneName2.c_str());
-        addNewRigidbody(droneName2);
-    }
+    // if (Node.hasParam("cflie_test"))
+    // {
+    //     Node.getParam("cflie_test", droneName1);
+    //     ROS_INFO("Adding %s", droneName1.c_str());
+    //     addNewRigidbody(droneName1);
+    // }
+    // ROS_INFO("Adding next drone");
+    // if (Node.hasParam("cflie_test1"))
+    // {
+    //     Node.getParam("cflie_test1", droneName2);
+    //     ROS_INFO("Adding %s", droneName2.c_str());
+    //     addNewRigidbody(droneName2);
+    // }
+    addNewRigidbody("object_00");
+
+    addNewRigidbody("cflie_00");
+    // ros::Duration d(2.0);
+    // d.sleep();
+    addNewRigidbody("cflie_E7");
 }
 
 // deconstructor
@@ -52,12 +58,11 @@ mdp_id drone_server::addNewRigidbody(std::string pTag)
     rigidBody* RB;
     if (mdp_wrappers::createNewRigidbody(pTag, RB)) {
         /* update drone state on param server */
-        Node.setParam("mdp/drone_" + std::to_string(RigidBodyList.size()) + "/state", "IDLE");
 
         RigidBodyList.push_back(RB);
         ID.name = pTag.c_str();
-        ID.numeric_id = RigidBodyList.size();
-        
+        ID.numeric_id = RigidBodyList.size()-1;
+        RB->setID(ID.numeric_id);
         // setup VRPN Callback Queue
         RB->mySpin.start();
 
@@ -112,11 +117,6 @@ void drone_server::run()
 
             RigidBodyList[i]->update(RigidBodyList);
 
-            /* update drone state on param server */
-            // if (RigidBodyList[i]->StateIsDirty) {
-            //     Node.setParam("mdp/drone_" + std::to_string(i) + "/state", RigidBodyList[i]->State);
-            //     RigidBodyList[i]->StateIsDirty = false;
-            // }
         }
         RigidBodyEnd = ros::Time::now();
         
@@ -124,7 +124,7 @@ void drone_server::run()
         WaitTimeStart = ros::Time::now();
         if (DesiredLoopRate > 0.0) {
             if (!LoopRate.sleep()) {
-                ROS_WARN("Looprate false");
+                // ROS_WARN("Looprate false");
             }
         }
         WaitTimeEnd = ros::Time::now();
@@ -193,6 +193,8 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
     mdp::input_msg Input((geometry_msgs::TransformStamped*)input.get());
     multi_drone_platform::apiUpdate msg;
 
+    ROS_INFO("drone server recieved %s", Input.msg_type().c_str());
+
     rigidBody* RB;
     if (!getRigidbodyFromDroneID(Input.drone_id().numeric_id(), RB)) {
         return;
@@ -205,6 +207,7 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
     msg.posvel.z   = Input.posvel().z;
 
     msg.yawVal = Input.yaw();
+    ROS_INFO("duration is %f", Input.duration());
     msg.duration = Input.duration();
     
     auto RelativeArr = dencoded_relative(Input.relative());
@@ -294,7 +297,7 @@ bool drone_server::APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::
     Res.frame_yaml = "";
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] == nullptr) continue;
-        printf("adding RB to list: %d, %s\n", i, RigidBodyList[i]->getName().c_str());
+        // printf("adding RB to list: %d, %s\n", i, RigidBodyList[i]->getName().c_str());
         Res.frame_yaml += std::to_string(i) + ":" + RigidBodyList[i]->getName() + " ";
     }
     return true;
