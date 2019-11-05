@@ -11,10 +11,11 @@
 #define TAKEOFF_TIME 3.0f
 #define GOTO_HOME 4.0f
 
-#define max_yaw 10.0f
-#define max_x 1.0f
-#define max_y 1.0f
-#define max_z 1.0f
+// LIMIT LEVEL
+// 0 DEMO - SAFE
+// 1 MORE CONTROL
+#define LIMIT_LEVEL 0
+
 
 namespace PS4_remote
 {
@@ -26,13 +27,26 @@ namespace PS4_remote
     input lastInput;
     std::vector<mdp_api::id> drones;
     int droneID;
-    bool velControl;
+    bool localCoord;
+    bool hlCommand;
+
+    bool sync;
+    float ltMax;
+    float rtMax;
+
+    float max_yaw;
+    float max_x;
+    float max_y;
+    float max_rise;
+    float max_fall;
+
+
     std::array<double, 3> axesInput;
     ros::NodeHandle* myNode;
     ros::Subscriber sub;
     ros::CallbackQueue myQueue;
     ros::AsyncSpinner* mySpin;
-
+    void defineLimits();
     void run(int argc, char **argv);
     void input_callback(const sensor_msgs::Joy::ConstPtr& msg);
     void commandHandle(const sensor_msgs::Joy::ConstPtr& msg);
@@ -48,148 +62,164 @@ void PS4_remote::resetInput()
 }
 void PS4_remote::commandHandle(const sensor_msgs::Joy::ConstPtr& msg)
 {
-    drones = mdp_api::get_all_rigidbodies();
+    if (sync)
+    {
+         drones = mdp_api::get_all_rigidbodies();
 
-    // PS Button
-    // ONE EMERGENCY
-    if (msg->buttons[10] == 1)
-    {
-        ROS_INFO("%s: EMERGENCY butt", drones[droneID].name.c_str());
-        if (drones.size() > droneID)
+        // PS Button
+        // ONE EMERGENCY
+        if (msg->buttons[8])
         {
-            mdp_api::cmd_emergency(drones[droneID]);
+            hlCommand = true;
+            ROS_INFO("%s: EMERGENCY butt", drones[droneID].name.c_str());
+            if (drones.size() > droneID)
+            {
+                mdp_api::cmd_emergency(drones[droneID]);
+            }
+            return;
         }
-        return;
-    }
-    // Share Button
-    // ALL EMERGENCY
-    if (msg->buttons[8])
-    {
-        ROS_INFO("ALL EMERGENCY butt");
-        for(size_t i = 0; i < drones.size(); i++)
+        // Share Button
+        // ALL EMERGENCY
+        if (msg->buttons[10])
         {
-            mdp_api::cmd_emergency(drones[i]);
+            hlCommand = true;
+            ROS_INFO("ALL EMERGENCY butt");
+            for(size_t i = 0; i < drones.size(); i++)
+            {
+                mdp_api::cmd_emergency(drones[i]);
+            }
+            for(size_t i = 0; i < drones.size(); i++)
+            {
+                mdp_api::cmd_emergency(drones[i]);
+            }
+            return;
         }
-        for(size_t i = 0; i < drones.size(); i++)
+        // up or down D-Pad
+        // id change
+        if (msg->axes[7] != 0)
         {
-            mdp_api::cmd_emergency(drones[i]);
-        }
-        return;
-    }
-    // up or down D-Pad
-    // id change
-    if (msg->axes[7] != 0)
-    {
-        ROS_INFO("ID Change butt");
-        ROS_INFO("%s: Hover", drones[droneID].name.c_str());
-        mdp_api::cmd_hover(drones[droneID]);
-        float dPadInput = msg->axes[7];
-        droneID+= dPadInput;
-        if (droneID < 0) droneID = drones.size() - 1;
-        if (droneID >= drones.size()) droneID = 0;
-        while(drones[droneID].name.find("object") != std::string::npos)
-        {
-            droneID += dPadInput;
+            hlCommand = true;
+            ROS_INFO("ID Change butt");
+            ROS_INFO("%s: Hover", drones[droneID].name.c_str());
+            mdp_api::cmd_hover(drones[droneID]);
+            float dPadInput = msg->axes[7];
+            droneID+= dPadInput;
             if (droneID < 0) droneID = drones.size() - 1;
             if (droneID >= drones.size()) droneID = 0;
+            while(drones[droneID].name.find("object") != std::string::npos)
+            {
+                droneID += dPadInput;
+                if (droneID < 0) droneID = drones.size() - 1;
+                if (droneID >= drones.size()) droneID = 0;
 
+            }
+            // make iteration circular
+            ROS_INFO("%s: target drone", drones[droneID].name.c_str());
+            // resetInput();
+            return;
         }
-        // make iteration circular
-        ROS_INFO("%s: target drone", drones[droneID].name.c_str());
-        // resetInput();
-        return;
-    }
-    // cross
-    // takeoff
-    if (msg->buttons[0] == 1)
-    {
-        ROS_INFO("%s: Takeoff butt", drones[droneID].name.c_str());
-        mdp_api::cmd_takeoff(drones[droneID], 0.5f, TAKEOFF_TIME);
-        // resetInput();
-        return;
-    }
-    // circle
-    // land
-    if (msg->buttons[1] == 1)
-    {
-        ROS_INFO("%s: Land butt", drones[droneID].name.c_str());
-        mdp_api::cmd_land(drones[droneID]);
-        return;
-    }
-
-    // triangle
-    // hover
-    if(msg->buttons[2] == 1) 
-    {
-        ROS_INFO("%s: Hover butt", drones[droneID].name.c_str());
-        mdp_api::cmd_hover(drones[droneID]);
-        return;
-    }
-
-    // square
-    // goToHome
-    if(msg->buttons[3] == 1) 
-    {
-        ROS_INFO("%s: GoToHome butt", drones[droneID].name.c_str());
-        mdp_api::goto_home(drones[droneID], GOTO_HOME);
-        return;
-    }
-
-    // change control
-    // Options button
-    if (msg->buttons[9])
-    {
-        if (velControl) 
+        // cross
+        // takeoff
+        if (msg->buttons[0] == 1)
         {
-            velControl = false;
-            ROS_INFO("%s: Changing control to POS", drones[droneID].name.c_str());
+            hlCommand = true;
+            ROS_INFO("%s: Takeoff butt", drones[droneID].name.c_str());
+            mdp_api::cmd_takeoff(drones[droneID], 0.5f, TAKEOFF_TIME);
+            // resetInput();
+            return;
         }
-        else
+        // circle
+        // land
+        if (msg->buttons[1] == 1)
         {
-            velControl = true;
-            ROS_INFO("%s: Changing control to VEL", drones[droneID].name.c_str());
+            hlCommand = true;
+            ROS_INFO("%s: Land butt", drones[droneID].name.c_str());
+            mdp_api::cmd_land(drones[droneID]);
+            return;
         }
-        return;
+
+        // triangle
+        // hover
+        if(msg->buttons[2] == 1) 
+        {
+            hlCommand = true;
+            ROS_INFO("%s: Hover butt", drones[droneID].name.c_str());
+            mdp_api::cmd_hover(drones[droneID]);
+            return;
+        }
+
+        // square
+        // goToHome
+        if(msg->buttons[3] == 1) 
+        {
+            hlCommand = true;
+            ROS_INFO("%s: GoToHome butt", drones[droneID].name.c_str());
+            mdp_api::goto_home(drones[droneID], GOTO_HOME);
+            return;
+        }
+
+        // change control
+        // Options button
+        if (msg->buttons[9])
+        {
+            hlCommand = true;
+            if (localCoord) 
+            {
+                localCoord = false;
+                ROS_INFO("%s: Changing control to POS", drones[droneID].name.c_str());
+            }
+            else
+            {
+                localCoord = true;
+                ROS_INFO("%s: Changing control to VEL", drones[droneID].name.c_str());
+            }
+            return;
+        }
+
+        // RJ (T)
+        lastInput.yaw =max_yaw*(msg->axes[4]);
+        
+        // LJ (T)
+        float x = max_x*(msg->axes[1]);
+
+        // LJ (L)
+        float y = max_y*(msg->axes[0]);
+        
+        // Triggers
+        // LT go down RT go up
+        // ROS_INFO("Raw LT: %f RT: %f, fixed: %f",msg->axes[2], msg->axes[5], (std::min(msg->axes[2], 0.0f))-(std::min(msg->axes[5], 0.0f)));
+        float z = (max_fall/2.0f) * (msg->axes[2] - 1)-(max_rise/2.0f) * (msg->axes[5] - 1);
+
+        lastInput.axesInput = {x, y, z};
+        lastInput.lastUpdate = ros::Time::now();
+        // ROS_INFO("Async update: %d", lastInput.lastUpdate.nsec);
+        // ROS_INFO("%s: [%.2f, %.2f, %.2f] and yaw by %f", drones[droneID].name.c_str(),
+        //         lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
     }
-
-    // RJ (T)
-    lastInput.yaw =max_yaw*(msg->axes[4]);
-    
-    // LJ (T)
-    float x = max_x*(msg->axes[1]);
-
-    // RJ (L)
-    float y = max_y*(msg->axes[3]);
-    
-    // Triggers
-    // LT go down RT go up
-    // ROS_INFO("Raw LT: %f RT: %f, fixed: %f",msg->axes[2], msg->axes[5], (std::min(msg->axes[2], 0.0f))-(std::min(msg->axes[5], 0.0f)));
-    float z = (max_z)*(std::min(msg->axes[2], 0.0f))-(std::min(msg->axes[5], 0.0f));
-
-    lastInput.axesInput = {x, y, z};
-    lastInput.lastUpdate = ros::Time::now();
-    // ROS_INFO("Async update: %d", lastInput.lastUpdate.nsec);
-    // ROS_INFO("%s: [%.2f, %.2f, %.2f] and yaw by %f", drones[droneID].name.c_str(),
-    //         lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
+    else
+    {
+        // sync triggers
+        ltMax = std::max(msg->axes[5], ltMax);
+        rtMax = std::max(msg->axes[2], rtMax);
+        if (rtMax == 1.0 && ltMax == 1.0)
+        {
+            sync = true;
+            ROS_INFO("Ready for take off");
+        }
+    }
+   
 }
 
 void PS4_remote::controlUpdate()
 {
-    if (lastInput.axesInput[0] != 0.0f || lastInput.axesInput[1] != 0.0f || lastInput.axesInput[2] != 0.0f)
+
+    if (lastInput.axesInput[0] != 0.0f || lastInput.axesInput[1] != 0.0f || lastInput.axesInput[2] != 0.0f || lastInput.yaw != 0.0f)
     {
         ROS_INFO("Control update: %d", lastInput.lastUpdate.nsec);
-
-        if (velControl)
+        hlCommand = false;
+        if (localCoord)
         {
-            ROS_INFO("%s: Change velocity by [%.2f, %.2f, %.2f] and yaw by %f", drones[droneID].name.c_str(),
-            lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
-            mdp_api::velocity_msg velMsg;
-            velMsg.duration = 1.0f;
-            velMsg.keep_height = true;
-            velMsg.relative = true;
-            velMsg.velocity = lastInput.axesInput;
-            velMsg.yaw_rate = lastInput.yaw;
-            mdp_api::set_drone_velocity(drones[droneID],velMsg);
+           
         }
         else
         {
@@ -206,13 +236,39 @@ void PS4_remote::controlUpdate()
     }
     else
     {
-        // mdp_api::cmd_hover(drones[droneID]);
+        if (!hlCommand)
+        {
+            mdp_api::cmd_hover(drones[droneID]);
+        }
     }
 }
 
 void PS4_remote::input_callback(const sensor_msgs::Joy::ConstPtr& msg)
 {
     commandHandle(msg);
+}
+void PS4_remote::defineLimits()
+{
+    switch(LIMIT_LEVEL)
+    {
+        // DEMO
+        case 0:
+            max_yaw = 0.0f;
+            max_x = 0.75f;
+            max_y = 0.75f;
+            max_rise = 0.5f;
+            max_fall = 0.25f;
+            break;
+        // TEST
+        case 1:
+            max_yaw = 5.0f;
+            max_x = 1.0f;
+            max_y = 1.0f;
+            max_rise = 1.0f;
+            max_fall = 0.5f;
+            break;
+    }
+    
 }
 void PS4_remote::run(int argc, char **argv)
 {
@@ -221,15 +277,23 @@ void PS4_remote::run(int argc, char **argv)
     ros::Rate loop_rate(UPDATE_RATE);
     ROS_INFO("Initialised PS4 Remote");
     int count = 0;
-
+    sync = false;
+    hlCommand = true;
+    ltMax = 0.0f;
+    rtMax = 0.0f;
+    defineLimits();
     sub = myNode->subscribe<sensor_msgs::Joy>(INPUT_TOP, 1, &PS4_remote::input_callback);
+    ROS_INFO("Please sync remote by pressing the left and right triggers...");
     mySpin->start();
     while (ros::ok())
     {
         ros::spinOnce();
-        controlUpdate();
-        loop_rate.sleep();
-        ++count;
+        if (sync)
+        {
+            controlUpdate();
+            loop_rate.sleep();
+            ++count;
+        }
     }
 
 }
@@ -247,7 +311,7 @@ int main(int argc, char **argv)
     mdp_api::initialise(SERVER_FREQ);
     bool start = true;
 
-    PS4_remote::velControl = false;
+    PS4_remote::localCoord = false;
     PS4_remote::droneID = 0;
     PS4_remote::drones = mdp_api::get_all_rigidbodies();
     while (PS4_remote::drones[PS4_remote::droneID].name.find("object") != std::string::npos)

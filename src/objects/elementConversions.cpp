@@ -60,30 +60,33 @@ namespace mdp_conversions
         float dx = lastPos.pose.position.x - firstPos.pose.position.x;
         float dy = lastPos.pose.position.y - firstPos.pose.position.y;
         float dz = lastPos.pose.position.z - firstPos.pose.position.z;
-        float dt = lastPos.header.stamp.sec - firstPos.header.stamp.sec;
+        float dt = (lastPos.header.stamp.toSec() - firstPos.header.stamp.toSec());
         returnVel.linear.x =  dx / dt;
         returnVel.linear.y = dy / dt; 
         returnVel.linear.z = dz / dt;
-
-        // convert orientation to angular position
-        geometry_msgs::Vector3 lastPosAng = getUpVector(lastPos.pose.orientation);
-        geometry_msgs::Vector3 firstPosAng = getUpVector(firstPos.pose.orientation);
         
-        // not used by Duong in his algorithms
-        // maybe yaw will be useful but pitch and roll will be internal controls
+        // ROS_INFO("%f / %f = %f", dx, dt, returnVel.linear.x);
+
+
+        // // convert orientation to angular position
+        // geometry_msgs::Vector3 lastPosAng = getUpVector(lastPos.pose.orientation);
+        // geometry_msgs::Vector3 firstPosAng = getUpVector(firstPos.pose.orientation);
+        
+        // // not used by Duong in his algorithms
+        // // maybe yaw will be useful but pitch and roll will be internal controls
         
         
-        // angular velocities
-        // assume easiest route to the same point
+        // // angular velocities
+        // // assume easiest route to the same point
 
-        float rollDiff = (lastPosAng.x - firstPosAng.x);
-        float pitchDiff = (lastPosAng.y - firstPosAng.y);
-        float yawDiff = (lastPosAng.z - firstPosAng.z);
+        // float rollDiff = (lastPosAng.x - firstPosAng.x);
+        // float pitchDiff = (lastPosAng.y - firstPosAng.y);
+        // float yawDiff = (lastPosAng.z - firstPosAng.z);
 
-        // @FIX: does not account for direction
-        returnVel.angular.x =  min(rollDiff, 180 - rollDiff)/ dt;
-        returnVel.angular.y = min(pitchDiff, 90 - pitchDiff) / dt;
-        returnVel.angular.z = min(yawDiff, 180 - yawDiff) / dt;
+        // // @FIX: does not account for direction
+        // returnVel.angular.x =  min(rollDiff, 180 - rollDiff)/ dt;
+        // returnVel.angular.y = min(pitchDiff, 90 - pitchDiff) / dt;
+        // returnVel.angular.z = min(yawDiff, 180 - yawDiff) / dt;
 
 
         return returnVel;

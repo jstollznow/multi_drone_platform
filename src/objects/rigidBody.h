@@ -54,6 +54,8 @@ class rigidBody
         std::string tag;
         bool controllable;
 
+        bool batteryDead;
+
         double nextTimeoutGen;
 
         ros::Time lastUpdate;
