@@ -9,6 +9,8 @@ rigidBody::rigidBody(std::string tag):mySpin(1,&myQueue)
     // drone or obstacle
     this->controllable = true;
 
+    this->batteryDead = false;
+
     // look for drone under tag namespace then vrpn output
     std::string optiTop = "/vrpn_client_node/" + tag + "/pose";
 
@@ -103,7 +105,7 @@ float duration, bool relative, bool constHeight)
     }
     else
     {
-        ROS_INFO("Why?");
+        // ROS_INFO("Why?");
         desPos.position.x = pos.x;
         desPos.position.y = pos.y;
     }
@@ -118,9 +120,9 @@ float duration, bool relative, bool constHeight)
         desPos.position.z = pos.z;
     }
     // static safeguarding
-    desPos.position.x = std::min(std::max(-1.8f, (float)desPos.position.x), 2.8f);
-    desPos.position.y = std::min(std::max(-1.4f, (float)desPos.position.y), 1.4f);
-    desPos.position.z = std::min(std::max(0.0f, (float)desPos.position.z), 2.0f);
+    desPos.position.x = std::min(std::max(-1.6f, (float)desPos.position.x), 0.95f); //2.45
+    desPos.position.y = std::min(std::max(-1.30f, (float)desPos.position.y), 1.30f);
+    desPos.position.z = std::min(std::max(0.10f, (float)desPos.position.z), 1.8f);
 
     // @TODO: need to manage orientation
     ROS_INFO("Desired:");
@@ -142,8 +144,8 @@ float duration, bool relative, bool constHeight)
     // manage relative x, y values 
     if (relative)
     {
-        desVel.linear.x = currVel.linear.x + vel.x;
-        desVel.linear.y = currVel.linear.y + vel.y;
+        desVel.linear.x = (double)currVel.linear.x + (double)vel.x;
+        desVel.linear.y = (double)currVel.linear.y + (double)vel.y;
     }
     else
     {
@@ -154,7 +156,7 @@ float duration, bool relative, bool constHeight)
     // manage relative z values 
     if(constHeight)
     {
-        desVel.linear.z = currVel.linear.z + vel.z;
+        desVel.linear.z = (double)currVel.linear.z + (double)vel.z;
     }
     else
     {
@@ -195,7 +197,7 @@ void rigidBody::calcVel()
     geometry_msgs::PoseStamped lastPos = motionCapture.front();
     motionCapture.erase(motionCapture.begin());
     geometry_msgs::PoseStamped firstPos = motionCapture.front();
-    currVel = mdp_conversions::calcVel(lastPos,firstPos);
+    currVel = mdp_conversions::calcVel(firstPos,lastPos);
     // ROS_INFO("%s linear velocity [x: %f,y: %f,z: %f]", tag.c_str(), currVel.linear.x, currVel.linear.y, currVel.linear.z);
 }
 
@@ -225,7 +227,16 @@ geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 
 void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 {
-    
+
+    if (batteryDead)
+    {
+        ROS_WARN("Dying battery override");
+        this->commandQueue.clear();
+        multi_drone_platform::apiUpdate goToHomeMsg;
+        goToHomeMsg.msg_type = "GOTO_HOME";
+        goToHomeMsg.duration = 4.0f;
+        this->commandQueue.push_back(goToHomeMsg);
+    }
 
     if (ros::Time::now().toSec() >= nextTimeoutGen) {
         if (State == "LANDING" || State == "LANDED") {
@@ -251,21 +262,27 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
             }
         }
     }
-
-    if (State == "IDLE" || State == "LANDED")
+    if (State == "IDLE")
     {
         handleCommand();
     }
-
 
     this->onUpdate();
 }
 
 void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)
 {
-    ROS_INFO("%s recieved msg %s", tag.c_str(),msg.msg_type.c_str());
-    this->commandQueue.clear();
-    this->commandQueue.push_back(msg);
+    if (!batteryDead)
+    {
+        ROS_INFO("%s recieved msg %s", tag.c_str(),msg.msg_type.c_str());
+        this->commandQueue.clear();
+        this->commandQueue.push_back(msg);
+        
+    }
+    else 
+    {
+        
+    }
     handleCommand();
 }
 
@@ -273,15 +290,17 @@ void rigidBody::handleCommand(){
     //ROS_INFO("%s: %s",tag.c_str(),State.c_str());
     geometry_msgs::Vector3 noMove;
     noMove.x = noMove.y = noMove.z = 0.0f;
+    multi_drone_platform::apiUpdate landMsg;
+    landMsg.msg_type = "LAND";
+    landMsg.duration = 2.0f;
 
     if (commandQueue.size() > 0)
     {
         multi_drone_platform::apiUpdate msg = this->commandQueue.front();
-        multi_drone_platform::apiUpdate landMsg;
         switch(APIMap[msg.msg_type]) {
             /* VELOCITY */
             case 0:
-                ROS_INFO("VEL: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relative, msg.constHeight);
+                ROS_INFO("V: [%.2f, %.2f, %.2f] rel_Xy: %d, rel_z: %d, dur: %.1f", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relative, msg.constHeight, msg.duration);
                 setDesVel(msg.posvel, msg.yawVal, msg.duration, msg.relative, msg.constHeight);
                 break;
             /* POSITION */
@@ -303,7 +322,7 @@ void rigidBody::handleCommand(){
             case 4:
                 ROS_INFO("message duration on hover %f", msg.duration);
                 if (msg.duration == 0.0f) msg.duration = 2.0f;
-                
+
                 setDesPos(noMove, msg.yawVal, msg.duration, true, true);
                 break;
             /* EMERGENCY */
@@ -320,8 +339,6 @@ void rigidBody::handleCommand(){
                 setDesPos(homePos, msg.yawVal,msg.duration, false, true);
                 if (msg.posvel.z <= 0.0f)
                 {
-                    landMsg.msg_type = "LAND";
-                    landMsg.duration = 2.0f;
                     enqueueCommand(landMsg);
                 }
                 break;
