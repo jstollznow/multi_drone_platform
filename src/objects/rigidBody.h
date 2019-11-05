@@ -54,7 +54,7 @@ class rigidBody
         std::string tag;
         bool controllable;
 
-        bool batteryDead;
+        bool batteryDying;
 
         double nextTimeoutGen;
 

@@ -73,14 +73,14 @@ private:
     }
     void batteryLog(const std_msgs::Float32::ConstPtr &msg)
     {
-        if (msg->data <= 3.2f)
+        if (msg->data <= 3.15f)
         {
             ROS_WARN("Battery dying soon...");
-            batteryDead = false;
+            batteryDying = true;
         }
         else 
         {
-            batteryDead = false;
+            batteryDying = false;
         }
     }
 public:
@@ -125,7 +125,6 @@ public:
         goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to");
 
         // feedback
-        batteryDead = false;
 
         batteryCheck = droneHandle.subscribe<std_msgs::Float32>("/" + tag + "/battery", 10, &cflie::batteryLog, this); 
 
