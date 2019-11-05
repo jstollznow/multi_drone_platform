@@ -2,6 +2,7 @@
 #include "crazyflie_driver/AddCrazyflie.h"
 #include "std_srvs/Empty.h"
 #include "std_msgs/Empty.h"
+#include "std_msgs/Float32.h"
 #include "crazyflie_driver/Land.h"
 #include "crazyflie_driver/GoTo.h"
 #include "crazyflie_driver/Takeoff.h"
@@ -38,6 +39,8 @@ class cflie : public rigidBody
 {
 private:
     const std::string link_uri = "radio://0/80/2M";
+    
+
     std::string droneAddress;
     ros::Publisher external_position;
     ros::ServiceClient emergencyService;
@@ -49,15 +52,12 @@ private:
     ros::ServiceClient goToService;
     
     ros::ServiceClient updateParams;
-    ros::Subscriber imuMeasure;
+
+    ros::Subscriber batteryCheck;
+    
     ros::ServiceClient addCrazyflieService;
 
     bool DoOnce = false;
-    
-    void imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
-    {
-        ROS_INFO("Some IMU data: \nAng Vel: %.6f, %.6f, %.6f\n", msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z);
-    }
 
     void goTo(geometry_msgs::Point goal, float yaw, float duration)
     {
@@ -71,7 +71,18 @@ private:
 
         resetTimeout(duration);
     }
-
+    void batteryLog(const std_msgs::Float32::ConstPtr &msg)
+    {
+        if (msg->data <= 3.2f)
+        {
+            ROS_WARN("Battery dying soon...");
+            batteryDead = false;
+        }
+        else 
+        {
+            batteryDead = false;
+        }
+    }
 public:
     cflie(std::string tag):rigidBody(tag)
     {
@@ -83,14 +94,14 @@ public:
         msg.request.tf_prefix = tag;
         msg.request.roll_trim = 0.0f;
         msg.request.pitch_trim = 0.0f;
-        msg.request.enable_logging = false;
+        msg.request.enable_logging = true;
         msg.request.enable_parameters = true;
         msg.request.use_ros_time = true;
         msg.request.enable_logging_imu = false;
         msg.request.enable_logging_temperature = false;
         msg.request.enable_logging_magnetic_field = false;
         msg.request.enable_logging_pressure = false;
-        msg.request.enable_logging_battery = false;
+        msg.request.enable_logging_battery = true;
         msg.request.enable_logging_pose = false;
         msg.request.enable_logging_packets = false;
 
@@ -114,7 +125,9 @@ public:
         goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to");
 
         // feedback
-        imuMeasure = droneHandle.subscribe<sensor_msgs::Imu>("/" + tag + "/imu", 10, &cflie::imuCallback, this); 
+        batteryDead = false;
+
+        batteryCheck = droneHandle.subscribe<std_msgs::Float32>("/" + tag + "/battery", 10, &cflie::batteryLog, this); 
 
     };
 
@@ -160,11 +173,12 @@ public:
     void onSetVelocity(geometry_msgs::Twist vel, float duration) override
     {
         geometry_msgs::Point positionGoal;
-        positionGoal.x = vel.linear.x * duration;
-        positionGoal.y = vel.linear.y * duration;
-        positionGoal.z = vel.linear.z * duration;
-        // @TODO: need to configure yaw rate
-        goTo(positionGoal, 0.0f, duration);
+        positionGoal.x = (vel.linear.x * duration);
+        positionGoal.y = (vel.linear.y * duration);
+        positionGoal.z = (vel.linear.z * duration);
+        ROS_INFO("CASTING %f * %f = %f", vel.linear.x, duration, positionGoal.x);
+
+        goTo(positionGoal, vel.angular.z , duration);
     }
 
     void onTakeoff(float height, float duration) override

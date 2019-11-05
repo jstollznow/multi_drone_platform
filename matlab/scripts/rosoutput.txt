@@ -1,0 +1,178 @@
+jacob@jacob-HP:~/catkin_ws$ roslaunch multi_drone_platform demo241019.launch
+... logging to /home/jacob/.ros/log/0f8deaca-fbb2-11e9-8d69-380025ece7df/roslaunch-jacob-HP-6079.log
+Checking log directory for disk usage. This may take awhile.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+
+started roslaunch server http://jacob-HP:34147/
+
+SUMMARY
+========
+
+PARAMETERS
+ * /cflie_test1: cflie_00
+ * /cflie_test: cflie_E7
+ * /genericLogTopicFrequencies: [100]
+ * /genericLogTopic_log1_Variables: ['stateEstimate.x...
+ * /genericLogTopics: ['log1']
+ * /rosdistro: kinetic
+ * /rosversion: 1.12.14
+ * /vrpn_client_node/broadcast_tf: True
+ * /vrpn_client_node/frame_id: world
+ * /vrpn_client_node/port: 3883
+ * /vrpn_client_node/refresh_tracker_frequency: 1.0
+ * /vrpn_client_node/server: 129.127.29.166
+ * /vrpn_client_node/update_frequency: 100.0
+ * /vrpn_client_node/use_server_time: False
+
+NODES
+  /
+    crazyflie_server (crazyflie_driver/crazyflie_server)
+    drone_server (multi_drone_platform/drone_server)
+    vrpn_client_node (vrpn_client_ros/vrpn_client_node)
+
+auto-starting new master
+process[master]: started with pid [6089]
+ROS_MASTER_URI=http://localhost:11311
+
+setting /run_id to 0f8deaca-fbb2-11e9-8d69-380025ece7df
+process[rosout-1]: started with pid [6104]
+started core service [/rosout]
+process[crazyflie_server-2]: started with pid [6117]
+process[vrpn_client_node-3]: started with pid [6122]
+process[drone_server-4]: started with pid [6132]
+[ INFO] [1572507780.109490315]: Connecting to VRPN server at 129.127.29.166:3883
+[ INFO] [1572507780.112725259]: Initialising drone server
+[ INFO] [1572507780.120969622]: Connection established
+[ INFO] [1572507780.122345518]: Setting state to LANDED
+[ INFO] [1572507780.123400262]: Reset timer to ~1000.000000 seconds
+[ INFO] [1572507780.128754731]: Subscribing to /vrpn_client_node/cflie_00/pose for motion capture
+[ INFO] [1572507780.128778964]: I am here, its cflie_00
+[ INFO] [1572507780.129950624]: Adding radio://0/80/2M/0xE7E7E7E700 as cflie_00 with trim(0.000000, 0.000000). Logging: 1, Parameters: 0, Use ROS time: 1
+check_vrpn_cookie(): VRPN Note: minor version number doesn't match: (prefer 'vrpn: ver. 07.34', got 'vrpn: ver. 07.20  0').  This is not normally a problem.
+[ INFO] [1572507780.136348722]: cflie_00 launched on Crazyflie Server
+[ INFO] [1572507780.141161702]: Successfully added drone with the tag: cflie_00
+[ INFO] [1572507780.162805025]: Requesting parameters...
+[ INFO] [1572507780.167662220]: Found variables in cache.
+[ INFO] [1572507780.742025606]: Requesting memories...
+[ INFO] [1572507780.750786345]: Memories: 5
+[ INFO] [1572507780.758897614]: Ready...
+[ INFO] [1572507780.758971631]: Elapsed: 0.599080 s
+[ INFO] [1572507780.864216467]: Update parameters worked
+[ INFO] [1572507780.885184287]: CF Console: ESTIMATOR: Using estimator 2
+[ INFO] [1572507780.891087791]: CF Console: CONTROLLER: Using controller 2
+[ INFO] [1572507781.124621540]: Found new sender: cflie_00
+[ INFO] [1572507781.124978450]: Creating new tracker cflie_00
+[ INFO] [1572507781.424394833]: HOME POS: [-0.696987, -0.135586, 0.028497]
+[ INFO] [1572507785.382243162]: Avg. Loop Info--
+[ INFO] [1572507785.382325174]: Actual [Hz]: 99.26, Wait [s]: 0.0091, Drones [s]: 0.0013
+[ INFO] [1572507786.072250108]: drone server recieved TAKE_OFF
+[ INFO] [1572507786.072302315]: duration is 2.000000
+[ INFO] [1572507786.082352092]: cflie_00 recieved msg TAKE_OFF
+[ INFO] [1572507786.082426791]: VEL: xyz: 0.00 0.00 0.50, rel_Xy: 0, rel_z: 0
+[ INFO] [1572507786.082449184]: Setting state to MOVING
+[ INFO] [15725077
+86.083556237]: GOTO: [0.000000, 0.000000, 1.000000] in 2.000000
+[ INFO] [1572507786.086872195]: GoTo requested
+[ INFO] [1572507786.088295860]: Reset timer to ~2.000000 seconds
+[ INFO] [1572507786.088325681]: Reset timer to ~2.000000 seconds
+[ WARN] [1572507787.892326479]: Timeout stage 1
+[ INFO] [1572507787.892411044]: Timeout Hover
+[ INFO] [1572507787.892459216]: Setting state to MOVING
+[ INFO] [1572507787.895005776]: Current:
+[ INFO] [1572507787.895113778]: x: -0.696992, y: -0.135562, z: 0.028524
+[ INFO] [1572507787.895220519]: Relative: 1
+[ INFO] [1572507787.895287888]: Desired:
+[ INFO] [1572507787.895341915]: x: -0.696992, y: -0.135562, z: 0.028524
+[ INFO] [1572507787.895392686]: Duration: 4.000000
+[ INFO] [1572507787.895450359]: GOTO: [-0.696992, -0.135562, 0.028524] in 4.000000
+[ INFO] [1572507787.898387146]: GoTo requested
+[ INFO] [1572507787.899883616]: Reset timer to ~4.000000 seconds
+[ INFO] [1572507787.899957362]: Reset timer to ~4.000000 seconds
+[ INFO] [1572507787.900007004]: Setting state to IDLE
+[ INFO] [1572507788.002317008]: drone server recieved POSITION
+[ INFO] [1572507788.002438952]: duration is 4.000000
+[ INFO] [1572507788.012332140]: cflie_00 recieved msg POSITION
+[ INFO] [1572507788.012460723]: POS: xyz: 0.50 0.00 1.00, rel_Xy: 1, rel_z: 1
+[ INFO] [1572507788.012496424]: Setting state to MOVING
+[ INFO] [1572507788.015475877]: Current:
+[ INFO] [1572507788.015551469]: x: -0.696994, y: -0.135540, z: 0.028514
+[ INFO] [1572507788.015591927]: Relative: 1
+[ INFO] [1572507788.015650342]: Desired:
+[ INFO] [1572507788.015702153]: x: -0.196994, y: -0.135540, z: 1.028514
+[ INFO] [1572507788.015768712]: Duration: 4.000000
+[ INFO] [1572507788.015888752]: GOTO: [-0.196994, -0.135540, 1.028514] in 4.000000
+[ INFO] [1572507788.019029640]: GoTo requested
+[ INFO] [1572507788.020546296]: Reset timer to ~4.000000 seconds
+[ INFO] [1572507788.020646948]: Reset timer to ~4.000000 seconds
+[ INFO] [1572507790.382219271]: Avg. Loop Info--
+[ INFO] [1572507790.382304679]: Actual [Hz]: 100.02, Wait [s]: 0.0099, Drones [s]: 0.0000
+[ WARN] [1572507791.822231139]: Timeout stage 1
+[ INFO] [1572507791.822308035]: Timeout Hover
+[ INFO] [1572507791.822347632]: Setting state to MOVING
+[ INFO] [1572507791.824747549]: Current:
+[ INFO] [1572507791.824828023]: x: -0.697000, y: -0.135590, z: 0.028501
+[ INFO] [1572507791.824866702]: Relative: 1
+[ INFO] [1572507791.824900954]: Desired:
+[ INFO] [1572507791.824945310]: x: -0.697000, y: -0.135590, z: 0.028501
+[ INFO] [1572507791.824990970]: Duration: 4.000000
+[ INFO] [1572507791.825035545]: GOTO: [-0.697000, -0.135590, 0.028501] in 4.000000
+[ INFO] [1572507791.828338229]: GoTo requested
+[ INFO] [1572507791.830067556]: Reset timer to ~4.000000 seconds
+[ INFO] [1572507791.830147045]: Reset timer to ~4.000000 seconds
+[ INFO] [1572507791.830187220]: Setting state to IDLE
+[ INFO] [1572507791.932266603]: drone server recieved GOTO_HOME
+[ INFO] [1572507791.932347465]: duration is 0.000000
+[ INFO] [1572507791.942258284]: cflie_00 recieved msg GOTO_HOME
+[ INFO] [1572507791.942345977]: message duration on goto home 0.000000
+[ INFO] [1572507791.942393082]: Setting state to MOVING
+[ INFO] [1572507791.944690839]: Current:
+[ INFO] [1572507791.944795119]: x: -0.697002, y: -0.135569, z: 0.028509
+[ INFO] [1572507791.944880530]: Relative: 0
+[ INFO] [1572507791.944942929]: Why?
+[ INFO] [1572507791.945004585]: Desired:
+[ INFO] [1572507791.945060882]: x: -0.696987, y: -0.135586, z: 0.057006
+[ INFO] [1572507791.945112582]: Duration: 0.000000
+[ INFO] [1572507791.945169874]: GOTO: [-0.696987, -0.135586, 0.057006] in 0.000000
+[ INFO] [1572507791.949148870]: GoTo requested
+[ INFO] [1572507791.950888644]: Reset timer to ~0.000000 seconds
+[ INFO] [1572507791.950977440]: Reset timer to ~0.000000 seconds
+[ WARN] [1572507791.951041835]: Timeout stage 1
+[ INFO] [1572507791.951081639]: Timeout Hover
+[ INFO] [1572507791.951119388]: Setting state to MOVING
+[ INFO] [1572507791.953649965]: Current:
+[ INFO] [1572507791.953791387]: x: -0.696999, y: -0.135576, z: 0.028488
+[ INFO] [1572507791.953832699]: Relative: 1
+[ INFO] [1572507791.953866900]: Desired:
+[ INFO] [1572507791.953997044]: x: -0.696999, y: -0.135576, z: 0.028488
+[ INFO] [1572507791.954038765]: Duration: 4.000000
+[ INFO] [1572507791.954075377]: GOTO: [-0.696999, -0.135576, 0.028488] in 4.000000
+[ INFO] [1572507791.957349798]: GoTo requested
+[ INFO] [1572507791.959007114]: Reset timer to ~4.000000 seconds
+[ INFO] [1572507791.959086812]: Reset timer to ~4.000000 seconds
+[ INFO] [1572507791.959119168]: Setting state to IDLE
+[ INFO] [1572507792.062271475]: drone server recieved LAND
+[ INFO] [1572507792.062322284]: duration is 0.000000
+[ INFO] [1572507792.072203314]: cflie_00 recieved msg LAND
+[ INFO] [1572507792.072242760]: Setting state to LANDING
+[ INFO] [1572507792.073592826]: Land sent to cflie_00
+[ INFO] [1572507792.076650130]: Land requested
+[ INFO] [1572507792.077782500]: Reset timer to ~5.000000 seconds
+[ INFO] [1572507795.382251032]: Avg. Loop Info--
+[ INFO] [1572507795.382334433]: Actual [Hz]: 102.98, Wait [s]: 0.0099, Drones [s]: 0.0000
+[ INFO] [1572507796.882307698]: Setting state to LANDED
+[ INFO] [1572507796.884917922]: Reset timer to ~100.000000 seconds
+[ INFO] [1572507797.012288103]: drone server recieved LAND
+[ INFO] [1572507797.012357919]: duration is 0.000000
+[ INFO] [1572507797.022226143]: cflie_00 recieved msg LAND
+[ INFO] [1572507797.022274595]: Setting state to LANDING
+[ INFO] [1572507797.023619396]: Land sent to cflie_00
+[ INFO] [1572507797.026371043]: Land requested
+[ INFO] [1572507797.027519740]: Reset timer to ~5.000000 seconds
+[ INFO] [1572507800.382240290]: Avg. Loop Info--
+[ INFO] [1572507800.382341894]: Actual [Hz]: 100.01, Wait [s]: 0.0100, Drones [s]: 0.0000
+[ INFO] [1572507801.832248986]: Setting state to LANDED
+[ INFO] [1572507801.834729883]: Reset timer to ~100.000000 seconds
+[ INFO] [1572507805.382246105]: Avg. Loop Info--
+[ INFO] [1572507805.382362276]: Actual [Hz]: 100.02, Wait [s]: 0.0100, Drones [s]: 0.0000
+[ INFO] [1572507810.382282298]: Avg. Loop Info--
