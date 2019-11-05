@@ -200,13 +200,6 @@ add_executable(script scripts/demoWk10.cpp)
 target_link_libraries(script ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API)
 add_dependencies(script multi_drone_platform_generate_messages_cpp)
 
-add_executable(virtualflie src/virtualflie/virtualflie.cpp)
-target_link_libraries(virtualflie ${catkin_LIBRARIES} ${PROJECT_NAME})
-# add_dependencies(virtualflie multi_drone_platform_generate_messages_cpp)
-
-add_executable(joyflie src/virtualflie/joyflie.cpp)
-target_link_libraries(joyflie ${catkin_LIBRARIES} ${PROJECT_NAME})
-#add_dependencies(joyflie multi_drone_platform_generate_messages_cpp)
 
 add_executable(ps4teleop src/PS4_control/ps4teleop.cpp)
 target_link_libraries(ps4teleop ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
@@ -216,13 +209,10 @@ add_executable(drone_server src/drone_server/drone_server.cpp)
 target_link_libraries(drone_server ${catkin_LIBRARIES} ${PROJECT_NAME}) 
 add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
-add_executable(tst_program src/user_api/test_program_19Oct2019.cpp)
+add_executable(tst_program scripts/test_program_19Oct2019.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
 add_dependencies(tst_program multi_drone_platform_generate_messages_cpp)
 
-add_executable(emergency_program src/user_api/emergency_program.cpp)
-target_link_libraries(emergency_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
-add_dependencies(emergency_program multi_drone_platform_generate_messages_cpp)
 
 add_executable(Commander GUI/base.cpp)
 target_link_libraries(Commander ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API ${GTKMM_LIBRARIES}) 
