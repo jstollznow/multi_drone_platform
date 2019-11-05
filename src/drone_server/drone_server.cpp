@@ -24,9 +24,9 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     //     ROS_INFO("Adding %s", droneName2.c_str());
     //     addNewRigidbody(droneName2);
     // }
-//     addNewRigidbody("vflie_01");
+    // addNewRigidbody("vflie_01");
 
-//     addNewRigidbody("vflie_00");
+    // addNewRigidbody("vflie_00");
   
     addNewRigidbody("cflie_E7");
 }
@@ -206,12 +206,11 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
     msg.posvel.z   = Input.posvel().z;
 
     msg.yawVal = Input.yaw();
-    ROS_INFO("duration is %f", Input.duration());
     msg.duration = Input.duration();
     
     auto RelativeArr = dencoded_relative(Input.relative());
-    msg.relative = RelativeArr[0];
-    msg.constHeight = RelativeArr[1];
+    msg.relativeXY = RelativeArr[0];
+    msg.relativeZ  = RelativeArr[1];
 
     RB->ApiPublisher.publish(msg);    
     // send the message off to the relevant rigidbody
