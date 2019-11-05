@@ -60,7 +60,8 @@
         "string": "cpp",
         "csignal": "cpp",
         "geometry": "cpp",
-        "mutex": "cpp"
+        "mutex": "cpp",
+        "valarray": "cpp"
     },
     "cSpell.words": [
         "opti"
