@@ -166,7 +166,7 @@ target_link_libraries(MDP_API ${catkin_LIBRARIES})
 add_dependencies(MDP_API multi_drone_platform_generate_messages_cpp)
 
 # for Commander
-find_package(PkgConfig)
+find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTKMM gtkmm-3.0)
 
 link_directories(${GTKMM_LIBRARY_DIRS})
