@@ -7,7 +7,7 @@
 #include "../objects/rigidBody.h"
 #include "wrappers.h"
 
-#define LOOP_RATE_HZ 100
+#define LOOP_RATE_HZ 50
 #define TIMING_UPDATE 5
 
 #define NODE_NAME "mdp_drone_server"

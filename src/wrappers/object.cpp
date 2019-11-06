@@ -15,12 +15,12 @@ public:
 
     }
 
-    void onSetPosition(geometry_msgs::Pose pos, float yaw, float duration) override
+    void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override
     {
 
     }
 
-    void onSetVelocity(geometry_msgs::Twist vel, float duration) override
+    void onSetVelocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override
     {
 
     }

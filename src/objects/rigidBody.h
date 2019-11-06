@@ -86,8 +86,8 @@ class rigidBody
         virtual void onTakeoff(float height, float duration) = 0;
         virtual void onLand(float duration) = 0;
         virtual void onEmergency() = 0;
-        virtual void onSetPosition(geometry_msgs::Pose pos, float yaw, float duration) = 0;
-        virtual void onSetVelocity(geometry_msgs::Twist vel, float duration) = 0;
+        virtual void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) = 0;
+        virtual void onSetVelocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) = 0;
 
     public:
         std::string State = "LANDED";
@@ -109,10 +109,10 @@ class rigidBody
         returnVel getCurrVel();
 
         returnPos getDesPos();
-        void setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration, bool relative, bool constHeight);
+        void setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration, bool relativeXY, bool relativeZ);
 
         returnVel getDesVel();
-        void setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relative, bool constHeight);
+        void setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeZ);
 
         geometry_msgs::Vector3 getHomePos();
         void setHomePos(geometry_msgs::Vector3 pos, bool relative);
@@ -129,6 +129,8 @@ class rigidBody
         void land(float duration = 5.0f);
 
         void takeoff(float height = 0.25f, float duration = 2.0f);
+
+        void hover(float duration);
 
         void addToQueue();
 };

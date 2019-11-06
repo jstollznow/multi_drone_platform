@@ -91,44 +91,53 @@ returnPos rigidBody::getDesPos()
 }
 
 void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw,
-float duration, bool relative, bool constHeight)
+float duration, bool relativeXY, bool relativeZ)
 {
-    set_state("MOVING");
-    ROS_INFO("Current:");
-    ROS_INFO("x: %f, y: %f, z: %f", currPos.position.x, currPos.position.y, currPos.position.z);
-    ROS_INFO("Relative: %d", relative);
+    // ROS_INFO("Current:");
+    // ROS_INFO("x: %f, y: %f, z: %f", currPos.position.x, currPos.position.y, currPos.position.z);
+    // ROS_INFO("Relative: %d", relative);
     // manage relative x, y values 
-    if (relative == true)
-    {
-        desPos.position.x = (double)currPos.position.x + (double)pos.x;
-        desPos.position.y = (double)currPos.position.y + (double)pos.y;
+
+    /* get z values in terms of x,y values (synchronise relativity) */
+    if (relativeZ && !relativeXY) {
+        pos.z = pos.z + currPos.position.z;
     }
-    else
-    {
-        // ROS_INFO("Why?");
-        desPos.position.x = pos.x;
-        desPos.position.y = pos.y;
+    if (!relativeZ && relativeXY) {
+        pos.z = pos.z - currPos.position.z;
     }
 
-    // manage relative z values 
-    if(constHeight)
-    {
-        desPos.position.z = (double)currPos.position.z + (double)pos.z;
+    /* Simple static safeguarding */
+    struct {
+        std::array<double, 2> x = {{-1.60f, 0.95f}};
+        std::array<double, 2> y = {{-1.30f, 1.30f}};
+        std::array<double, 2> z = {{ 0.10f, 1.80f}};
+    } StaticSafeguarding;
+
+    if (relativeXY) {
+        /* lowest pos value */
+        pos.x = std::max(StaticSafeguarding.x[0] - currPos.position.x, pos.x);
+        pos.y = std::max(StaticSafeguarding.y[0] - currPos.position.y, pos.y);
+        pos.z = std::max(StaticSafeguarding.z[0] - currPos.position.z, pos.z);
+
+        /* highest pos value */
+        pos.x = std::min(StaticSafeguarding.x[1] - currPos.position.x, pos.x);
+        pos.y = std::min(StaticSafeguarding.y[1] - currPos.position.y, pos.y);
+        pos.z = std::min(StaticSafeguarding.z[1] - currPos.position.z, pos.z);
+    } else {
+        /* both */
+        pos.x = std::min(std::max(StaticSafeguarding.x[0], pos.x), StaticSafeguarding.x[1]);
+        pos.y = std::min(std::max(StaticSafeguarding.y[0], pos.y), StaticSafeguarding.y[1]);
+        pos.z = std::min(std::max(StaticSafeguarding.z[0], pos.z), StaticSafeguarding.z[1]);
     }
-    else
-    {
-        desPos.position.z = pos.z;
-    }
-    // static safeguarding
-    desPos.position.x = std::min(std::max(-1.6f, (float)desPos.position.x), 0.95f); //2.45
-    desPos.position.y = std::min(std::max(-1.30f, (float)desPos.position.y), 1.30f);
-    desPos.position.z = std::min(std::max(0.10f, (float)desPos.position.z), 1.8f);
+
 
     // @TODO: need to manage orientation
     ROS_INFO("Desired:");
     ROS_INFO("x: %f, y: %f, z: %f", desPos.position.x, desPos.position.y, desPos.position.z);
     ROS_INFO("Duration: %f", duration);
-    this->onSetPosition(desPos, yaw, duration);
+
+    this->onSetPosition(pos, yaw, duration, relativeXY);
+
     resetTimeout(duration);
 }
 
@@ -138,35 +147,12 @@ returnVel rigidBody::getDesVel()
 }
 
 void rigidBody::setDesVel(geometry_msgs::Vector3 vel, float yawRate, 
-float duration, bool relative, bool constHeight)
+float duration, bool relativeXY, bool relativeZ)
 {
-    set_state("MOVING");
-    // manage relative x, y values 
-    if (relative)
-    {
-        desVel.linear.x = (double)currVel.linear.x + (double)vel.x;
-        desVel.linear.y = (double)currVel.linear.y + (double)vel.y;
-    }
-    else
-    {
-        desVel.linear.x = vel.x;
-        desVel.linear.y = vel.y;
-    }
+    // @TODO: velocity based safeguarding
 
-    // manage relative z values 
-    if(constHeight)
-    {
-        desVel.linear.z = (double)currVel.linear.z + (double)vel.z;
-    }
-    else
-    {
-        desVel.linear.z = vel.z;
-    }
-
-    desVel.angular.z = yawRate;
-    
     // onVelocity command
-    this->onSetVelocity(desVel, duration);
+    this->onSetVelocity(vel, yawRate, duration, relativeXY);
 
     this->resetTimeout(duration);
 }
@@ -235,15 +221,9 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
             if (State != "IDLE") {
                 /* Go to hover */
                 ROS_WARN("Timeout stage 1");
-
-                geometry_msgs::Vector3 dummyVec;
-                dummyVec.x = 0.0f;
-                dummyVec.y = 0.0f;
-                dummyVec.z = 0.0f;
                 ROS_INFO("Timeout Hover");
-                setDesPos(dummyVec, 0.0f, TIMEOUT_HOVER, true, true);
-                set_state("IDLE");
-                //nextTimeoutGen = ros::Time::now().toSec() + TIMEOUT_HOVER;
+                this->hover(TIMEOUT_HOVER);
+                this->set_state("IDLE");
             } else {
                 /* land drone because timeout */
                 ROS_WARN("Timeout stage 2");
@@ -287,13 +267,15 @@ void rigidBody::handleCommand(){
         switch(APIMap[msg.msg_type]) {
             /* VELOCITY */
             case 0:
-                ROS_INFO("V: [%.2f, %.2f, %.2f] rel_Xy: %d, rel_z: %d, dur: %.1f", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relative, msg.constHeight, msg.duration);
-                setDesVel(msg.posvel, msg.yawVal, msg.duration, msg.relative, msg.constHeight);
+                ROS_INFO("V: [%.2f, %.2f, %.2f] rel_Xy: %d, rel_z: %d, dur: %.1f", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relativeXY, msg.relativeZ, msg.duration);
+                setDesVel(msg.posvel, msg.yawVal, msg.duration, msg.relativeXY, msg.relativeZ);
+                this->set_state("MOVING");
                 break;
             /* POSITION */
             case 1:
-                ROS_INFO("POS: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relative, msg.constHeight);
-                setDesPos(msg.posvel, msg.yawVal, msg.duration, msg.relative, msg.constHeight);
+                ROS_INFO("P: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relativeXY, msg.relativeZ);
+                setDesPos(msg.posvel, msg.yawVal, msg.duration, msg.relativeXY, msg.relativeZ);
+                this->set_state("MOVING");
                 break;
             /* TAKEOFF */
             case 2:
@@ -310,7 +292,7 @@ void rigidBody::handleCommand(){
                 ROS_INFO("message duration on hover %f", msg.duration);
                 if (msg.duration == 0.0f) msg.duration = 2.0f;
 
-                setDesPos(noMove, msg.yawVal, msg.duration, true, true);
+                this->hover(msg.duration);
                 break;
             /* EMERGENCY */
             case 5: 
@@ -318,12 +300,13 @@ void rigidBody::handleCommand(){
                 break;
             /* SET_HOME */
             case 6:
-                setHomePos(msg.posvel, msg.relative);
+                setHomePos(msg.posvel, msg.relativeXY);
                 break;
             /* GOTO_HOME */
             case 8:
                 ROS_INFO("message duration on goto home %f", msg.duration);
                 setDesPos(homePos, msg.yawVal,msg.duration, false, true);
+                this->set_state("MOVING");
                 if (msg.posvel.z <= 0.0f)
                 {
                     enqueueCommand(landMsg);
@@ -368,6 +351,14 @@ void rigidBody::takeoff(float height, float duration)
     this->set_state("TAKING OFF");
     this->onTakeoff(height, duration);
     resetTimeout(duration);
+}
+
+void rigidBody::hover(float duration)
+{
+    this->set_state("HOVER");
+    geometry_msgs::Vector3 HoverPoint;
+    HoverPoint.x = 0.0; HoverPoint.y = 0.0; HoverPoint.z = 0.0;
+    setDesPos(HoverPoint, 0.0f, duration, true, true);
 }
 
 void rigidBody::resetTimeout(float timeout)

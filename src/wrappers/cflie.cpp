@@ -59,14 +59,16 @@ private:
 
     bool DoOnce = false;
 
-    void goTo(geometry_msgs::Point goal, float yaw, float duration)
+    void goTo(geometry_msgs::Vector3 goal, float yaw, float duration, bool isRelative)
     {
         crazyflie_driver::GoTo goToMsg;
-        goToMsg.request.goal = goal;
-        ROS_INFO("GOTO: [%f, %f, %f] in %f", goal.x, goal.y, goal.z, duration);
+        goToMsg.request.goal.x = goal.x;
+        goToMsg.request.goal.y = goal.y;
+        goToMsg.request.goal.z = goal.z;
+        ROS_INFO("GOTO: [%f, %f, %f] in %f, relative: %d", goal.x, goal.y, goal.z, duration, isRelative);
         goToMsg.request.duration = ros::Duration(duration);
         goToMsg.request.yaw = yaw;
-        goToMsg.request.relative = false;
+        goToMsg.request.relative = isRelative;
         goToService.call(goToMsg);
 
         resetTimeout(duration);
@@ -94,7 +96,7 @@ public:
         msg.request.tf_prefix = tag;
         msg.request.roll_trim = 0.0f;
         msg.request.pitch_trim = 0.0f;
-        msg.request.enable_logging = true;
+        msg.request.enable_logging = false;
         msg.request.enable_parameters = true;
         msg.request.use_ros_time = true;
         msg.request.enable_logging_imu = false;
@@ -164,20 +166,19 @@ public:
         
     }
 
-    void onSetPosition(geometry_msgs::Pose pos, float yaw, float duration) override
+    void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override
     {
-        goTo(pos.position, yaw, duration);
+        goTo(pos, yaw, duration, isRelative);
     }
 
-    void onSetVelocity(geometry_msgs::Twist vel, float duration) override
+    void onSetVelocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override
     {
-        geometry_msgs::Point positionGoal;
-        positionGoal.x = (vel.linear.x * duration);
-        positionGoal.y = (vel.linear.y * duration);
-        positionGoal.z = (vel.linear.z * duration);
-        ROS_INFO("CASTING %f * %f = %f", vel.linear.x, duration, positionGoal.x);
+        geometry_msgs::Vector3 positionGoal;
+        positionGoal.x = (vel.x * duration);
+        positionGoal.y = (vel.y * duration);
+        positionGoal.z = (vel.z * duration);
 
-        goTo(positionGoal, vel.angular.z , duration);
+        goTo(positionGoal, yawrate , duration, true);
     }
 
     void onTakeoff(float height, float duration) override

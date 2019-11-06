@@ -2,19 +2,19 @@
 #include "ros/ros.h"
 
 #define DO_FLIGHT_TEST      1
-#define DO_BASEBALL_RUN     1
+#define DO_BASEBALL_RUN     0
 #define DO_FIGURE_EIGHT     0   // velocity control, may be a bit risky
 
 
 void do_drone_flight_test(mdp_api::id drone)
 {
     auto drones = mdp_api::get_all_rigidbodies();
-    if (drones.size() < 2) return;
+    if (drones.size() < 1) return;
     mdp_api::cmd_takeoff(drones[0], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
-    mdp_api::cmd_takeoff(drones[1], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
+    // mdp_api::cmd_takeoff(drones[1], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
 
     mdp_api::sleep_until_idle(drones[0]);
-    mdp_api::sleep_until_idle(drones[1]);
+    // mdp_api::sleep_until_idle(drones[1]);
     // mdp_api::sleep_until_idle(drone);        // sleep api program until drone is idle (takeoff command has finished)
 
     mdp_api::position_msg msg;         // construct a position msg
@@ -25,7 +25,7 @@ void do_drone_flight_test(mdp_api::id drone)
     msg.yaw = 0.0;
 
     mdp_api::set_drone_position(drones[0], msg);    // tell drone to go to position outlined in msg
-    mdp_api::set_drone_position(drones[1], msg);
+    // mdp_api::set_drone_position(drones[1], msg);
 
     // //mdp_api::sleep_until_idle(drone);    // sleep api program until drone is idle
 
@@ -34,19 +34,19 @@ void do_drone_flight_test(mdp_api::id drone)
     // //mdp_api::sleep_until_idle(drone);
 
     mdp_api::sleep_until_idle(drones[0]);
-    mdp_api::sleep_until_idle(drones[1]);
+    // mdp_api::sleep_until_idle(drones[1]);
 
     mdp_api::goto_home(drones[0]);
-    mdp_api::goto_home(drones[1]);
+    // mdp_api::goto_home(drones[1]);
 
     mdp_api::sleep_until_idle(drones[0]);
-    mdp_api::sleep_until_idle(drones[1]);
+    // mdp_api::sleep_until_idle(drones[1]);
 
     mdp_api::cmd_land(drones[0]);
-    mdp_api::cmd_land(drones[1]);
+    // mdp_api::cmd_land(drones[1]);
 
     mdp_api::sleep_until_idle(drones[0]);
-    mdp_api::sleep_until_idle(drones[1]);
+    // mdp_api::sleep_until_idle(drones[1]);
 }
 
 void takeoff(mdp_api::id drone)
