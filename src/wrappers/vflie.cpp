@@ -110,16 +110,24 @@ public:
 
     }
 
-    void onSetPosition(geometry_msgs::Pose pos, float yaw, float duration) override
+    void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override
     {
         this->MoveType = MOVETYPE::POSITION;
-        this->DesiredPosition[0] = pos.position.x;
-        this->DesiredPosition[1] = pos.position.y;
-        this->DesiredPosition[2] = pos.position.z;
+
+        if (isRelative) {
+            pos.x = pos.x + PositionArray[0];
+            pos.y = pos.y + PositionArray[1];
+            pos.z = pos.z + PositionArray[2];
+        }
+
+        this->DesiredPosition[0] = pos.x;
+        this->DesiredPosition[1] = pos.y;
+        this->DesiredPosition[2] = pos.z;
+
         this->EndOfCommand = ros::Time::now().toSec() + duration;
     }
 
-    void onSetVelocity(geometry_msgs::Twist vel, float duration) override
+    void onSetVelocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override
     {
         this->MoveType = MOVETYPE::VELOCITY;
         this->EndOfCommand = ros::Time::now().toSec() + duration;
@@ -190,23 +198,32 @@ public:
 
     void onTakeoff(float height, float duration) override
     {
-        geometry_msgs::Pose pose = this->currPos;
-        pose.position.z = height;
-        onSetPosition(pose, this->Yaw, duration);
+        geometry_msgs::Vector3 pos;
+        pos.x = this->currPos.position.x;
+        pos.y = this->currPos.position.y;
+        pos.z = height;
+
+        onSetPosition(pos, this->Yaw, duration, false);
     }
 
     void onLand(float duration) override
     {
-        geometry_msgs::Pose pose = this->currPos;
-        pose.position.z = 0.0;
-        onSetPosition(pose, this->Yaw, duration);
+        geometry_msgs::Vector3 pos;
+        pos.x = this->currPos.position.x;
+        pos.y = this->currPos.position.y;
+        pos.z = 0.0;
+
+        onSetPosition(pos, this->Yaw, duration, false);
     }
 
     void onEmergency() override
     {
-        geometry_msgs::Pose pose = this->currPos;
-        pose.position.z = 0.0;
-        onSetPosition(pose, this->Yaw, 0.5);
+        geometry_msgs::Vector3 pos;
+        pos.x = this->currPos.position.x;
+        pos.y = this->currPos.position.y;
+        pos.z = 0.0;
+
+        onSetPosition(pos, this->Yaw, 0.5, false);
     }
 };
 
