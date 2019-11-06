@@ -1,3 +1,4 @@
 src/drone_server/wrappers.h
 .vscode
 GUI/UI/#debugWindow.glade#
+GUI/UI/debugWindow.glade~

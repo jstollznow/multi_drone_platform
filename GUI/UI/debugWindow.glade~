@@ -67,8 +67,8 @@ done
   </object>
   <template class="debugWindow" parent="GtkWindow">
     <property name="can_focus">False</property>
-    <property name="hexpand">False</property>
-    <property name="vexpand">False</property>
+    <property name="hexpand">True</property>
+    <property name="vexpand">True</property>
     <property name="title" translatable="yes">cflie_00</property>
     <property name="resizable">False</property>
     <property name="icon">drone (1).png</property>
@@ -76,232 +76,20 @@ done
       <object class="GtkGrid" id="windowGrid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="row_spacing">4</property>
-        <property name="column_spacing">4</property>
-        <child>
-          <object class="GtkGrid" id="sideDroneGrid">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="row_homogeneous">True</property>
-            <property name="column_homogeneous">True</property>
-            <child>
-              <object class="GtkImage" id="sideDrone">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="pixbuf">sideDrone.png</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkImage" id="topSideDrone">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="pixbuf">topBlack.png</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="sideDroneLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Side 
-View</property>
-                <property name="justify">center</property>
-                <property name="lines">2</property>
-                <attributes>
-                  <attribute name="font-desc" value="&lt;Enter Value&gt; 14"/>
-                </attributes>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkImage" id="bottomSideDrone">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="pixbuf">bottomBlack.png</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkFixed" id="fixedSpace">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-              </object>
-              <packing>
-                <property name="left_attach">2</property>
-                <property name="top_attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-          </object>
-          <packing>
-            <property name="left_attach">7</property>
-            <property name="top_attach">4</property>
-            <property name="width">3</property>
-            <property name="height">3</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkSeparator" id="gridSep">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="orientation">vertical</property>
-          </object>
-          <packing>
-            <property name="left_attach">6</property>
-            <property name="top_attach">0</property>
-            <property name="height">7</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkGrid" id="topDroneGrid">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="row_homogeneous">True</property>
-            <property name="column_homogeneous">True</property>
-            <child>
-              <object class="GtkImage" id="topDrone">
-                <property name="name">0</property>
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
-                <property name="pixbuf">topDrone.png</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkImage" id="bottomTopDrone">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="pixbuf">bottomBlack.png</property>
-                <property name="icon_size">0</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkImage" id="leftTopDrone">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
-                <property name="pixbuf">leftBlack.png</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkImage" id="topTopDrone">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="pixbuf">topBlack.png</property>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="topDroneLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Top 
-View</property>
-                <property name="justify">center</property>
-                <property name="lines">2</property>
-                <attributes>
-                  <attribute name="font-desc" value="&lt;Enter Value&gt; 14"/>
-                </attributes>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkImage" id="rightTopDrone">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="pixbuf">rightBlack.png</property>
-              </object>
-              <packing>
-                <property name="left_attach">2</property>
-                <property name="top_attach">1</property>
-              </packing>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-          </object>
-          <packing>
-            <property name="left_attach">7</property>
-            <property name="top_attach">0</property>
-            <property name="width">3</property>
-            <property name="height">3</property>
-          </packing>
-        </child>
+        <property name="margin_left">5</property>
+        <property name="margin_right">5</property>
+        <property name="margin_top">5</property>
+        <property name="margin_bottom">5</property>
+        <property name="column_spacing">5</property>
         <child>
           <object class="GtkGrid" id="droneStatTable">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
-            <property name="border_width">4</property>
-            <property name="row_spacing">10</property>
-            <property name="column_spacing">4</property>
-            <child>
-              <object class="GtkLabel" id="droneNameLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="label" translatable="yes">cflie_00</property>
-                <attributes>
-                  <attribute name="font-desc" value="&lt;Enter Value&gt; 26"/>
-                  <attribute name="weight" value="bold"/>
-                </attributes>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-                <property name="width">2</property>
-              </packing>
-            </child>
+            <property name="border_width">2</property>
+            <property name="row_spacing">2</property>
+            <property name="column_spacing">8</property>
             <child>
               <object class="GtkLabel" id="currLabel">
                 <property name="visible">True</property>
@@ -315,7 +103,7 @@ View</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">2</property>
+                <property name="top_attach">1</property>
               </packing>
             </child>
             <child>
@@ -338,11 +126,11 @@ View</property>
               <object class="GtkGrid" id="currPosVelGrid">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="hexpand">True</property>
                 <property name="row_spacing">5</property>
                 <property name="row_homogeneous">True</property>
                 <child>
                   <object class="GtkLabel" id="currVelLabel">
-                    <property name="width_request">100</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Velocity: </property>
@@ -368,9 +156,10 @@ View</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkGrid" id="posGrid">
+                  <object class="GtkGrid" id="currPosGrid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
                     <property name="column_spacing">4</property>
                     <property name="row_homogeneous">True</property>
                     <child>
@@ -396,10 +185,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="xLabel">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="currPosX">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">12.464</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -412,10 +201,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="yLabel">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="currPosY">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">42.748</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -428,10 +217,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="zLabel">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="currPosZ">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">00.165</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -450,9 +239,10 @@ View</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkGrid" id="velGrid">
+                  <object class="GtkGrid" id="currVelGrid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
                     <property name="column_spacing">4</property>
                     <property name="row_homogeneous">True</property>
                     <child>
@@ -478,10 +268,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="xLabel1">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="currVelX">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">00.755</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -494,10 +284,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="yLabel1">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="currVelY">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">557.22</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -510,10 +300,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="zLabel1">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="currVelZ">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">22.789</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -532,8 +322,7 @@ View</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="desPosLabel">
-                    <property name="width_request">100</property>
+                  <object class="GtkLabel" id="currPosLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Position: </property>
@@ -549,7 +338,7 @@ View</property>
               </object>
               <packing>
                 <property name="left_attach">2</property>
-                <property name="top_attach">2</property>
+                <property name="top_attach">1</property>
               </packing>
             </child>
             <child>
@@ -560,7 +349,7 @@ View</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
+                <property name="top_attach">0</property>
                 <property name="height">13</property>
               </packing>
             </child>
@@ -568,11 +357,11 @@ View</property>
               <object class="GtkGrid" id="desPosVelGrid">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="hexpand">True</property>
                 <property name="row_spacing">5</property>
                 <property name="row_homogeneous">True</property>
                 <child>
-                  <object class="GtkLabel" id="currVelLabel1">
-                    <property name="width_request">100</property>
+                  <object class="GtkLabel" id="desVelLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Velocity: </property>
@@ -586,8 +375,7 @@ View</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="desPosLabel1">
-                    <property name="width_request">100</property>
+                  <object class="GtkLabel" id="desPosLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Position: </property>
@@ -613,9 +401,10 @@ View</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkGrid" id="posGrid1">
+                  <object class="GtkGrid" id="desPosGrid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
                     <property name="column_spacing">4</property>
                     <property name="row_homogeneous">True</property>
                     <child>
@@ -641,10 +430,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="xLabel2">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="desPosX">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">02.451</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -657,10 +446,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="yLabel2">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="desPosY">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">352.25</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -673,10 +462,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="zLabel2">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="desPosZ">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">224.72</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -695,9 +484,10 @@ View</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkGrid" id="velGrid1">
+                  <object class="GtkGrid" id="desVelGrid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
                     <property name="column_spacing">4</property>
                     <property name="row_homogeneous">True</property>
                     <child>
@@ -723,10 +513,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="xLabel3">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="desVelX">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">27.424</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -739,10 +529,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="yLabel3">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="desVelY">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">2442</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -755,10 +545,10 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="zLabel3">
-                        <property name="width_request">75</property>
+                      <object class="GtkLabel" id="desVelZ">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">0.5244</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -786,6 +576,7 @@ View</property>
               <object class="GtkGrid" id="labelGrid">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="hexpand">True</property>
                 <property name="row_spacing">5</property>
                 <property name="row_homogeneous">True</property>
                 <child>
@@ -803,6 +594,7 @@ View</property>
                   <object class="GtkGrid" id="xyzLabels">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
                     <property name="column_spacing">4</property>
                     <property name="row_homogeneous">True</property>
                     <child>
@@ -828,10 +620,11 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="xLabel4">
+                      <object class="GtkLabel" id="xLabel">
                         <property name="width_request">75</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">x</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -844,10 +637,11 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="yLabel4">
+                      <object class="GtkLabel" id="yLabel">
                         <property name="width_request">75</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">y</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -860,10 +654,11 @@ View</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="zLabel4">
+                      <object class="GtkLabel" id="zLabel">
                         <property name="width_request">75</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="label" translatable="yes">z</property>
                         <property name="width_chars">8</property>
                         <attributes>
@@ -883,7 +678,7 @@ View</property>
                 </child>
                 <child>
                   <object class="GtkFixed" id="fixedSpace1">
-                    <property name="width_request">100</property>
+                    <property name="width_request">85</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                   </object>
@@ -895,7 +690,7 @@ View</property>
               </object>
               <packing>
                 <property name="left_attach">2</property>
-                <property name="top_attach">1</property>
+                <property name="top_attach">0</property>
               </packing>
             </child>
             <child>
@@ -911,7 +706,7 @@ View</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">4</property>
+                <property name="top_attach">5</property>
               </packing>
             </child>
             <child>
@@ -925,7 +720,7 @@ View</property>
               </object>
               <packing>
                 <property name="left_attach">2</property>
-                <property name="top_attach">4</property>
+                <property name="top_attach">5</property>
               </packing>
             </child>
             <child>
@@ -941,7 +736,7 @@ View</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">5</property>
+                <property name="top_attach">7</property>
               </packing>
             </child>
             <child>
@@ -958,7 +753,7 @@ View</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">6</property>
+                <property name="top_attach">9</property>
               </packing>
             </child>
             <child>
@@ -986,40 +781,411 @@ View</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
-                <property name="top_attach">7</property>
+                <property name="top_attach">11</property>
                 <property name="width">3</property>
                 <property name="height">7</property>
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkLabel" id="queueInput">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">Land Command</property>
+                <attributes>
+                  <attribute name="font-desc" value="&lt;Enter Value&gt; 12"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="left_attach">2</property>
+                <property name="top_attach">9</property>
+              </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkLabel" id="droneNameLabel">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">cflie_00</property>
+                <attributes>
+                  <attribute name="font-desc" value="&lt;Enter Value&gt; 26"/>
+                  <attribute name="weight" value="bold"/>
+                </attributes>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+              </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkSeparator" id="currDesSep">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">2</property>
+                <property name="width">3</property>
+              </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkSeparator" id="currDesSep1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">4</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator" id="currDesSep2">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">6</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator" id="currDesSep3">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">8</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator" id="currDesSep4">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">10</property>
+                <property name="width">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkGrid" id="batteryGrid">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="valign">center</property>
+                <property name="hexpand">True</property>
+                <property name="column_spacing">5</property>
+                <child>
+                  <object class="GtkProgressBar" id="batteryProgressBar">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="valign">center</property>
+                    <property name="hexpand">True</property>
+                    <property name="fraction">0.88</property>
+                    <property name="pulse_step">0.070000000000000007</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="batteryStatusLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">90.5%</property>
+                    <attributes>
+                      <attribute name="font-desc" value="&lt;Enter Value&gt; 12"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">2</property>
+                <property name="top_attach">7</property>
+              </packing>
             </child>
           </object>
           <packing>
             <property name="left_attach">0</property>
             <property name="top_attach">0</property>
-            <property name="width">6</property>
-            <property name="height">7</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkGrid" id="sidePanelGrid">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="hexpand">False</property>
+            <property name="vexpand">False</property>
+            <property name="border_width">2</property>
+            <property name="row_spacing">2</property>
+            <child>
+              <object class="GtkGrid" id="topDroneGrid">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="hexpand">False</property>
+                <property name="vexpand">False</property>
+                <property name="row_homogeneous">True</property>
+                <property name="column_homogeneous">True</property>
+                <child>
+                  <object class="GtkImage" id="topDrone">
+                    <property name="name">0</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="pixbuf">topDrone.png</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkImage" id="bottomTopDrone">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="pixbuf">bottomBlack.png</property>
+                    <property name="icon_size">0</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkImage" id="leftTopDrone">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">True</property>
+                    <property name="pixbuf">leftBlack.png</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkImage" id="topTopDrone">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="pixbuf">topBlack.png</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="topDroneLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Top 
+View</property>
+                    <property name="justify">center</property>
+                    <property name="lines">2</property>
+                    <attributes>
+                      <attribute name="font-desc" value="&lt;Enter Value&gt; 14"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkImage" id="rightTopDrone">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="pixbuf">rightBlack.png</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkGrid" id="sideDroneGrid">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="hexpand">False</property>
+                <property name="vexpand">False</property>
+                <property name="row_homogeneous">True</property>
+                <property name="column_homogeneous">True</property>
+                <child>
+                  <object class="GtkImage" id="sideDrone">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="pixbuf">sideDrone.png</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkImage" id="topSideDrone">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="pixbuf">topBlack.png</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="sideDroneLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Side 
+View</property>
+                    <property name="justify">center</property>
+                    <property name="lines">2</property>
+                    <attributes>
+                      <attribute name="font-desc" value="&lt;Enter Value&gt; 14"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkImage" id="bottomSideDrone">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="pixbuf">bottomBlack.png</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFixed" id="fixedSpace">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator" id="droneViewSep">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkGrid" id="commandGrid">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="valign">end</property>
+                <property name="column_spacing">5</property>
+                <property name="column_homogeneous">True</property>
+                <child>
+                  <object class="GtkButton" id="landButton">
+                    <property name="label" translatable="yes">Land</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="on_landButton_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="emergencyButton">
+                    <property name="label" translatable="yes">Emergency</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="on_emergencyButton_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">4</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator" id="sideViewSep">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">3</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">2</property>
+            <property name="top_attach">0</property>
           </packing>
         </child>
         <child>
           <object class="GtkSeparator" id="viewSep">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="orientation">vertical</property>
           </object>
           <packing>
-            <property name="left_attach">7</property>
-            <property name="top_attach">3</property>
-            <property name="width">3</property>
+            <property name="left_attach">1</property>
+            <property name="top_attach">0</property>
           </packing>
         </child>
       </object>
