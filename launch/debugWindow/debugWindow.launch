@@ -1,0 +1,26 @@
+<launch>
+    <arg name="cflie_test" default="cflie_E7"/>
+    <arg name="cflie_test1" default="cflie_00"/>
+    <!-- crazyflie server -->
+    <include 
+        file="$(find multi_drone_platform)/launch/crazyflie/crazyflie_server.launch">
+    </include>
+    <rosparam>
+        genericLogTopics: ["log1"]
+        genericLogTopicFrequencies: [100]
+        genericLogTopic_log1_Variables: ["stateEstimate.x", "stateEstimate.y", "stateEstimate.z"]
+    </rosparam>
+    <include 
+        file="$(find multi_drone_platform)/launch/rigidBodies/vrpn.launch">
+    </include>
+    <param name="cflie_test" value="$(arg cflie_test)"/>
+    <param name="cflie_test1" value="$(arg cflie_test1)"/>
+    <include 
+        file="$(find multi_drone_platform)/launch/drone_server/drone_server.launch">
+    </include>
+
+   
+
+
+
+</launch>

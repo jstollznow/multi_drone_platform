@@ -4,7 +4,6 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Twist.h"
-#include "multi_drone_platform/inputData.h"
 
 namespace mdp_conversions
 {
