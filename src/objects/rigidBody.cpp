@@ -1,4 +1,5 @@
 #include "rigidBody.h"
+
 #include "elementConversions.cpp"
 
 
@@ -9,7 +10,7 @@ rigidBody::rigidBody(std::string tag):mySpin(1,&myQueue)
     // drone or obstacle
     this->controllable = true;
 
-    this->batteryDead = false;
+    this->batteryDying = false;
 
     // look for drone under tag namespace then vrpn output
     std::string optiTop = "/vrpn_client_node/" + tag + "/pose";
@@ -213,17 +214,6 @@ geometry_msgs::PoseStamped rigidBody::getMotionCapture()
 
 void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 {
-
-    if (batteryDead)
-    {
-        ROS_WARN("Dying battery override");
-        this->commandQueue.clear();
-        multi_drone_platform::apiUpdate goToHomeMsg;
-        goToHomeMsg.msg_type = "GOTO_HOME";
-        goToHomeMsg.duration = 4.0f;
-        this->commandQueue.push_back(goToHomeMsg);
-    }
-
     if (ros::Time::now().toSec() >= nextTimeoutGen) {
         if (State == "LANDING" || State == "LANDED") {
             set_state("LANDED");
@@ -252,16 +242,15 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
 
 void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)
 {
-    if (!batteryDead)
+    if(!batteryDying)
     {
         ROS_INFO("%s recieved msg %s", tag.c_str(),msg.msg_type.c_str());
         this->commandQueue.clear();
-        this->commandQueue.push_back(msg);
-        
+        this->commandQueue.push_back(msg);   
     }
-    else 
+    else
     {
-        
+        ROS_WARN("Battery Timeout");
     }
     handleCommand();
 }
@@ -273,7 +262,6 @@ void rigidBody::handleCommand(){
     multi_drone_platform::apiUpdate landMsg;
     landMsg.msg_type = "LAND";
     landMsg.duration = 2.0f;
-
     if (commandQueue.size() > 0)
     {
         multi_drone_platform::apiUpdate msg = this->commandQueue.front();
@@ -332,6 +320,7 @@ void rigidBody::handleCommand(){
         dequeueCommand();
     }
     
+    
 }
 
 void rigidBody::enqueueCommand(multi_drone_platform::apiUpdate command)
@@ -353,7 +342,7 @@ void rigidBody::emergency()
 
 void rigidBody::land(float duration)
 {
-    this->set_state("LANDING");
+    set_state("LANDING");
     this->onLand(duration);
     resetTimeout(duration);
 }

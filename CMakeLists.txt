@@ -207,13 +207,13 @@ target_link_libraries(script ${catkin_LIBRARIES} MDP_API)
 add_executable(ps4teleop src/PS4_control/ps4teleop.cpp)
 target_link_libraries(ps4teleop ${catkin_LIBRARIES} MDP_API) 
 
-add_executable(tst_program src/user_api/test_program_19Oct2019.cpp)
+add_executable(tst_program scripts/test_program_19Oct2019.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} MDP_API) 
 
 add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
 
-add_executable(Commander GUI/base.cpp)
+add_executable(Commander GUI/debugWindow/base.cpp)
 target_link_libraries(Commander ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES}) 
 
 
