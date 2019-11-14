@@ -147,10 +147,10 @@ include_directories(
 )
 
 file(GLOB obj_src
-"${CMAKE_CURRENT_SOURCE_DIR}/src/objects/*.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/objects/*.cpp"
 )
 file(GLOB test_src
-"${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.cpp"
 )
 # Declare a C++ library
 add_library(RIGIDBODY
@@ -160,16 +160,10 @@ target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
 add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
 
 add_library(MDP_API
-${CMAKE_CURRENT_SOURCE_DIR}/src/user_api/user_api.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/user_api/user_api.cpp
 )
 target_link_libraries(MDP_API ${catkin_LIBRARIES})
 add_dependencies(MDP_API multi_drone_platform_generate_messages_cpp)
-
-
-add_library(${PROJECT_NAME}
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/objects/rigidBody.cpp
-  
-)
 
 # for Commander
 find_package(PkgConfig REQUIRED)
@@ -213,17 +207,14 @@ target_link_libraries(script ${catkin_LIBRARIES} MDP_API)
 add_executable(ps4teleop src/PS4_control/ps4teleop.cpp)
 target_link_libraries(ps4teleop ${catkin_LIBRARIES} MDP_API) 
 
+add_executable(tst_program scripts/test_program_19Oct2019.cpp)
+target_link_libraries(tst_program ${catkin_LIBRARIES} MDP_API) 
+
 add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
 
-add_executable(tst_program scripts/test_program_19Oct2019.cpp)
-target_link_libraries(tst_program ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API) 
-add_dependencies(tst_program multi_drone_platform_generate_messages_cpp)
-
-
-add_executable(debug GUI/debugWindow/base.cpp)
-target_link_libraries(debug ${catkin_LIBRARIES} ${PROJECT_NAME} MDP_API ${GTKMM_LIBRARIES}) 
-add_dependencies(debug multi_drone_platform_generate_messages_cpp)
+add_executable(Commander GUI/debugWindow/base.cpp)
+target_link_libraries(Commander ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES}) 
 
 
 #############
