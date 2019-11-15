@@ -105,6 +105,9 @@ class rigidBody
         bool getControllable();
         std::string getName();
 
+        geometry_msgs::Vector3 predictCurrentPosition();
+        double predictCurrentYaw();
+
         returnPos getCurrPos();
         returnVel getCurrVel();
 

@@ -64,7 +64,7 @@ namespace mdp_api {
 
     void set_home(mdp_api::id pDroneID, mdp_api::position_msg pMsg);
     position_data get_home(mdp_api::id pDroneID);
-    void goto_home(mdp_api::id pDroneID, float duration = 2.0f, float pHeight = -1.0f);
+    void goto_home(mdp_api::id pDroneID, float duration = 4.0f, float pHeight = -1.0f);
 
     void set_drone_server_update_frequency(float pUpdateFrequency);
     timings get_operating_frequencies();

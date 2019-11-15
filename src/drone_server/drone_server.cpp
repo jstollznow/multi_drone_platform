@@ -4,7 +4,7 @@
 // constructor
 drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
 {
-    ROS_INFO("Initialising drone server");
+    ROS_INFO("Initialising drone server1");
     InputAPISub = Node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 10, &drone_server::APICallback, this);
     EmergencySub = Node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::EmergencyCallback, this);
     DataServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIGetDataService, this);
@@ -26,9 +26,9 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     // }
     // addNewRigidbody("vflie_01");
 
-    // addNewRigidbody("vflie_00");
+    addNewRigidbody("vflie_00");
   
-    addNewRigidbody("cflie_E7");
+    // addNewRigidbody("cflie_E7");
 }
 
 // deconstructor

@@ -71,7 +71,39 @@ geometry_msgs::Vector3 rigidBody::vec3PosConvert(geometry_msgs::Pose& pos)
 float rigidBody::getYaw(geometry_msgs::Pose& pos)
 {
     return mdp_conversions::toEuler(pos.orientation).Yaw;
-} 
+}
+
+geometry_msgs::Vector3 rigidBody::predictCurrentPosition()
+{
+    double time_since_mocap_update = ros::Time::now().toSec() - lastUpdate.toSec();
+    if (time_since_mocap_update < 0.0) {
+        ROS_WARN("time since update returning less than 0");
+        time_since_mocap_update = 0.0;
+    }
+
+    geometry_msgs::Vector3 pos = vec3PosConvert(currPos);
+    pos.x += (currVel.linear.x * time_since_mocap_update);
+    pos.y += (currVel.linear.y * time_since_mocap_update);
+    pos.z += (currVel.linear.z * time_since_mocap_update);
+
+    return pos;
+}
+
+double rigidBody::predictCurrentYaw()
+{
+    double time_since_mocap_update = ros::Time::now().toSec() - lastUpdate.toSec();
+    if (time_since_mocap_update < 0.0) {
+        ROS_WARN("time since update returning less than 0");
+        time_since_mocap_update = 0.0;
+    }
+
+    double yaw = getYaw(currPos);
+    yaw += (currVel.angular.z * time_since_mocap_update);
+
+    return yaw;
+}
+
+
 returnPos rigidBody::getCurrPos()
 {
     // returns 0 duration
@@ -93,6 +125,7 @@ returnPos rigidBody::getDesPos()
 void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw,
 float duration, bool relativeXY, bool relativeZ)
 {
+    auto current_position = predictCurrentPosition();
     // ROS_INFO("Current:");
     // ROS_INFO("x: %f, y: %f, z: %f", currPos.position.x, currPos.position.y, currPos.position.z);
     // ROS_INFO("Relative: %d", relative);
@@ -100,10 +133,10 @@ float duration, bool relativeXY, bool relativeZ)
 
     /* get z values in terms of x,y values (synchronise relativity) */
     if (relativeZ && !relativeXY) {
-        pos.z = pos.z + currPos.position.z;
+        pos.z = pos.z + current_position.z;
     }
     if (!relativeZ && relativeXY) {
-        pos.z = pos.z - currPos.position.z;
+        pos.z = pos.z - current_position.z;
     }
 
     /* Simple static safeguarding */
@@ -115,14 +148,14 @@ float duration, bool relativeXY, bool relativeZ)
 
     if (relativeXY) {
         /* lowest pos value */
-        pos.x = std::max(StaticSafeguarding.x[0] - currPos.position.x, pos.x);
-        pos.y = std::max(StaticSafeguarding.y[0] - currPos.position.y, pos.y);
-        pos.z = std::max(StaticSafeguarding.z[0] - currPos.position.z, pos.z);
+        pos.x = std::max(StaticSafeguarding.x[0] - current_position.x, pos.x);
+        pos.y = std::max(StaticSafeguarding.y[0] - current_position.y, pos.y);
+        pos.z = std::max(StaticSafeguarding.z[0] - current_position.z, pos.z);
 
         /* highest pos value */
-        pos.x = std::min(StaticSafeguarding.x[1] - currPos.position.x, pos.x);
-        pos.y = std::min(StaticSafeguarding.y[1] - currPos.position.y, pos.y);
-        pos.z = std::min(StaticSafeguarding.z[1] - currPos.position.z, pos.z);
+        pos.x = std::min(StaticSafeguarding.x[1] - current_position.x, pos.x);
+        pos.y = std::min(StaticSafeguarding.y[1] - current_position.y, pos.y);
+        pos.z = std::min(StaticSafeguarding.z[1] - current_position.z, pos.z);
     } else {
         /* both */
         pos.x = std::min(std::max(StaticSafeguarding.x[0], pos.x), StaticSafeguarding.x[1]);
@@ -130,7 +163,9 @@ float duration, bool relativeXY, bool relativeZ)
         pos.z = std::min(std::max(StaticSafeguarding.z[0], pos.z), StaticSafeguarding.z[1]);
     }
 
-
+    this->desPos.position.x = pos.x;
+    this->desPos.position.y = pos.y;
+    this->desPos.position.z = pos.z;
     // @TODO: need to manage orientation
     ROS_INFO("Desired:");
     ROS_INFO("x: %f, y: %f, z: %f", desPos.position.x, desPos.position.y, desPos.position.z);

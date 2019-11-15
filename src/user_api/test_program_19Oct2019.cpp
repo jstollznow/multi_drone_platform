@@ -19,12 +19,15 @@ void do_drone_flight_test(mdp_api::id drone)
 
     mdp_api::position_msg msg;         // construct a position msg
     msg.relative = true;
-    msg.keep_height = false;
-    msg.position = {0.5, 0.0, 1.0};
-    msg.duration = 4.0;
+    msg.keep_height = true;
+    msg.position = {1.0, 0.0, 0.0};
+    msg.duration = 1.0;
     msg.yaw = 0.0;
 
-    mdp_api::set_drone_position(drones[0], msg);    // tell drone to go to position outlined in msg
+    for (size_t i = 0; i < 100; i++) {
+        mdp_api::set_drone_position(drones[0], msg);    // tell drone to go to position outlined in msg
+        mdp_api::spin_once();
+    }
     // mdp_api::set_drone_position(drones[1], msg);
 
     // //mdp_api::sleep_until_idle(drone);    // sleep api program until drone is idle

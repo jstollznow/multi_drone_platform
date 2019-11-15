@@ -72,10 +72,9 @@ private:
     void pubDes()
     {
         geometry_msgs::PoseStamped msg;
-        // msg.pose.position.x = this->homePos.x;
-        // msg.pose.position.y = this->homePos.y;
-        // msg.pose.position.z = this->homePos.z;
-        msg.pose = this->desPos;
+        msg.pose.position.x = this->desPos.position.x;
+        msg.pose.position.y = this->desPos.position.y;
+        msg.pose.position.z = this->desPos.position.z;
         msg.header.frame_id = "map";
         this->DesPub.publish(msg);
     }
@@ -141,7 +140,7 @@ public:
     {
         if (LastPoseUpdate < 0.0) {LastPoseUpdate = ros::Time::now().toSec(); return;}
         double deltaTime = ros::Time::now().toSec() - LastPoseUpdate;
-        double T = 2 * deltaTime;
+        double T = 1;//2 * deltaTime;
 
         switch (MoveType) {
             case MOVETYPE::POSITION: {
