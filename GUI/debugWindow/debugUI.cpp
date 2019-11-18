@@ -8,9 +8,18 @@ Gtk::Window(cobject), builder(refGlade)
     linkWidgets();
     
 }
-void debugUI::init(mdp_api::id droneName)
+void debugUI::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool expanded)
 {
-    expanded = false;
+    this->expanded = false;
+    if (expanded)
+    {
+        on_expandButton_clicked();
+        // this->expanded = true;
+    }
+    if (startLocation != std::array<int,2>({0, 0}))
+    {
+        this->move(startLocation[0], startLocation[1]);
+    }
     myDrone = droneName;
     this->set_title(myDrone.name);
     droneNameLabel->set_label(myDrone.name);
@@ -51,7 +60,7 @@ void debugUI::on_expandButton_clicked()
 
 void debugUI::on_debugWindow_destroy()
 {
-
+    std::cout<<"TCHUSSSS"<<std::endl;
 }
 
 void debugUI::linkWidgets()
@@ -115,7 +124,6 @@ void debugUI::linkWidgets()
 
         expandButton->signal_clicked().connect
         (sigc::mem_fun(*this, &debugUI::on_expandButton_clicked));
-        
 
     }
     catch(const std::exception& e)

@@ -3,8 +3,10 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <ros/ros.h>
 #include "../../include/user_api.h"
-#include "../../src/drone_server/drone_server.h"
+// #include <ros/ros.h>
+// #include "../../src/drone_server/drone_server.h"
 
 #define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/GUI/debugWindow/debug.ui"
 
@@ -72,12 +74,13 @@ class debugUI: public Gtk::Window
 
         mdp_api::id myDrone;
 
+        // ros::NodeHandle myNode;
         ros::NodeHandle myNode;
 
         bool expanded;
     public:
         debugUI(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
-        void init(mdp_api::id droneName);
+        void init(mdp_api::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
         void updateStats();
 
     protected:

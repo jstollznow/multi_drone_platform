@@ -11,6 +11,7 @@
 #include "sensor_msgs/Imu.h"
 
 #include "multi_drone_platform/apiUpdate.h"
+#include "multi_drone_platform/droneLog.h"
 
 #define DEFAULT_QUEUE 10
 #define TIMEOUT_HOVER 4
@@ -97,6 +98,8 @@ class rigidBody
         ros::CallbackQueue myQueue;
         ros::Publisher ApiPublisher;
 
+        ros::Publisher logPublisher;
+
         rigidBody(std::string tag);
         
         void setID(uint32_t id);
@@ -125,6 +128,8 @@ class rigidBody
 
         void apiCallback(const multi_drone_platform::apiUpdate& msg);
 
+        void postLog(int type, std::string message);
+
         void emergency();
 
         void land(float duration = 5.0f);
@@ -133,5 +138,4 @@ class rigidBody
 
         void hover(float duration);
 
-        void addToQueue();
 };

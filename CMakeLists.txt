@@ -69,6 +69,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   apiUpdate.msg
+  droneLog.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -89,6 +90,7 @@ generate_messages(
   geometry_msgs
   std_msgs
   sensor_msgs
+
 )
 
 ################################################

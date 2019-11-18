@@ -19,8 +19,8 @@
         file="$(find multi_drone_platform)/launch/drone_server/drone_server.launch">
     </include>
 
-    <node name="debug" pkg="multi_drone_platform" type="debug" output="screen">
-     </node>
+    <!-- <node name="debug" pkg="multi_drone_platform" type="debug" output="screen">
+     </node> -->
 
 
 

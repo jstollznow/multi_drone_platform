@@ -86,7 +86,7 @@ done
     <property name="hexpand">True</property>
     <property name="vexpand">True</property>
     <property name="title" translatable="yes">MDP</property>
-    <property name="window_position">center-on-parent</property>
+    <property name="window_position">center</property>
     <property name="icon">mdpLogo.png</property>
     <property name="has_resize_grip">True</property>
     <signal name="destroy" handler="on_debugWindow_destroy" swapped="no"/>
