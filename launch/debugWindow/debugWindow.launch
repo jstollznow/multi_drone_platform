@@ -1,6 +1,6 @@
 <launch>
-    <arg name="cflie_test" default="cflie_E7"/>
-    <arg name="cflie_test1" default="cflie_00"/>
+    <arg name="cflie_test" default="vflie_00"/>
+    <arg name="cflie_test1" default="vflie_01"/>
     <!-- crazyflie server -->
     <include 
         file="$(find multi_drone_platform)/launch/crazyflie/crazyflie_server.launch">
@@ -19,7 +19,8 @@
         file="$(find multi_drone_platform)/launch/drone_server/drone_server.launch">
     </include>
 
-   
+    <node name="debug" pkg="multi_drone_platform" type="debug" output="screen">
+     </node>
 
 
 

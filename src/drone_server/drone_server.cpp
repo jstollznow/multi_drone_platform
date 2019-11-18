@@ -31,7 +31,11 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     // addNewRigidbody("cflie_03");
     // ros::Duration d(2.0);
     // d.sleep();
-    addNewRigidbody("cflie_E7");
+    addNewRigidbody("vflie_00");
+    addNewRigidbody("vflie_01");
+    addNewRigidbody("vflie_02");
+    addNewRigidbody("vflie_03");
+    addNewRigidbody("vflie_04");
 }
 
 // deconstructor

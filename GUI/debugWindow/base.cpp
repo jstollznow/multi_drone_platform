@@ -4,50 +4,50 @@
 #include <gtkmm/button.h>
 #include <string>
 #include <iostream>
-#include <gtkmm.h>
+#include <vector>
+#include "../../include/user_api.h"
+#include "debugUI.h"
 
-#define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/GUI/debugWindow/debug.ui"
+// #define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/GUI/debugWindow/debug.ui"
 // main window of the application
-class HelloWorldWindow : public Gtk::ApplicationWindow {
-    // a simple push button
-    Gtk::Button btn;
-public:
-    HelloWorldWindow()
-    : btn("Click me!") {// initialize button with a text label
-        // when user presses the button "clicked" signal is emitted
-        // connect an event handler for the signal with connect()
-        // which accepts lambda expression, among other things
-        btn.signal_clicked().connect(
-        [this]() {
-            btn.set_label("Hello World");
-        });
-        // add the push button to the window
-        add(btn);
-        // make the window visible
-        show_all();
-    }
-};
 
 int main(int argc, char *argv[]) {
      // This creates an Gtk+ application with an unique application ID
-     auto app = Gtk::Application::create(argc, argv, "org.gtkmm.example.HelloApp");
-    Gtk::Window* myWindow;
-     HelloWorldWindow hw;
-     try
-     {
-        //  need to be careful about using not using relative addresses
-        
-        const std::__cxx11::string name = UI_PATH;
-        auto ui = Gtk::Builder::create_from_file(name);
-        ui->get_widget("debugWindow", myWindow);
-         
-     }
-     catch(Glib::FileError& e)
-     {
-         std::cerr << e.what() << " this is the error message\n";
-     }
-     
-     // this starts the application with our window
-     // close the window to terminate the application
-     return app->run(*myWindow);
+    // Gtk::Main(argc, argv)::run();
+    auto app = Gtk::Application::create(argc, argv);
+    mdp_api::initialise(10);
+    std::vector<debugUI*> myUIs;
+    mdp_api::id myId;
+    myId.name = "tubby_00";
+    myId.numeric_id = 2;
+    std::vector<mdp_api::id> myDrones;
+    myDrones = mdp_api::get_all_rigidbodies();
+    for (size_t i = 0; i < myDrones.size(); i++)
+    {
+        debugUI *myWindow = 0;
+        auto ui = Gtk::Builder::create_from_file(UI_PATH);
+        ui->get_widget_derived("debugWindow", myWindow);
+        myWindow->init(myDrones[i]);
+        myUIs.push_back(myWindow);
+    }
+    // app->signal_startup().connect()
+    // app->add_window(*myWindow);
+    // app->add_window(*myWindow2);
+    // myWindow->set_application(app);
+    // app->run();
+    app->signal_startup().connect([&]{
+        for(size_t i = 0; i < myUIs.size(); i++)
+        {
+            app->add_window(*myUIs[i]);
+        }
+        // app->add_window(*myWindow2);
+        // app->add_window(*myWindow);
+        });
+    // myWindow2->show();
+    return app->run();
+}
+
+void startup()
+{
+
 }
