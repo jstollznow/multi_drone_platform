@@ -41,8 +41,8 @@ private:
 
     std::array<double, 3> PositionArray = {{0.0, 0.0, 0.0}};
     std::array<double, 3> VelocityArray = {{0.0, 0.0, 0.0}};
-    std::array<double, 3> DesiredVelocity = {{0.0, 0.0, 0.0}};
-    std::array<double, 3> DesiredPosition = {{0.0, 0.0, 0.0}};
+    std::array<double, 3> DesiredVelocityArray = {{0.0, 0.0, 0.0}};
+    std::array<double, 3> DesiredPositionArray = {{0.0, 0.0, 0.0}};
 
     enum MOVETYPE {
         POSITION, VELOCITY
@@ -72,15 +72,15 @@ private:
     void pubDes()
     {
         geometry_msgs::PoseStamped msg;
-        msg.pose.position.x = this->desPos.position.x;
-        msg.pose.position.y = this->desPos.position.y;
-        msg.pose.position.z = this->desPos.position.z;
+        msg.pose.position.x = this->DesiredPose.position.x;
+        msg.pose.position.y = this->DesiredPose.position.y;
+        msg.pose.position.z = this->DesiredPose.position.z;
         msg.header.frame_id = "map";
         this->DesPub.publish(msg);
     }
 
 public:
-    vflie(std::string tag) : rigidBody(tag)
+    vflie(std::string tag, uint32_t id) : rigidBody(tag, id)
     {
         this->PosePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (getPoseTopic(tag), 1);
         this->DesPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> ("/despos", 1);
@@ -96,9 +96,9 @@ public:
         } else if (tag == "vflie_03") {
             hpx = -0.5;
         }
-        this->homePos.x = -1.0;
-        this->homePos.y = hpx;
-        this->homePos.z = 0.0;
+        this->HomePosition.x = -1.0;
+        this->HomePosition.y = hpx;
+        this->HomePosition.z = 0.0;
         this->PositionArray = {-1.0, hpx, 0.0};
 
         this->publishCurrentPose();
@@ -119,9 +119,9 @@ public:
             pos.z = pos.z + PositionArray[2];
         }
 
-        this->DesiredPosition[0] = pos.x;
-        this->DesiredPosition[1] = pos.y;
-        this->DesiredPosition[2] = pos.z;
+        this->DesiredPositionArray[0] = pos.x;
+        this->DesiredPositionArray[1] = pos.y;
+        this->DesiredPositionArray[2] = pos.z;
 
         this->EndOfCommand = ros::Time::now().toSec() + duration;
     }
@@ -140,15 +140,15 @@ public:
     {
         if (LastPoseUpdate < 0.0) {LastPoseUpdate = ros::Time::now().toSec(); return;}
         double deltaTime = ros::Time::now().toSec() - LastPoseUpdate;
-        double T = 1;//2 * deltaTime;
+        double T = 2 * deltaTime;
 
         switch (MoveType) {
             case MOVETYPE::POSITION: {
 
                 std::array<double, 3> DirToDesPos = {{0.0, 0.0, 0.0}};
-                DirToDesPos[0] = (this->DesiredPosition[0] - this->PositionArray[0]);
-                DirToDesPos[1] = (this->DesiredPosition[1] - this->PositionArray[1]);
-                DirToDesPos[2] = (this->DesiredPosition[2] - this->PositionArray[2]);
+                DirToDesPos[0] = (this->DesiredPositionArray[0] - this->PositionArray[0]);
+                DirToDesPos[1] = (this->DesiredPositionArray[1] - this->PositionArray[1]);
+                DirToDesPos[2] = (this->DesiredPositionArray[2] - this->PositionArray[2]);
 
                 double Magnitude = std::abs(DirToDesPos[0]) + std::abs(DirToDesPos[1]) + std::abs(DirToDesPos[2]);
                 if (Magnitude > 0.0) {
@@ -162,25 +162,25 @@ public:
                         DesiredVelocity = 3*(DistanceToGoal / TimeLeft);
                     }
 
-                    this->DesiredVelocity[0] = (DirToDesPos[0] / Magnitude) * DesiredVelocity;
-                    this->DesiredVelocity[1] = (DirToDesPos[1] / Magnitude) * DesiredVelocity;
-                    this->DesiredVelocity[2] = (DirToDesPos[2] / Magnitude) * DesiredVelocity;
+                    this->DesiredVelocityArray[0] = (DirToDesPos[0] / Magnitude) * DesiredVelocity;
+                    this->DesiredVelocityArray[1] = (DirToDesPos[1] / Magnitude) * DesiredVelocity;
+                    this->DesiredVelocityArray[2] = (DirToDesPos[2] / Magnitude) * DesiredVelocity;
                 } else {
-                    this->DesiredVelocity[0] = 0.0;
-                    this->DesiredVelocity[1] = 0.0;
-                    this->DesiredVelocity[2] = 0.0;
+                    this->DesiredVelocityArray[0] = 0.0;
+                    this->DesiredVelocityArray[1] = 0.0;
+                    this->DesiredVelocityArray[2] = 0.0;
                 }
 
-                this->VelocityArray[0] = linearLerp(this->VelocityArray[0], this->DesiredVelocity[0], T);
-                this->VelocityArray[1] = linearLerp(this->VelocityArray[1], this->DesiredVelocity[1], T);
-                this->VelocityArray[2] = linearLerp(this->VelocityArray[2], this->DesiredVelocity[2], T);
+                this->VelocityArray[0] = linearLerp(this->VelocityArray[0], this->DesiredVelocityArray[0], T);
+                this->VelocityArray[1] = linearLerp(this->VelocityArray[1], this->DesiredVelocityArray[1], T);
+                this->VelocityArray[2] = linearLerp(this->VelocityArray[2], this->DesiredVelocityArray[2], T);
 
             } break;
             case MOVETYPE::VELOCITY: {
 
-                this->VelocityArray[0] = linearLerp(this->VelocityArray[0], this->desVel.linear.x, T);
-                this->VelocityArray[1] = linearLerp(this->VelocityArray[1], this->desVel.linear.y, T);
-                this->VelocityArray[2] = linearLerp(this->VelocityArray[2], this->desVel.linear.z, T);
+                this->VelocityArray[0] = linearLerp(this->VelocityArray[0], this->DesiredVelocity.linear.x, T);
+                this->VelocityArray[1] = linearLerp(this->VelocityArray[1], this->DesiredVelocity.linear.y, T);
+                this->VelocityArray[2] = linearLerp(this->VelocityArray[2], this->DesiredVelocity.linear.z, T);
 
             } break;
             default: break;
@@ -198,8 +198,8 @@ public:
     void onTakeoff(float height, float duration) override
     {
         geometry_msgs::Vector3 pos;
-        pos.x = this->currPos.position.x;
-        pos.y = this->currPos.position.y;
+        pos.x = this->CurrentPose.position.x;
+        pos.y = this->CurrentPose.position.y;
         pos.z = height;
 
         onSetPosition(pos, this->Yaw, duration, false);
@@ -208,8 +208,8 @@ public:
     void onLand(float duration) override
     {
         geometry_msgs::Vector3 pos;
-        pos.x = this->currPos.position.x;
-        pos.y = this->currPos.position.y;
+        pos.x = this->CurrentPose.position.x;
+        pos.y = this->CurrentPose.position.y;
         pos.z = 0.0;
 
         onSetPosition(pos, this->Yaw, duration, false);
@@ -218,8 +218,8 @@ public:
     void onEmergency() override
     {
         geometry_msgs::Vector3 pos;
-        pos.x = this->currPos.position.x;
-        pos.y = this->currPos.position.y;
+        pos.x = this->CurrentPose.position.x;
+        pos.y = this->CurrentPose.position.y;
         pos.z = 0.0;
 
         onSetPosition(pos, this->Yaw, 0.5, false);

@@ -3,9 +3,10 @@
 
 
 
-rigidBody::rigidBody(std::string tag):mySpin(1,&myQueue)
+rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 {
     this->tag = tag;
+    this->NumericID = id;
     // drone or obstacle
     this->controllable = true;
 
@@ -13,8 +14,6 @@ rigidBody::rigidBody(std::string tag):mySpin(1,&myQueue)
 
     // look for drone under tag namespace then vrpn output
     std::string optiTop = "/vrpn_client_node/" + tag + "/pose";
-
-    
 
     // 1000 seconds on ground before timeout engaged 
     set_state("LANDED");
@@ -29,7 +28,9 @@ rigidBody::rigidBody(std::string tag):mySpin(1,&myQueue)
     droneHandle.setCallbackQueue(&myQueue);
     
     motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
-    
+    CurrentPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/CurrentPose", 1);
+    DesiredPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/DesiredPose", 1);
+
     ROS_INFO("Subscribing to %s for motion capture", optiTop.c_str());   
 }
 
@@ -40,14 +41,14 @@ rigidBody::~rigidBody()
 
 void rigidBody::setID(uint32_t id)
 {
-    this->id = id;
+    this->NumericID = id;
 }
 
 void rigidBody::set_state(const std::string& state)
 {
     ROS_INFO("Setting state to %s", state.c_str());
     this->State = state;
-    droneHandle.setParam("mdp/drone_" + std::to_string(id) + "/state", state);
+    droneHandle.setParam("mdp/drone_" + std::to_string(this->NumericID) + "/state", state);
 }
 
 bool rigidBody::getControllable()
@@ -60,14 +61,6 @@ std::string rigidBody::getName()
     return this->tag;
 }
 
-geometry_msgs::Vector3 rigidBody::vec3PosConvert(geometry_msgs::Pose& pos)
-{
-    geometry_msgs::Vector3 returnPos;
-    returnPos.x = pos.position.x;
-    returnPos.y = pos.position.y;
-    returnPos.z = pos.position.z;
-    return returnPos;
-}
 float rigidBody::getYaw(geometry_msgs::Pose& pos)
 {
     return mdp_conversions::toEuler(pos.orientation).Yaw;
@@ -81,10 +74,10 @@ geometry_msgs::Vector3 rigidBody::predictCurrentPosition()
         time_since_mocap_update = 0.0;
     }
 
-    geometry_msgs::Vector3 pos = vec3PosConvert(currPos);
-    pos.x += (currVel.linear.x * time_since_mocap_update);
-    pos.y += (currVel.linear.y * time_since_mocap_update);
-    pos.z += (currVel.linear.z * time_since_mocap_update);
+    geometry_msgs::Vector3 pos = point_to_vector3(CurrentPose.position);
+    pos.x += (CurrentVelocity.linear.x * time_since_mocap_update);
+    pos.y += (CurrentVelocity.linear.y * time_since_mocap_update);
+    pos.z += (CurrentVelocity.linear.z * time_since_mocap_update);
 
     return pos;
 }
@@ -97,29 +90,10 @@ double rigidBody::predictCurrentYaw()
         time_since_mocap_update = 0.0;
     }
 
-    double yaw = getYaw(currPos);
-    yaw += (currVel.angular.z * time_since_mocap_update);
+    double yaw = getYaw(CurrentPose);
+    yaw += (CurrentVelocity.angular.z * time_since_mocap_update);
 
     return yaw;
-}
-
-
-returnPos rigidBody::getCurrPos()
-{
-    // returns 0 duration
-    float duration = 0;
-    return {lastUpdate, vec3PosConvert(currPos), getYaw(currPos)};
-}
-
-returnVel rigidBody::getCurrVel()
-{
-    float duration = 0;
-    return {lastUpdate, currVel.linear, currVel.angular.z};
-}
-
-returnPos rigidBody::getDesPos()
-{
-    return {lastUpdate, vec3PosConvert(desPos), getYaw(desPos)};
 }
 
 void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw,
@@ -127,7 +101,7 @@ float duration, bool relativeXY, bool relativeZ)
 {
     auto current_position = predictCurrentPosition();
     // ROS_INFO("Current:");
-    // ROS_INFO("x: %f, y: %f, z: %f", currPos.position.x, currPos.position.y, currPos.position.z);
+    // ROS_INFO("x: %f, y: %f, z: %f", CurrentPosition.position.x, CurrentPosition.position.y, CurrentPosition.position.z);
     // ROS_INFO("Relative: %d", relative);
     // manage relative x, y values 
 
@@ -163,22 +137,17 @@ float duration, bool relativeXY, bool relativeZ)
         pos.z = std::min(std::max(StaticSafeguarding.z[0], pos.z), StaticSafeguarding.z[1]);
     }
 
-    this->desPos.position.x = pos.x;
-    this->desPos.position.y = pos.y;
-    this->desPos.position.z = pos.z;
+    this->DesiredPose.position.x = pos.x;
+    this->DesiredPose.position.y = pos.y;
+    this->DesiredPose.position.z = pos.z;
     // @TODO: need to manage orientation
     ROS_INFO("Desired:");
-    ROS_INFO("x: %f, y: %f, z: %f", desPos.position.x, desPos.position.y, desPos.position.z);
+    ROS_INFO("x: %f, y: %f, z: %f", DesiredPose.position.x, DesiredPose.position.y, DesiredPose.position.z);
     ROS_INFO("Duration: %f", duration);
 
     this->onSetPosition(pos, yaw, duration, relativeXY);
 
     resetTimeout(duration);
-}
-
-returnVel rigidBody::getDesVel()
-{
-    return {lastCommandSet, desVel.linear, desVel.angular.z};
 }
 
 void rigidBody::setDesVel(geometry_msgs::Vector3 vel, float yawRate, 
@@ -194,7 +163,7 @@ float duration, bool relativeXY, bool relativeZ)
 
 geometry_msgs::Vector3 rigidBody::getHomePos()
 {
-    return homePos;
+    return HomePosition;
 }   
 
 void rigidBody::setHomePos(geometry_msgs::Vector3 pos, bool relative)
@@ -202,38 +171,38 @@ void rigidBody::setHomePos(geometry_msgs::Vector3 pos, bool relative)
     // z coord does not matter for home position, will be set in each case
     if (relative)
     {
-        homePos.x = currPos.position.x + pos.x;
-        homePos.y = currPos.position.y + pos.y;
+        HomePosition.x = CurrentPose.position.x + pos.x;
+        HomePosition.y = CurrentPose.position.y + pos.y;
     }
     else
     {
-        homePos.x = pos.x;
-        homePos.y = pos.y;
+        HomePosition.x = pos.x;
+        HomePosition.y = pos.y;
     }
-    homePos.z = 0.0f;
+    HomePosition.z = 0.0f;
 }
 
-void rigidBody::calcVel()
+void rigidBody::calculateVelocity()
 {
     geometry_msgs::PoseStamped lastPos = motionCapture.front();
     motionCapture.erase(motionCapture.begin());
     geometry_msgs::PoseStamped firstPos = motionCapture.front();
-    currVel = mdp_conversions::calcVel(firstPos,lastPos);
+    CurrentVelocity = mdp_conversions::calcVel(firstPos,lastPos);
     // ROS_INFO("%s linear velocity [x: %f,y: %f,z: %f]", tag.c_str(), currVel.linear.x, currVel.linear.y, currVel.linear.z);
 }
 
 void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
     if(motionCapture.size() == 0){
-        homePos.x = msg->pose.position.x;
-        homePos.y = msg->pose.position.y;
-        homePos.z = msg->pose.position.z;
+        HomePosition.x = msg->pose.position.x;
+        HomePosition.y = msg->pose.position.y;
+        HomePosition.z = msg->pose.position.z;
 
-        ROS_INFO("HOME POS: [%f, %f, %f]", homePos.x, homePos.y, homePos.z);
+        ROS_INFO("HOME POS: [%f, %f, %f]", HomePosition.x, HomePosition.y, HomePosition.z);
      }
     motionCapture.push_back(*msg);
-    if (motionCapture.size() >= 2){calcVel();}
-    currPos = motionCapture.front().pose;
+    if (motionCapture.size() >= 2){this->calculateVelocity();}
+    CurrentPose = motionCapture.front().pose;
     // ROS_INFO("Current Position: x: %f, y: %f, z: %f",currPos.position.x, currPos.position.y, currPos.position.z);
     // @TODO: Orientation implementation
 
@@ -252,11 +221,11 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
     if (batteryDead)
     {
         ROS_WARN("Dying battery override");
-        this->commandQueue.clear();
+        this->CommandQueue.clear();
         multi_drone_platform::apiUpdate goToHomeMsg;
         goToHomeMsg.msg_type = "GOTO_HOME";
         goToHomeMsg.duration = 4.0f;
-        this->commandQueue.push_back(goToHomeMsg);
+        this->CommandQueue.push_back(goToHomeMsg);
     }
 
     if (ros::Time::now().toSec() >= nextTimeoutGen) {
@@ -282,6 +251,31 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
         handleCommand();
     }
 
+    /* publish desired pose and velocity */
+    std_msgs::Float64MultiArray Arr;
+    Arr.layout.data_offset = 0;
+    Arr.data.resize(8);
+    Arr.data[0] = this->DesiredPose.position.x;
+    Arr.data[1] = this->DesiredPose.position.y;
+    Arr.data[2] = this->DesiredPose.position.z;
+    Arr.data[3] = getYaw(this->DesiredPose);
+    Arr.data[4] = this->DesiredVelocity.linear.x;
+    Arr.data[5] = this->DesiredVelocity.linear.y;
+    Arr.data[6] = this->DesiredVelocity.linear.z;
+    Arr.data[7] = this->DesiredVelocity.angular.y;  // @FIX, is this yawrate?
+    DesiredPosePublisher.publish(Arr);
+
+    /* publish current pose and velocity */
+    Arr.data[0] = this->CurrentPose.position.x;
+    Arr.data[1] = this->CurrentPose.position.y;
+    Arr.data[2] = this->CurrentPose.position.z;
+    Arr.data[3] = getYaw(this->CurrentPose);
+    Arr.data[4] = this->CurrentVelocity.linear.x;
+    Arr.data[5] = this->CurrentVelocity.linear.y;
+    Arr.data[6] = this->CurrentVelocity.linear.z;
+    Arr.data[7] = this->CurrentVelocity.angular.y;  // @FIX, is this yawrate?
+    CurrentPosePublisher.publish(Arr);
+
     this->onUpdate();
 }
 
@@ -290,8 +284,8 @@ void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)
     if (!batteryDead)
     {
         ROS_INFO("%s recieved msg %s", tag.c_str(),msg.msg_type.c_str());
-        this->commandQueue.clear();
-        this->commandQueue.push_back(msg);
+        this->CommandQueue.clear();
+        this->CommandQueue.push_back(msg);
         
     }
     else 
@@ -309,9 +303,9 @@ void rigidBody::handleCommand(){
     landMsg.msg_type = "LAND";
     landMsg.duration = 2.0f;
 
-    if (commandQueue.size() > 0)
+    if (CommandQueue.size() > 0)
     {
-        multi_drone_platform::apiUpdate msg = this->commandQueue.front();
+        multi_drone_platform::apiUpdate msg = this->CommandQueue.front();
         switch(APIMap[msg.msg_type]) {
             /* VELOCITY */
             case 0:
@@ -353,7 +347,7 @@ void rigidBody::handleCommand(){
             /* GOTO_HOME */
             case 8:
                 ROS_INFO("message duration on goto home %f", msg.duration);
-                setDesPos(homePos, msg.yawVal,msg.duration, false, true);
+                setDesPos(HomePosition, msg.yawVal,msg.duration, false, true);
                 this->set_state("MOVING");
                 if (msg.posvel.z <= 0.0f)
                 {
@@ -371,13 +365,13 @@ void rigidBody::handleCommand(){
 
 void rigidBody::enqueueCommand(multi_drone_platform::apiUpdate command)
 {
-    commandQueue.push_back(command);
+    CommandQueue.push_back(command);
 }
 
 void rigidBody::dequeueCommand()
 {
-    auto it = commandQueue.begin(); 
-    commandQueue.erase(it);
+    auto it = CommandQueue.begin(); 
+    CommandQueue.erase(it);
 }
 
 void rigidBody::emergency()
@@ -403,8 +397,9 @@ void rigidBody::takeoff(float height, float duration)
 void rigidBody::hover(float duration)
 {
     this->set_state("HOVER");
+    // set the hover point based on current velocity
     geometry_msgs::Vector3 HoverPoint;
-    HoverPoint.x = 0.0; HoverPoint.y = 0.0; HoverPoint.z = 0.0;
+    HoverPoint.x = CurrentVelocity.linear.x; HoverPoint.y = CurrentVelocity.linear.y; HoverPoint.z = CurrentVelocity.linear.z;
     setDesPos(HoverPoint, 0.0f, duration, true, true);
 }
 

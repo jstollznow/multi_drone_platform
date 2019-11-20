@@ -1,7 +1,8 @@
 #include "../../include/user_api.h"
 #include "ros/ros.h"
 
-#define DO_FLIGHT_TEST      1
+#define DO_FLIGHT_TEST      0
+#define DO_HOVER_TEST       1
 #define DO_BASEBALL_RUN     0
 #define DO_FIGURE_EIGHT     0   // velocity control, may be a bit risky
 
@@ -20,8 +21,8 @@ void do_drone_flight_test(mdp_api::id drone)
     mdp_api::position_msg msg;         // construct a position msg
     msg.relative = true;
     msg.keep_height = true;
-    msg.position = {1.0, 0.0, 0.0};
-    msg.duration = 1.0;
+    msg.position = {2.0, 0.0, 0.0};
+    msg.duration = 2.0;
     msg.yaw = 0.0;
 
     for (size_t i = 0; i < 100; i++) {
@@ -52,24 +53,34 @@ void do_drone_flight_test(mdp_api::id drone)
     // mdp_api::sleep_until_idle(drones[1]);
 }
 
-void takeoff(mdp_api::id drone)
+void hover_test(mdp_api::id drone)
 {
-    ros::Duration d(2.0);
+    mdp_api::cmd_takeoff(drone, 1.0);
 
-    mdp_api::cmd_takeoff(drone, 0.5);
+    ros::Duration d(1.0);
 
-    mdp_api::position_msg msg;         // construct a position msg
-    msg.relative = false;
-    msg.position = {0.0, 0.0, 0.5};
-    msg.duration = 2.0;
+    mdp_api::sleep_until_idle(drone);
+
+    mdp_api::position_msg msg;
+    msg.relative = true;
+    msg.keep_height = true;
+    msg.position = {3.0, 0.0, 0.0};
     msg.yaw = 0.0;
+    msg.duration = 2.0;
 
-    d.sleep();
     mdp_api::set_drone_position(drone, msg);
 
     d.sleep();
-    mdp_api::cmd_land(drone);
+
+    mdp_api::cmd_hover(drone);
+
+    mdp_api::sleep_until_idle(drone);
     d.sleep();
+    d.sleep();
+
+    mdp_api::goto_home(drone, 4.0, 0.0);
+
+    mdp_api::sleep_until_idle(drone);
 }
 
 void do_baseball_base_run(std::vector<std::array<double, 3>> positions)
@@ -193,14 +204,19 @@ void do_figure_eight_with_follower()
 int main(int argc, char** argv)
 {
     mdp_api::initialise(10); // update rate of 10Hz
+    auto drones = mdp_api::get_all_rigidbodies();
 
     #if (DO_FLIGHT_TEST)
-        auto drones = mdp_api::get_all_rigidbodies();
         if (drones.size() > 0) {
             do_drone_flight_test(drones[0]);
-            // takeoff(drones[0]);
         }
     #endif /* DO_FLIGHT_TEST */
+
+    #if (DO_HOVER_TEST)
+        if (drones.size() > 0) {
+            hover_test(drones[0]);
+        }
+    #endif /* DO_HOVER_TEST */
 
     #if (DO_BASEBALL_RUN)
         do_baseball_base_run({

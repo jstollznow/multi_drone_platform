@@ -5,7 +5,7 @@ class object : public rigidBody
 private:
 
 public:
-    object(std::string tag) : rigidBody(tag)
+    object(std::string tag, uint32_t id) : rigidBody(tag, id)
     {
 
     };

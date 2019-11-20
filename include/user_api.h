@@ -52,10 +52,10 @@ namespace mdp_api {
     std::vector<mdp_api::id> get_all_rigidbodies();
 
     void set_drone_velocity(mdp_api::id pDroneID, mdp_api::velocity_msg pMsg);
-    velocity_data get_body_velocity(mdp_api::id pRigidbodyID);
+    velocity_data get_velocity(mdp_api::id pRigidbodyID);
 
     void set_drone_position(mdp_api::id pDroneID, mdp_api::position_msg pMsg);
-    position_data get_body_position(mdp_api::id pRigidbodyID);
+    position_data get_position(mdp_api::id pRigidbodyID);
 
     void cmd_takeoff(mdp_api::id pDroneID, float pHeight = 0.5f, float pDuration = 2.0f);
     void cmd_land(mdp_api::id pDroneID);
