@@ -69,6 +69,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   apiUpdate.msg
+  droneLog.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -89,6 +90,7 @@ generate_messages(
   geometry_msgs
   std_msgs
   sensor_msgs
+
 )
 
 ################################################
@@ -156,6 +158,11 @@ file(GLOB test_src
 add_library(RIGIDBODY
   ${CMAKE_CURRENT_SOURCE_DIR}/src/objects/rigidBody.cpp
 )
+add_library(DEBUGUI
+  ${CMAKE_CURRENT_SOURCE_DIR}/GUI/debugWindow/debugUI.cpp
+)
+
+
 target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
 add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
 
@@ -213,8 +220,8 @@ target_link_libraries(tst_program ${catkin_LIBRARIES} MDP_API)
 add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
 
-add_executable(Commander GUI/debugWindow/base.cpp)
-target_link_libraries(Commander ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES}) 
+add_executable(debug GUI/debugWindow/base.cpp)
+target_link_libraries(debug ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGUI RIGIDBODY) 
 
 
 #############

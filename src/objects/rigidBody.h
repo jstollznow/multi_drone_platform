@@ -12,6 +12,7 @@
 #include "std_msgs/Float64MultiArray.h"
 
 #include "multi_drone_platform/apiUpdate.h"
+#include "multi_drone_platform/droneLog.h"
 
 #define DEFAULT_QUEUE 10
 #define TIMEOUT_HOVER 4
@@ -87,6 +88,8 @@ class rigidBody
         rigidBody(std::string tag, uint32_t id);
         virtual ~rigidBody();
 
+        ros::Publisher logPublisher;
+  
         void setID(uint32_t id);
 
         bool getControllable();
@@ -106,10 +109,14 @@ class rigidBody
 
         void update(std::vector<rigidBody*>& rigidBodies);
         void apiCallback(const multi_drone_platform::apiUpdate& msg);
+  
+        void postLog(int type, std::string message);
+  
         void emergency();
         void land(float duration = 5.0f);
         void takeoff(float height = 0.25f, float duration = 2.0f);
         void hover(float duration);
+
         void addToQueue();
 
 };

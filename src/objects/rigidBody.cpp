@@ -26,6 +26,10 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
     ApiPublisher = droneHandle.advertise<multi_drone_platform::apiUpdate> (ApiTopic, 20);
     ApiSubscriber = droneHandle.subscribe(ApiTopic, 20, &rigidBody::apiCallback, this);
 
+    std::string logTopic = tag + "/log";
+
+    logPublisher = droneHandle.advertise<multi_drone_platform::droneLog> (logTopic, 20);
+
     droneHandle.setCallbackQueue(&myQueue);
     
     motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
@@ -225,8 +229,8 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
         } else {
             if (State != "IDLE") {
                 /* Go to hover */
-                ROS_WARN("Timeout stage 1");
-                ROS_INFO("Timeout Hover");
+                this->postLog(1, "Timeout stage 1");
+                this->postLog(2, "Timeout hover");
                 this->hover(TIMEOUT_HOVER);
                 this->set_state("IDLE");
             } else {
@@ -274,14 +278,48 @@ void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)
     if(!batteryDying)
     {
         ROS_INFO("%s recieved msg %s", tag.c_str(),msg.msg_type.c_str());
+        std::string commandInfo = "Recieved msg " + msg.msg_type;
+        this->postLog(0, commandInfo);  
         this->CommandQueue.clear();
         this->CommandQueue.push_back(msg);
     }
     else
     {
-        ROS_WARN("Battery Timeout");
+        this->postLog(1, "Battery Timeout");
     }
     handleCommand();
+}
+
+/*
+TYPE 
+0 INFO
+1 WARN
+2 DEBUG
+3 ERROR
+*/
+void rigidBody::postLog(int type, std::string message)
+{
+    multi_drone_platform::droneLog myLogPost;
+    myLogPost.type = type;
+    myLogPost.logMessage = message;
+
+    logPublisher.publish(myLogPost);
+
+    switch (type)
+    {
+        case 0:
+        case 2:
+            ROS_INFO("%s: %s", tag.c_str(),message.c_str());
+            break;
+        case 1:
+            ROS_WARN("%s: %s", tag.c_str(),message.c_str());
+            break;
+        case 3:
+            ROS_ERROR("%s: %s", tag.c_str(),message.c_str());
+            break;
+    }
+
+
 }
 
 void rigidBody::handleCommand(){
