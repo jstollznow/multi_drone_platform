@@ -4,7 +4,7 @@
 // constructor
 drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
 {
-    ROS_INFO("Initialising drone server");
+    ROS_INFO("Initialising drone server1");
     InputAPISub = Node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 10, &drone_server::APICallback, this);
     EmergencySub = Node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::EmergencyCallback, this);
     DataServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIGetDataService, this);
@@ -60,9 +60,9 @@ mdp_id drone_server::addNewRigidbody(std::string pTag)
 {
     mdp_id ID;
     ID.name = "";
-    ID.numeric_id = 0;
+    ID.numeric_id = RigidBodyList.size();
     rigidBody* RB;
-    if (mdp_wrappers::createNewRigidbody(pTag, RB)) {
+    if (mdp_wrappers::createNewRigidbody(pTag, ID.numeric_id, RB)) {
         /* update drone state on param server */
 
         RigidBodyList.push_back(RB);
@@ -235,29 +235,29 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
     switch(APIMap[Req.msg_type()]) {
         case 0: {   /* VELOCITY */
         // RB SIDE
-            auto RetVel = RB->getCurrVel();
-            auto RetPos = RB->getCurrPos();
-            // can get a ros::Time back from these messages now
-            Res.vec3().x = RetVel.velocity.x;
-            Res.vec3().y = RetVel.velocity.y;
-            Res.vec3().z = RetVel.velocity.z;
-            Res.yaw_rate() = RetVel.yawRate;
-            Res.forward_x() = cos(-RetPos.yaw);
-            Res.forward_y() = sin(-RetPos.yaw);
+            // auto RetVel = RB->getCurrVel();
+            // auto RetPos = RB->getCurrPos();
+            // // can get a ros::Time back from these messages now
+            // Res.vec3().x = RetVel.velocity.x;
+            // Res.vec3().y = RetVel.velocity.y;
+            // Res.vec3().z = RetVel.velocity.z;
+            // Res.yaw_rate() = RetVel.yawRate;
+            // Res.forward_x() = cos(-RetPos.yaw);
+            // Res.forward_y() = sin(-RetPos.yaw);
             ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
             return true;
         } break;
         case 1: {   /* POSITION */
         // RB SIDE
-            auto RetVel = RB->getCurrVel();
-            auto RetPos = RB->getCurrPos();
-            // can get a ros::Time back from these messages now
-            Res.vec3().x = RetPos.position.x;
-            Res.vec3().y = RetPos.position.y;
-            Res.vec3().z = RetPos.position.z;
-            Res.yaw_rate() = RetVel.yawRate;
-            Res.forward_x() = cos(-RetPos.yaw);
-            Res.forward_y() = sin(-RetPos.yaw);
+            // auto RetVel = RB->getCurrVel();
+            // auto RetPos = RB->getCurrPos();
+            // // can get a ros::Time back from these messages now
+            // Res.vec3().x = RetPos.position.x;
+            // Res.vec3().y = RetPos.position.y;
+            // Res.vec3().z = RetPos.position.z;
+            // Res.yaw_rate() = RetVel.yawRate;
+            // Res.forward_x() = cos(-RetPos.yaw);
+            // Res.forward_y() = sin(-RetPos.yaw);
             ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
             return true;
         } break;
@@ -272,8 +272,7 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
         } break;
         case 9: {   /* ORIENTATION */
         // RB SIDE
-            auto RetVel = RB->getCurrVel();
-            auto RetPos = RB->getCurrPos();
+
             ROS_INFO_STREAM("Server completed get data service of type: " << Req.msg_type());
             return true;
         } break;

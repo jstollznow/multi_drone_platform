@@ -86,7 +86,7 @@ private:
         }
     }
 public:
-    cflie(std::string tag):rigidBody(tag)
+    cflie(std::string tag, uint32_t id):rigidBody(tag, id)
     {
         ROS_INFO("I am here, its %s", tag.c_str());
         droneAddress = (tag.substr(tag.find_first_of('_')+1, tag.length()));
