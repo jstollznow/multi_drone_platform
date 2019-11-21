@@ -64,16 +64,16 @@ void hover_test(mdp_api::id drone)
     mdp_api::position_msg msg;
     msg.relative = true;
     msg.keep_height = true;
-    msg.position = {1.0, 0.0, 0.0};
+    msg.position = {2.5, 0.0, 0.0};
     msg.yaw = 0.0;
-    msg.duration = 2.0;
+    msg.duration = 3.0;
 
     mdp_api::set_drone_position(drone, msg);
 
-    msg.position = {0.0, 0.5, 0.0};
-    d.sleep();
+    //msg.position = {0.0, 0.5, 0.0};
+    //d.sleep();
 
-    mdp_api::set_drone_position(drone, msg);
+    //mdp_api::set_drone_position(drone, msg);
 
     mdp_api::sleep_until_idle(drone);
 

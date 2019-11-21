@@ -4,7 +4,7 @@
 
 
 
-rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(0,&myQueue)
+rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 {
     this->tag = tag;
     this->NumericID = id;
@@ -102,6 +102,15 @@ double rigidBody::predictCurrentYaw()
     return yaw;
 }
 
+double vec3Distance(geometry_msgs::Vector3 a, geometry_msgs::Point b)
+{
+    double dist = 0.0;
+    dist += std::abs(a.x - b.x);
+    dist += std::abs(a.y - b.y);
+    dist += std::abs(a.z - b.z);
+    return dist;
+}
+
 void rigidBody::setDesPos(geometry_msgs::Vector3 pos, float yaw,
 float duration, bool relativeXY, bool relativeZ)
 {
@@ -121,9 +130,9 @@ float duration, bool relativeXY, bool relativeZ)
 
     /* Simple static safeguarding */
     struct {
-        std::array<double, 2> x = {{-1.60f, 0.95f}};
-        std::array<double, 2> y = {{-1.30f, 1.30f}};
-        std::array<double, 2> z = {{ 0.10f, 1.80f}};
+        std::array<double, 2> x = {{-1.60, 0.95}};
+        std::array<double, 2> y = {{-1.30, 1.30}};
+        std::array<double, 2> z = {{ 0.10, 1.80}};
     } StaticSafeguarding;
 
     if (relativeXY) {
@@ -143,16 +152,26 @@ float duration, bool relativeXY, bool relativeZ)
         pos.z = std::min(std::max(StaticSafeguarding.z[0], pos.z), StaticSafeguarding.z[1]);
     }
 
-    this->DesiredPose.position.x = pos.x;
-    this->DesiredPose.position.y = pos.y;
-    this->DesiredPose.position.z = pos.z;
-    // @TODO: need to manage orientation
-    ROS_INFO("Desired:");
-    ROS_INFO("x: %f, y: %f, z: %f", DesiredPose.position.x, DesiredPose.position.y, DesiredPose.position.z);
-    ROS_INFO("Duration: %f", duration);
+    geometry_msgs::Vector3 abs_pos = pos;
+    if (relativeXY) {
+        abs_pos.x += this->CurrentPose.position.x;
+        abs_pos.y += this->CurrentPose.position.y;
+    }
+    if (relativeZ) {
+        abs_pos.z += this->CurrentPose.position.z;
+    }
 
-    this->onSetPosition(pos, yaw, duration, relativeXY);
+    if (vec3Distance(abs_pos, this->DesiredPose.position) > 0.1) {
+        this->DesiredPose.position.x = abs_pos.x;
+        this->DesiredPose.position.y = abs_pos.y;
+        this->DesiredPose.position.z = abs_pos.z;
+        // @TODO: need to manage orientation
+        ROS_INFO("Desired:");
+        ROS_INFO("x: %f, y: %f, z: %f", DesiredPose.position.x, DesiredPose.position.y, DesiredPose.position.z);
+        ROS_INFO("Duration: %f", duration);
 
+        this->onSetPosition(pos, yaw, duration, relativeXY);
+    }
     resetTimeout(duration);
 }
 
@@ -425,10 +444,16 @@ void rigidBody::takeoff(float height, float duration)
 
 void rigidBody::hover(float duration)
 {
-    this->set_state("HOVER");
-    // set the hover point based on current velocity
-    auto pos = this->predictCurrentPosition();
-    setDesPos(pos, 0.0f, duration, false, false);
+    if (ros::Time::now().toSec() >= (nextTimeoutGen - 0.5)) {
+        this->set_state("HOVER");
+        // set the hover point based on current velocity
+        // auto pos = this->CurrentPose.position;
+        geometry_msgs::Vector3 pos;
+        pos.x += CurrentVelocity.linear.x * 0.3;
+        pos.y += CurrentVelocity.linear.y * 0.3;
+        pos.z += CurrentVelocity.linear.z * 0.3;
+        setDesPos(pos, 0.0f, duration, true, true);
+    }
 }
 
 void rigidBody::resetTimeout(float timeout)

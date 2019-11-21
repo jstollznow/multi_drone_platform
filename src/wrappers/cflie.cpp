@@ -74,7 +74,10 @@ private:
         goToMsg.request.relative = isRelative;
         
         auto startPoint = std::chrono::high_resolution_clock::now();
-        goToService.call(goToMsg);
+        if (!goToService.call(goToMsg)) {
+            ROS_WARN("GOTO FAILED ON '%s'", tag.c_str());
+            goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to", true);
+        }
         long long start = std::chrono::time_point_cast<std::chrono::milliseconds> (startPoint).time_since_epoch().count();
         long long end = std::chrono::time_point_cast<std::chrono::milliseconds> (std::chrono::high_resolution_clock::now()).time_since_epoch().count();
         ROS_WARN("GOTO TOOK %lld ms", end - start);
@@ -127,12 +130,12 @@ public:
         updateParams = droneHandle.serviceClient<crazyflie_driver::UpdateParams>("/" + tag + "/update_params");
 
         emergencyService = droneHandle.serviceClient<std_srvs::Empty>("/" + tag + "/emergency");        
-        external_position = droneHandle.advertise<geometry_msgs::PointStamped>("/" + tag + "/external_position", DEFAULT_QUEUE);
+        external_position = droneHandle.advertise<geometry_msgs::PointStamped>("/" + tag + "/external_position", 1);
         // high level commands
         takeoffService = droneHandle.serviceClient<crazyflie_driver::Takeoff>("/" + tag + "/takeoff");
         landService = droneHandle.serviceClient<crazyflie_driver::Land>("/" + tag + "/land");
         stopService = droneHandle.serviceClient<crazyflie_driver::Stop>("/" + tag + "/stop");
-        goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to");
+        goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to", true);
 
         // feedback
 
