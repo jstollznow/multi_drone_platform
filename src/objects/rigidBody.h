@@ -9,6 +9,7 @@
 #include "geometry_msgs/Vector3.h"
 #include "std_msgs/Header.h"
 #include "sensor_msgs/Imu.h"
+#include "std_msgs/Float64MultiArray.h"
 
 #include "multi_drone_platform/apiUpdate.h"
 
@@ -24,64 +25,56 @@ static std::map<std::string, int> APIMap = {
     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
 };
 
-struct returnPos{
-    ros::Time lastUpdate;
-    geometry_msgs::Vector3 position;
-    float yaw;
-};
-struct returnVel{
-    ros::Time lastUpdate;
-    geometry_msgs::Vector3 velocity;
-    float yawRate;
-};
 class rigidBody
-{   
+{
+/* DATA */
     private:
-        void calcVel();
-        float getYaw(geometry_msgs::Pose& pos);
-        geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
-        void set_state(const std::string& state);
-
         ros::Subscriber ApiSubscriber;
-        uint32_t id;
+        ros::Publisher CurrentPosePublisher;
+        ros::Publisher DesiredPosePublisher;
+        uint32_t NumericID;
         
     protected:
-
-        std::vector<multi_drone_platform::apiUpdate> commandQueue;
-        void handleCommand();
-        void enqueueCommand(multi_drone_platform::apiUpdate command);
-        void dequeueCommand();
-    protected:
+        std::vector<multi_drone_platform::apiUpdate> CommandQueue;
         std::string tag;
         bool controllable;
 
         bool batteryDying;
 
         double nextTimeoutGen;
-
         ros::Time lastUpdate;
         ros::Time lastCommandSet;
-
         std::vector<geometry_msgs::PoseStamped> motionCapture;
 
         // velocity handles
-        geometry_msgs::Twist desVel;
-        geometry_msgs::Twist currVel;
+        geometry_msgs::Twist DesiredVelocity;
+        geometry_msgs::Twist CurrentVelocity;
 
         // Position handles
-        geometry_msgs::Pose desPos;
-        geometry_msgs::Pose currPos;
-        
-        geometry_msgs::Vector3 homePos;
-    
+        geometry_msgs::Pose DesiredPose;
+        geometry_msgs::Pose CurrentPose;
+        geometry_msgs::Vector3 HomePosition;
         ros::Subscriber motionSub;
-
         ros::NodeHandle droneHandle;
 
+    public:
+        std::string State = "LANDED";
+        ros::AsyncSpinner mySpin;
+        ros::CallbackQueue myQueue;
+        ros::Publisher ApiPublisher;
+
+/* FUNCTIONS */
+    private:
+        void calculateVelocity();
+        float getYaw(geometry_msgs::Pose& pos);
+        void set_state(const std::string& state);
+        
+    protected:
+        void handleCommand();
+        void enqueueCommand(multi_drone_platform::apiUpdate command);
+        void dequeueCommand();
         void resetTimeout(float timeout = 1.0f);
-
         // Wrapper Methods
-
         virtual void onUpdate() = 0;
         virtual void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};
         virtual void onTakeoff(float height, float duration) = 0;
@@ -91,28 +84,18 @@ class rigidBody
         virtual void onSetVelocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) = 0;
 
     public:
-        std::string State = "LANDED";
+        rigidBody(std::string tag, uint32_t id);
+        virtual ~rigidBody();
 
-        ros::AsyncSpinner mySpin;
-        ros::CallbackQueue myQueue;
-        ros::Publisher ApiPublisher;
-
-        rigidBody(std::string tag);
-        
         void setID(uint32_t id);
 
-        virtual ~rigidBody();
-        
         bool getControllable();
         std::string getName();
 
-        returnPos getCurrPos();
-        returnVel getCurrVel();
+        geometry_msgs::Vector3 predictCurrentPosition();
+        double predictCurrentYaw();
 
-        returnPos getDesPos();
         void setDesPos(geometry_msgs::Vector3 pos, float yaw, float duration, bool relativeXY, bool relativeZ);
-
-        returnVel getDesVel();
         void setDesVel(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeZ);
 
         geometry_msgs::Vector3 getHomePos();
@@ -122,16 +105,11 @@ class rigidBody
         geometry_msgs::PoseStamped getMotionCapture();
 
         void update(std::vector<rigidBody*>& rigidBodies);
-
         void apiCallback(const multi_drone_platform::apiUpdate& msg);
-
         void emergency();
-
         void land(float duration = 5.0f);
-
         void takeoff(float height = 0.25f, float duration = 2.0f);
-
         void hover(float duration);
-
         void addToQueue();
+
 };
