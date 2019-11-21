@@ -188,13 +188,13 @@ bool PS4_remote::hlCommandHandle(int takeoff, int land, int hover, int goToHome)
 bool PS4_remote::lastInputHandle(float xAxes, float yAxes, float zUpTrigger, float zDownTrigger, float yawAxes)
 {    
     // Left Joystick (Top/Bottom)
-    float x = max_x*xAxes;
+    float x = max_x*xAxes*2.0;
 
     // Left Joystick (Left/Right)
-    float y = max_y*yAxes;
+    float y = max_y*yAxes*2.0;
     
     // Right Joystick (Top/Bottom)
-    lastInput.yaw =max_yaw*yawAxes;
+    lastInput.yaw =max_yaw*yawAxes*2.0;
 
     // Triggers
     // LT go down RT go up
@@ -246,7 +246,7 @@ void PS4_remote::controlUpdate()
             ROS_INFO("%s: Change position by [%.2f, %.2f, %.2f] and yaw by %f", drones[droneID].name.c_str(),
             lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
             mdp_api::position_msg posMsg;
-            posMsg.duration =  1.0f;
+            posMsg.duration =  2.0f;
             posMsg.keep_height = true;
             posMsg.relative = true;
             posMsg.position = lastInput.axesInput;

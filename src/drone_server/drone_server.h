@@ -7,7 +7,7 @@
 #include "../objects/rigidBody.h"
 #include "wrappers.h"
 
-#define LOOP_RATE_HZ 50
+#define LOOP_RATE_HZ 100
 #define TIMING_UPDATE 5
 
 #define NODE_NAME "mdp_drone_server"
@@ -58,4 +58,5 @@ class drone_server
         bool APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res);
 
         void run();
+        void shutdown();
 };

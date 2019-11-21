@@ -1,5 +1,6 @@
 #include "../objects/rigidBody.h"
 #include "crazyflie_driver/AddCrazyflie.h"
+#include "crazyflie_driver/RemoveCrazyflie.h"
 #include "std_srvs/Empty.h"
 #include "std_msgs/Empty.h"
 #include "std_msgs/Float32.h"
@@ -11,6 +12,8 @@
 #include "crazyflie_driver/FullState.h"
 #include "crazyflie_driver/Position.h"
 #include "crazyflie_driver/UpdateParams.h"
+
+#include <chrono>
 // Possible commands for crazyflie
 
 
@@ -69,7 +72,12 @@ private:
         goToMsg.request.duration = ros::Duration(duration);
         goToMsg.request.yaw = yaw;
         goToMsg.request.relative = isRelative;
+        
+        auto startPoint = std::chrono::high_resolution_clock::now();
         goToService.call(goToMsg);
+        long long start = std::chrono::time_point_cast<std::chrono::milliseconds> (startPoint).time_since_epoch().count();
+        long long end = std::chrono::time_point_cast<std::chrono::milliseconds> (std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+        ROS_WARN("GOTO TOOK %lld ms", end - start);
 
         resetTimeout(duration);
     }
@@ -134,7 +142,17 @@ public:
 
     ~cflie() 
     {
-        // use remove service
+        // use remove service, need to keep ros alive for a bit, ctrl c closes the crazyflie server before we have a chance to remove the crazyflie.
+        // will need to make a workaround which keeps the server up long enough for us to remove the crazyflie...
+
+        // auto RemCrazyflieService = droneHandle.serviceClient<crazyflie_driver::RemoveCrazyflie> ("/remove_crazyflie");
+        // crazyflie_driver::RemoveCrazyflie msg;
+        // msg.request.uri = link_uri + "/0xE7E7E7E7" + droneAddress;
+        // if (RemCrazyflieService.call(msg)) {
+        //     ROS_INFO("Removed %s from the crazyflie server", tag.c_str());
+        // } else {
+        //     ROS_INFO("Failed to remove %s from the crazyflie server", tag.c_str());
+        // }
     }
     void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg)
     {

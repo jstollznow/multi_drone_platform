@@ -4,7 +4,7 @@
 
 
 
-rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
+rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(0,&myQueue)
 {
     this->tag = tag;
     this->NumericID = id;
@@ -23,20 +23,21 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
     droneHandle = ros::NodeHandle();
 
     std::string ApiTopic = tag + "/apiUpdate";
-    ApiPublisher = droneHandle.advertise<multi_drone_platform::apiUpdate> (ApiTopic, 20);
-    ApiSubscriber = droneHandle.subscribe(ApiTopic, 20, &rigidBody::apiCallback, this);
 
     std::string logTopic = tag + "/log";
 
-    logPublisher = droneHandle.advertise<multi_drone_platform::droneLog> (logTopic, 20);
-
     droneHandle.setCallbackQueue(&myQueue);
     
-    motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
+    logPublisher = droneHandle.advertise<multi_drone_platform::droneLog> (logTopic, 20);
+    ApiPublisher = droneHandle.advertise<multi_drone_platform::apiUpdate> (ApiTopic, 2);
+    ApiSubscriber = droneHandle.subscribe(ApiTopic, 2, &rigidBody::apiCallback, this);
+    motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 1,&rigidBody::addMotionCapture, this);
     CurrentPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/CurrentPose", 1);
     DesiredPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/DesiredPose", 1);
 
     ROS_INFO("Subscribing to %s for motion capture", optiTop.c_str());   
+
+    mySpin.start();
 }
 
 rigidBody::~rigidBody()
@@ -427,7 +428,7 @@ void rigidBody::hover(float duration)
     this->set_state("HOVER");
     // set the hover point based on current velocity
     auto pos = this->predictCurrentPosition();
-    setDesPos(pos, 0.0f, duration, false, true);
+    setDesPos(pos, 0.0f, duration, false, false);
 }
 
 void rigidBody::resetTimeout(float timeout)
