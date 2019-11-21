@@ -398,9 +398,8 @@ void rigidBody::hover(float duration)
 {
     this->set_state("HOVER");
     // set the hover point based on current velocity
-    geometry_msgs::Vector3 HoverPoint;
-    HoverPoint.x = CurrentVelocity.linear.x; HoverPoint.y = CurrentVelocity.linear.y; HoverPoint.z = CurrentVelocity.linear.z;
-    setDesPos(HoverPoint, 0.0f, duration, true, true);
+    auto pos = this->predictCurrentPosition();
+    setDesPos(pos, 0.0f, duration, false, true);
 }
 
 void rigidBody::resetTimeout(float timeout)
