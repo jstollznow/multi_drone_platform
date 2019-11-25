@@ -24,7 +24,7 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     //     ROS_INFO("Adding %s", droneName2.c_str());
     //     addNewRigidbody(droneName2);
     // }
-    addNewRigidbody("cflie_00");
+    // addNewRigidbody("cflie_00");
     // addNewRigidbody("cflie_E7");
     // addNewRigidbody("object_00");
 
@@ -32,8 +32,8 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     // addNewRigidbody("cflie_03");
     // ros::Duration d(2.0);
     // d.sleep();
-    // addNewRigidbody("vflie_00");
-    // addNewRigidbody("vflie_01");
+    addNewRigidbody("vflie_00");
+    addNewRigidbody("vflie_01");
     // addNewRigidbody("vflie_02");
     // addNewRigidbody("vflie_03");
     // addNewRigidbody("vflie_04");

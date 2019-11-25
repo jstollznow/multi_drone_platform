@@ -220,6 +220,7 @@ void cmd_hover(mdp_api::id pDroneID)
 
     Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "HOVER";
+    Msg.duration() = 10.0f;
 
     NodeData.Pub.publish(Msg_data);
 }
