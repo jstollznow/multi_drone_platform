@@ -4,8 +4,15 @@
 
 debugUI::debugUI(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade): 
 Gtk::Window(cobject), builder(refGlade)
+// , mySpin(1,&myQueue)
 {
     linkWidgets();
+    first = true;
+    firstTimeStamp = 0.0f;
+    std::string logTopic = myDrone.name + "/log";
+    // logSubscriber = myNode.subscribe<multi_drone_platform::droneLog>(logTopic, 10,&debugUI::logCallback, this);
+
+    // myNode.setCallbackQueue(&myQueue);
     
 }
 void debugUI::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool expanded)
@@ -29,7 +36,7 @@ void debugUI::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool
 
 void debugUI::updateStats()
 {
-
+    
 }
 
 void debugUI::on_landButton_clicked()
@@ -40,6 +47,29 @@ void debugUI::on_emergencyButton_clicked()
 {
 
 }
+
+void debugUI::logCallback(const multi_drone_platform::droneLog::ConstPtr& msg)
+{
+    if (first)
+    {
+        first = false;
+        firstTimeStamp = msg->timeStamp;
+        logTextBuffer->set_text("");
+    }
+    float time = msg->timeStamp - firstTimeStamp;
+
+    std::ostringstream streamObj;
+	streamObj << std::fixed;
+	streamObj << std::setprecision(4);
+	streamObj << time;
+
+    
+    std::string newLogLine = streamObj.str() + ": " + logType[msg->type] + " " + msg->logMessage + "\n";
+
+    logTextBuffer->insert(logTextBuffer->end(), newLogLine);
+
+}
+
 void debugUI::on_speedScale_value_changed()
 {
     std::ostringstream streamObj;
@@ -92,6 +122,7 @@ void debugUI::linkWidgets()
         builder->get_widget(VNAME(speedMultiplierLabel), speedMultiplierLabel);
         builder->get_widget(VNAME(pktLossLabel), pktLossLabel);
         builder->get_widget(VNAME(logTextView), logTextView);
+        // builder->get_widget(VNAME(logTextBuffer), logTextBuffer);
         builder->get_widget(VNAME(landButton), landButton);
         builder->get_widget(VNAME(emergencyButton), emergencyButton);
         builder->get_widget(VNAME(speedScale), speedScale);

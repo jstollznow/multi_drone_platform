@@ -6,6 +6,7 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
+#include "std_msgs/Float32MultiArray.h"
 #include "geometry_msgs/Vector3.h"
 #include "std_msgs/Header.h"
 #include "sensor_msgs/Imu.h"
@@ -39,6 +40,7 @@ class rigidBody
 {   
     private:
         void calcVel();
+        std::string strFormatVec3(std::string name, geometry_msgs::Vector3 vec3);
         float getYaw(geometry_msgs::Pose& pos);
         geometry_msgs::Vector3 vec3PosConvert(geometry_msgs::Pose& pos);
         void set_state(const std::string& state);
@@ -52,6 +54,8 @@ class rigidBody
         void handleCommand();
         void enqueueCommand(multi_drone_platform::apiUpdate command);
         void dequeueCommand();
+
+        void constructUpdateMsg();
     protected:
         std::string tag;
         bool controllable;
@@ -96,9 +100,10 @@ class rigidBody
 
         ros::AsyncSpinner mySpin;
         ros::CallbackQueue myQueue;
-        ros::Publisher ApiPublisher;
 
+        ros::Publisher ApiPublisher;
         ros::Publisher logPublisher;
+        ros::Publisher updatePublisher;
 
         rigidBody(std::string tag);
         

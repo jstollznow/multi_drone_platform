@@ -220,7 +220,7 @@ target_link_libraries(tst_program ${catkin_LIBRARIES} MDP_API)
 add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
 
-add_executable(debug GUI/debugWindow/base.cpp)
+add_executable(debug GUI/debugWindow/debugNode.cpp)
 target_link_libraries(debug ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGUI RIGIDBODY) 
 
 
