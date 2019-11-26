@@ -2,12 +2,25 @@
 
 #include "ros/ros.h"
 #include "boost/algorithm/string/split.hpp"
+#include <unordered_map>
 
 #include "../drone_server/drone_server_msg_translations.cpp"
+#include "std_msgs/Float64MultiArray.h"
 
 #define FRAME_ID "user_api"
 
 namespace mdp_api {
+
+struct drone_data
+{
+    ros::Subscriber pose_subscriber;
+    std::array<double, 8> pose;
+
+    void pose_data_callback(const std_msgs::Float64MultiArray::ConstPtr& msg)
+    {
+        std::copy(msg->data.begin(), msg->data.end(), pose.begin());
+    }
+};
 
 struct node_data
 {
@@ -17,6 +30,7 @@ struct node_data
     ros::Publisher Pub;
     ros::ServiceClient DataClient;
     ros::ServiceClient ListClient;
+    std::unordered_map<uint32_t, drone_data> DroneData;
 } NodeData;
 
 void initialise(unsigned int pUpdateRate)
@@ -53,8 +67,12 @@ void terminate()
     }
 
     ROS_INFO("Finished Client API Connection");
+    for (auto it = NodeData.DroneData.begin(); it != NodeData.DroneData.end(); it++) {
+        it->second.pose_subscriber.shutdown();
+    }
     delete NodeData.LoopRate;
     delete NodeData.Node;
+    ros::shutdown();
 }
 
 std::vector<mdp_api::id> get_all_rigidbodies()
@@ -74,6 +92,14 @@ std::vector<mdp_api::id> get_all_rigidbodies()
                 ID.numeric_id = atoi(id_str[0].c_str());
                 ID.name = id_str[1];
                 Vec.push_back(ID);
+            }
+        }
+
+        // add drone data for each drone
+        for (size_t i = 0; i < Vec.size(); i++) {
+            if (NodeData.DroneData.count(Vec[i].numeric_id) == 0) {
+                NodeData.DroneData[Vec[i].numeric_id] = {};
+                NodeData.DroneData[Vec[i].numeric_id].pose_subscriber = NodeData.Node->subscribe<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(Vec[i].numeric_id) + "/CurrentPose", 1, &drone_data::pose_data_callback, &NodeData.DroneData[Vec[i].numeric_id]);
             }
         }
     } else {
@@ -124,44 +150,31 @@ void set_drone_position(mdp_api::id pDroneID, mdp_api::position_msg pMsg)
     NodeData.Pub.publish(Msg_data);
 }
 
-position_data get_body_position(mdp_api::id pRigidbodyID)
+position_data get_position(mdp_api::id pRigidbodyID)
 {
-    nav_msgs::GetPlan Srv_data;
-    mdp::drone_feedback_srv Srv(&Srv_data);
-
-    Srv.drone_id().numeric_id() = pRigidbodyID.numeric_id;
-    Srv.msg_type() = "POSITION";
-
     position_data Data;
-    if (NodeData.DataClient.call(Srv_data)) {
-        Data.x = Srv.vec3().x;
-        Data.y = Srv.vec3().y;
-        Data.z = Srv.vec3().z;
-        Data.yaw = Srv.yaw_rate();
-    } else {
-        ROS_WARN("Failed to call api data service");
-    }
+    // if the drone id does not exist, return
+    if (NodeData.DroneData.count(pRigidbodyID.numeric_id) == 0) return Data;
 
+    std::array<double, 8>* PoseData = &NodeData.DroneData[pRigidbodyID.numeric_id].pose;
+    Data.x =    (*PoseData)[0];
+    Data.y =    (*PoseData)[1];
+    Data.z =    (*PoseData)[2];
+    Data.yaw =  (*PoseData)[3];
     return Data;
 }
 
-velocity_data get_body_velocity(mdp_api::id pRigidbodyID)
+velocity_data get_velocity(mdp_api::id pRigidbodyID)
 {
-    nav_msgs::GetPlan Srv_data;
-    mdp::drone_feedback_srv Srv(&Srv_data);
-
-    Srv.drone_id().numeric_id() = pRigidbodyID.numeric_id;
-    Srv.msg_type() = "VELOCITY";
     velocity_data Data;
-    if (NodeData.DataClient.call(Srv_data)) {
-        Data.x = Srv.vec3().x;
-        Data.y = Srv.vec3().y;
-        Data.z = Srv.vec3().z;
-        Data.yaw = Srv.yaw_rate();
-    } else {
-        ROS_WARN("Failed to call api data service");
-    }
-    
+    // if the drone id does not exist, return
+    if (NodeData.DroneData.count(pRigidbodyID.numeric_id) == 0) return Data;
+
+    std::array<double, 8>* PoseData = &NodeData.DroneData[pRigidbodyID.numeric_id].pose;
+    Data.x =    (*PoseData)[4];
+    Data.y =    (*PoseData)[5];
+    Data.z =    (*PoseData)[6];
+    Data.yaw =  (*PoseData)[7];
     return Data;
 }
 

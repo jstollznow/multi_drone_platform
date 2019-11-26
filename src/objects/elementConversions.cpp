@@ -91,3 +91,12 @@ namespace mdp_conversions
         return returnVel;
     }
 }
+
+geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point& point)
+{
+    geometry_msgs::Vector3 v;
+    v.x = point.x;
+    v.y = point.y;
+    v.z = point.z;
+    return v;
+}
