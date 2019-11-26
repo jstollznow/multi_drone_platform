@@ -32,6 +32,7 @@ class rigidBody
 /* DATA */
     private:
         ros::Subscriber ApiSubscriber;
+        ros::Publisher LogPublisher;
         ros::Publisher CurrentPosePublisher;
         ros::Publisher DesiredPosePublisher;
         uint32_t NumericID;
@@ -56,7 +57,7 @@ class rigidBody
         geometry_msgs::Pose DesiredPose;
         geometry_msgs::Pose CurrentPose;
         geometry_msgs::Vector3 HomePosition;
-        ros::Subscriber motionSub;
+        ros::Subscriber MotionSubscriber;
         ros::NodeHandle droneHandle;
 
     public:
@@ -76,7 +77,7 @@ class rigidBody
         void enqueueCommand(multi_drone_platform::apiUpdate command);
         void dequeueCommand();
         void resetTimeout(float timeout = 1.0f);
-        
+
         // Wrapper Methods
         virtual void onUpdate() = 0;
         virtual void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};
@@ -90,9 +91,7 @@ class rigidBody
         rigidBody(std::string tag, uint32_t id);
         virtual ~rigidBody();
 
-        ros::Publisher ApiPublisher;
-        ros::Publisher logPublisher;
-  
+       
         void setID(uint32_t id);
 
         bool getControllable();

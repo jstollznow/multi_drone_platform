@@ -7,7 +7,7 @@
 rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 {
     // look for drone under tag namespace then vrpn output
-    std::string optiTop = "/vrpn_client_node/" + tag + "/pose";
+    std::string motionTopic = "/vrpn_client_node/" + tag + "/pose";
     std::string logTopic = tag + "/log";
     std::string updateTopic = tag + "/update";
     std::string ApiTopic = tag + "/apiUpdate";
@@ -17,9 +17,8 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 
     ApiPublisher = droneHandle.advertise<multi_drone_platform::apiUpdate> (ApiTopic, 20);
     ApiSubscriber = droneHandle.subscribe(ApiTopic, 20, &rigidBody::apiCallback, this);
-    logPublisher = droneHandle.advertise<multi_drone_platform::droneLog> (logTopic, 20);
-    updatePublisher = droneHandle.advertise<std_msgs::Float32MultiArray> (updateTopic, 20);
-    motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
+    LogPublisher = droneHandle.advertise<multi_drone_platform::droneLog> (logTopic, 20);
+    MotionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 10,&rigidBody::addMotionCapture, this);
 
     this->tag = tag;
     this->NumericID = id;
@@ -36,11 +35,11 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
     
 
     
-    motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
+    MotionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 10,&rigidBody::addMotionCapture, this);
     CurrentPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/CurrentPose", 1);
     DesiredPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/DesiredPose", 1);
 
-    this->postLog(0, "Subscribing to motion topic: " + optiTop);
+    this->postLog(0, "Subscribing to motion topic: " + motionTopic);
     this->postLog(0, "Subscrbing to API topic: " + ApiTopic);
     this->postLog(0, "Publishing log data to: " + logTopic);
     this->postLog(0, "Publishing updates to: " + updateTopic);   
@@ -86,7 +85,7 @@ geometry_msgs::Vector3 rigidBody::predictCurrentPosition()
         time_since_mocap_update = 0.0;
     }
 
-    geometry_msgs::Vector3 pos = point_to_vector3(CurrentPose.position);
+    geometry_msgs::Vector3 pos = mdp_conversions::point_to_vector3(CurrentPose.position);
     pos.x += (CurrentVelocity.linear.x * time_since_mocap_update);
     pos.y += (CurrentVelocity.linear.y * time_since_mocap_update);
     pos.z += (CurrentVelocity.linear.z * time_since_mocap_update);
@@ -154,8 +153,8 @@ float duration, bool relativeXY, bool relativeZ)
     this->DesiredPose.position.z = pos.z;
     // @TODO: need to manage orientation
 
-    this->postLog(2, "DesPos: [" + std::to_string(desPos.position.x) + ", " + std::to_string(desPos.position.y) +
-    ", " + std::to_string(desPos.position.z) + "] Dur: " + std::to_string(duration));
+    this->postLog(2, "DesPos: [" + std::to_string(DesiredPose.position.x) + ", " + std::to_string(DesiredPose.position.y) +
+    ", " + std::to_string(DesiredPose.position.z) + "] Dur: " + std::to_string(duration));
 
     this->onSetPosition(pos, yaw, duration, relativeXY);
 
@@ -210,8 +209,8 @@ void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg
         HomePosition.y = msg->pose.position.y;
         HomePosition.z = msg->pose.position.z;
         
-        std::string homePosLog = "HOME POS: [" + std::to_string(homePos.x) + ", " 
-        + std::to_string(homePos.y) + ", " + std::to_string(homePos.z) + "]";
+        std::string homePosLog = "HOME POS: [" + std::to_string(HomePosition.x) + ", " 
+        + std::to_string(HomePosition.y) + ", " + std::to_string(HomePosition.z) + "]";
         this->postLog(0, homePosLog);
     }
     
@@ -315,7 +314,7 @@ void rigidBody::postLog(int type, std::string message)
     myLogPost.timeStamp = ros::Time::now().toSec();
     myLogPost.logMessage = message;
 
-    logPublisher.publish(myLogPost);
+    LogPublisher.publish(myLogPost);
 
     switch (type)
     {

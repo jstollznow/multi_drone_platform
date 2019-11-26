@@ -158,13 +158,16 @@ file(GLOB test_src
 add_library(RIGIDBODY
   ${CMAKE_CURRENT_SOURCE_DIR}/src/objects/rigidBody.cpp
 )
+target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
+add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
+
 add_library(DEBUGUI
   ${CMAKE_CURRENT_SOURCE_DIR}/GUI/debugWindow/debugUI.cpp
 )
+target_link_libraries(DEBUGUI ${catkin_LIBRARIES})
+add_dependencies(DEBUGUI multi_drone_platform_generate_messages_cpp)
 
 
-target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
-add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
 
 add_library(MDP_API
   ${CMAKE_CURRENT_SOURCE_DIR}/src/user_api/user_api.cpp
