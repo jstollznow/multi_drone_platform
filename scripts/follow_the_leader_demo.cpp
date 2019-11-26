@@ -185,7 +185,7 @@ void PS4_remote::commandHandle(const sensor_msgs::Joy::ConstPtr& msg)
 {
     if (sync)
     {
-        drones = mdp_api::get_all_rigidbodies();
+        // drones = mdp_api::get_all_rigidbodies();
         
         if (!emergencyHandle(msg->buttons[10], msg->buttons[8]))
         {
@@ -289,6 +289,7 @@ void PS4_remote::run(int argc, char **argv)
  
     mySpin->start();
     auto Drones = mdp_api::get_all_rigidbodies();
+    drones = mdp_api::get_all_rigidbodies();
     PS4_remote::droneID = Drones[0].numeric_id;
     auto Follower_Drone = Drones[1];
     mdp_api::cmd_takeoff(Follower_Drone, 1.0f, 2.0f);

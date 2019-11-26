@@ -15,7 +15,7 @@
 #include "multi_drone_platform/droneLog.h"
 
 #define DEFAULT_QUEUE 10
-#define TIMEOUT_HOVER 4
+#define TIMEOUT_HOVER 20
 
 // api structures
 
@@ -43,6 +43,8 @@ class rigidBody
         bool batteryDying;
 
         double nextTimeoutGen;
+        multi_drone_platform::apiUpdate lastRecievedApiUpdate;
+        ros::Time timeOfLastApiUpdate;
         ros::Time lastUpdate;
         ros::Time lastCommandSet;
         std::vector<geometry_msgs::PoseStamped> motionCapture;
@@ -75,6 +77,7 @@ class rigidBody
         void enqueueCommand(multi_drone_platform::apiUpdate command);
         void dequeueCommand();
         void resetTimeout(float timeout = 1.0f);
+        bool isMsgSignificantlyDifferent(multi_drone_platform::apiUpdate msg);
         // Wrapper Methods
         virtual void onUpdate() = 0;
         virtual void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};

@@ -207,7 +207,7 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
     mdp::input_msg Input((geometry_msgs::TransformStamped*)input.get());
     multi_drone_platform::apiUpdate msg;
 
-    ROS_INFO("drone server recieved %s", Input.msg_type().c_str());
+    // ROS_INFO("drone server recieved %s", Input.msg_type().c_str());
 
     rigidBody* RB;
     if (!getRigidbodyFromDroneID(Input.drone_id().numeric_id(), RB)) {
@@ -304,6 +304,7 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
 
 bool drone_server::APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res)
 {
+    printf("Attempting to generate drone list!\n");
     /* encoding for the list service is done here without a helper class */
     /* check API functions documentation for clarity */
     Res.frame_yaml = "";
