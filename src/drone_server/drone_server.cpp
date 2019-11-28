@@ -5,7 +5,7 @@
 drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
 {
     ROS_INFO("Initialising drone server1");
-    InputAPISub = Node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 10, &drone_server::APICallback, this);
+    InputAPISub = Node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 2, &drone_server::APICallback, this);
     EmergencySub = Node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::EmergencyCallback, this);
     DataServer = Node.advertiseService(SRV_TOPIC, &drone_server::APIGetDataService, this);
     ListServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIListService, this);
@@ -25,6 +25,7 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     //     addNewRigidbody(droneName2);
     // }
     // addNewRigidbody("cflie_00");
+    // addNewRigidbody("cflie_E7");
     // addNewRigidbody("object_00");
 
     // addNewRigidbody("cflie_15");
@@ -33,13 +34,18 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     // d.sleep();
     addNewRigidbody("vflie_00");
     addNewRigidbody("vflie_01");
-    addNewRigidbody("vflie_02");
-    addNewRigidbody("vflie_03");
-    addNewRigidbody("vflie_04");
+    // addNewRigidbody("vflie_02");
+    // addNewRigidbody("vflie_03");
+    // addNewRigidbody("vflie_04");
 }
 
 // deconstructor
 drone_server::~drone_server()
+{
+    this->shutdown();
+}
+
+void drone_server::shutdown()
 {
     /* cleanup all drone pointers in the rigidbody list */
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
@@ -157,6 +163,8 @@ void drone_server::run()
         }
         timingPrint++;
     }
+    ros::Duration d(2.0);
+    d.sleep();
     // for formatting
     printf("\n");
 }
@@ -199,7 +207,7 @@ void drone_server::APICallback(const geometry_msgs::TransformStamped::ConstPtr& 
     mdp::input_msg Input((geometry_msgs::TransformStamped*)input.get());
     multi_drone_platform::apiUpdate msg;
 
-    ROS_INFO("drone server recieved %s", Input.msg_type().c_str());
+    // ROS_INFO("drone server recieved %s", Input.msg_type().c_str());
 
     rigidBody* RB;
     if (!getRigidbodyFromDroneID(Input.drone_id().numeric_id(), RB)) {
@@ -296,6 +304,7 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
 
 bool drone_server::APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res)
 {
+    printf("Attempting to generate drone list!\n");
     /* encoding for the list service is done here without a helper class */
     /* check API functions documentation for clarity */
     Res.frame_yaml = "";
@@ -306,7 +315,6 @@ bool drone_server::APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::
     }
     return true;
 }
-
 
 
 

@@ -44,7 +44,7 @@ void initialise(unsigned int pUpdateRate)
     NodeData.LoopRate = new ros::Rate(pUpdateRate);
     NodeData.LoopRateValue = pUpdateRate;
 
-    NodeData.Pub = NodeData.Node->advertise<geometry_msgs::TransformStamped> ("mdp_api", 10);
+    NodeData.Pub = NodeData.Node->advertise<geometry_msgs::TransformStamped> ("mdp_api", 2);
     NodeData.DataClient = NodeData.Node->serviceClient<nav_msgs::GetPlan> ("mdp_api_data_srv");
     NodeData.ListClient = NodeData.Node->serviceClient<tf2_msgs::FrameGraph> ("mdp_api_list_srv");
 
@@ -220,6 +220,7 @@ void cmd_hover(mdp_api::id pDroneID)
 
     Msg.drone_id().numeric_id() = pDroneID.numeric_id;
     Msg.msg_type() = "HOVER";
+    Msg.duration() = 10.0f;
 
     NodeData.Pub.publish(Msg_data);
 }

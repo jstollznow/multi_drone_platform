@@ -214,6 +214,9 @@ add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE
 add_executable(script scripts/demoWk10.cpp)
 target_link_libraries(script ${catkin_LIBRARIES} MDP_API)
 
+add_executable(follow scripts/follow_the_leader_demo.cpp)
+target_link_libraries(follow ${catkin_LIBRARIES} MDP_API)
+
 add_executable(ps4teleop src/PS4_control/ps4teleop.cpp)
 target_link_libraries(ps4teleop ${catkin_LIBRARIES} MDP_API) 
 

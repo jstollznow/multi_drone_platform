@@ -2,7 +2,7 @@
 #include "ros/callback_queue.h"
 #include "sensor_msgs/Joy.h"
 #include <vector>
-#include "../../include/user_api.h"
+#include "../include/user_api.h"
 
 #define INPUT_TOP "/ps4"
 #define SERVER_FREQ 10
@@ -29,6 +29,7 @@ namespace PS4_remote
     int droneID;
     bool localCoord;
     bool hlCommand;
+    bool should_finish = false;
 
     bool sync;
     float ltMax;
@@ -101,30 +102,7 @@ bool PS4_remote::emergencyHandle(int allDrones, int oneDrone)
 bool PS4_remote::optionChangeHandle(float idChange, int coordChange)
 {
     
-    if ((int)idChange != 0)
-    // up or down D-Pad
-    {
-        hlCommand = true;
-        ROS_INFO("ID Change butt");
-        ROS_INFO("%s: Hover", drones[droneID].name.c_str());
-        mdp_api::cmd_hover(drones[droneID]);
-        droneID += (int)idChange;
-        if (droneID < 0) droneID = drones.size() - 1;
-        if (droneID >= drones.size()) droneID = 0;
-        while(drones[droneID].name.find("object") != std::string::npos)
-        {
-            droneID += (int)idChange;
-            if (droneID < 0) droneID = drones.size() - 1;
-            if (droneID >= drones.size()) droneID = 0;
-
-        }
-        // make iteration circular
-        ROS_INFO("%s: target drone", drones[droneID].name.c_str());
-
-        return true;
-    }
-    // options button
-    else if (coordChange != 0)
+    if (coordChange != 0)
     {
         hlCommand = true;   
         if (localCoord) 
@@ -158,10 +136,10 @@ bool PS4_remote::hlCommandHandle(int takeoff, int land, int hover, int goToHome)
     else if (land == 1)
     // circle
     {
-        hlCommand = true;
-        ROS_INFO("%s: Land butt", drones[droneID].name.c_str());
-        mdp_api::cmd_land(drones[droneID]);
-        return true;
+        // hlCommand = true;
+        // ROS_INFO("%s: Land butt", drones[droneID].name.c_str());
+        // mdp_api::cmd_land(drones[droneID]);
+        // return true;
     }
     else if (hover == 1)
     // triangle
@@ -176,7 +154,7 @@ bool PS4_remote::hlCommandHandle(int takeoff, int land, int hover, int goToHome)
     {
         hlCommand = true;
         ROS_INFO("%s: GoToHome butt", drones[droneID].name.c_str());
-        mdp_api::goto_home(drones[droneID], GOTO_HOME);
+        should_finish = true;
         return true;
     }
 
@@ -198,7 +176,7 @@ bool PS4_remote::lastInputHandle(float xAxes, float yAxes, float zUpTrigger, flo
 
     // Triggers
     // LT go down RT go up
-    float z = (max_fall/2.0f) * (zDownTrigger - 1)-(max_rise/2.0f) * (zUpTrigger - 1);
+    float z = 0.0;
 
     lastInput.axesInput = {x, y, z};
     lastInput.lastUpdate = ros::Time::now();
@@ -207,7 +185,7 @@ void PS4_remote::commandHandle(const sensor_msgs::Joy::ConstPtr& msg)
 {
     if (sync)
     {
-        drones = mdp_api::get_all_rigidbodies();
+        // drones = mdp_api::get_all_rigidbodies();
         
         if (!emergencyHandle(msg->buttons[10], msg->buttons[8]))
         {
@@ -310,16 +288,36 @@ void PS4_remote::run(int argc, char **argv)
     ROS_INFO("Please sync remote by pressing the left and right triggers...");
  
     mySpin->start();
- 
-    while (ros::ok())
-    {
-        ros::spinOnce();
-        if (sync)
+    auto Drones = mdp_api::get_all_rigidbodies();
+    drones = mdp_api::get_all_rigidbodies();
+    PS4_remote::droneID = Drones[0].numeric_id;
+    auto Follower_Drone = Drones[1];
+    mdp_api::cmd_takeoff(Follower_Drone, 1.0f, 2.0f);
+    mdp_api::sleep_until_idle(Follower_Drone);
+    mdp_api::cmd_hover(Drones[1]);
+    if (Drones.size() >= 2) {
+        while (ros::ok() && !should_finish)
         {
-            controlUpdate();
-            loop_rate.sleep();
-            ++count;
+            ros::spinOnce();
+            if (sync)
+            {
+                controlUpdate();
+                auto CurrentPos = mdp_api::get_position(Drones[0]);
+                mdp_api::position_msg msg;
+                msg.position = {CurrentPos.x, CurrentPos.y, 0.0f};
+                msg.keep_height = true;
+                msg.relative = false;
+                msg.duration = 1.0f;
+                msg.yaw = 0.0f;
+                mdp_api::set_drone_position(Follower_Drone, msg);
+                loop_rate.sleep();
+                ++count;
+            }
         }
+        mdp_api::goto_home(Drones[0], GOTO_HOME);
+        mdp_api::goto_home(Drones[1], GOTO_HOME);
+        mdp_api::sleep_until_idle(Drones[0]);
+        mdp_api::sleep_until_idle(Drones[1]);
     }
 
 }
