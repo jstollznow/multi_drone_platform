@@ -304,7 +304,6 @@ bool drone_server::APIGetDataService(nav_msgs::GetPlan::Request &pReq, nav_msgs:
 
 bool drone_server::APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res)
 {
-    printf("Attempting to generate drone list!\n");
     /* encoding for the list service is done here without a helper class */
     /* check API functions documentation for clarity */
     Res.frame_yaml = "";

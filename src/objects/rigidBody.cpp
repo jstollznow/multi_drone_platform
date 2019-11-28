@@ -21,7 +21,7 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 
     ApiSubscriber = droneHandle.subscribe(ApiTopic, 2, &rigidBody::apiCallback, this);
     LogPublisher = droneHandle.advertise<multi_drone_platform::droneLog> (logTopic, 20);
-    MotionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 1,&rigidBody::addMotionCapture, this);
+    MotionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 1,&rigidBody::addMotionCapture, this);
     CurrentPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/CurrentPose", 1);
     DesiredPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/DesiredPose", 1);
 
