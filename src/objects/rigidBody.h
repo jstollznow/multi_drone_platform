@@ -6,6 +6,7 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
+#include "std_msgs/Float32MultiArray.h"
 #include "geometry_msgs/Vector3.h"
 #include "std_msgs/Header.h"
 #include "sensor_msgs/Imu.h"
@@ -31,6 +32,7 @@ class rigidBody
 /* DATA */
     private:
         ros::Subscriber ApiSubscriber;
+        ros::Publisher LogPublisher;
         ros::Publisher CurrentPosePublisher;
         ros::Publisher DesiredPosePublisher;
         uint32_t NumericID;
@@ -57,7 +59,7 @@ class rigidBody
         geometry_msgs::Pose DesiredPose;
         geometry_msgs::Pose CurrentPose;
         geometry_msgs::Vector3 HomePosition;
-        ros::Subscriber motionSub;
+        ros::Subscriber MotionSubscriber;
         ros::NodeHandle droneHandle;
 
     public:
@@ -78,6 +80,7 @@ class rigidBody
         void dequeueCommand();
         void resetTimeout(float timeout = 1.0f);
         bool isMsgSignificantlyDifferent(multi_drone_platform::apiUpdate msg);
+
         // Wrapper Methods
         virtual void onUpdate() = 0;
         virtual void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};
@@ -91,8 +94,7 @@ class rigidBody
         rigidBody(std::string tag, uint32_t id);
         virtual ~rigidBody();
 
-        ros::Publisher logPublisher;
-  
+       
         void setID(uint32_t id);
 
         bool getControllable();
@@ -119,7 +121,5 @@ class rigidBody
         void land(float duration = 5.0f);
         void takeoff(float height = 0.25f, float duration = 2.0f);
         void hover(float duration);
-
-        void addToQueue();
 
 };

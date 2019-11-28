@@ -1,14 +1,29 @@
-#include "gtkRef.h"
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <ros/ros.h>
+#include <geometry_msgs/Vector3.h>
+#include <std_msgs/Float32MultiArray.h>
+#include <ros/callback_queue.h>
+#include <multi_drone_platform/droneLog.h>
+#include "gtkRef.h"
 #include "../../include/user_api.h"
-// #include <ros/ros.h>
-// #include "../../src/drone_server/drone_server.h"
 
+#define UPDATE_RATE 10
 #define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/GUI/debugWindow/debug.ui"
+
+static std::map<int, std::string> logType = {
+    {0, "INFO"}, {1, "WARN"}, {2, "DEBUG"},{3, "ERROR"}
+};
+/*
+TYPE 
+0 INFO
+1 WARN
+2 DEBUG
+3 ERROR
+*/
+
 
 class debugUI: public Gtk::Window
 {
@@ -44,6 +59,7 @@ class debugUI: public Gtk::Window
         Gtk::Label* speedMultiplierLabel;
         Gtk::Label* pktLossLabel;
         Gtk::TextView* logTextView;
+        Gtk::TextBuffer* logTextBuffer;
                 
         // for user interaction
         Gtk::Button* landButton;
@@ -70,20 +86,30 @@ class debugUI: public Gtk::Window
         Gtk::ScrolledWindow* logScroll;
 
         Gtk::Image* compressImage;
-        Gtk::Image* expandImage;
+        Gtk::Image* expandImage;   
 
-        mdp_api::id myDrone;
 
-        // ros::NodeHandle myNode;
-        ros::NodeHandle myNode;
 
-        bool expanded;
     public:
         debugUI(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
         void init(mdp_api::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
         void updateStats();
 
+        // ros::CallbackQueue myQueue;
+        // ros::AsyncSpinner mySpin;
+
     protected:
+        mdp_api::id myDrone;
+        std_msgs::Float32MultiArray updateMsg;
+        
+        // ros::Subscriber logSubscriber;
+        // ros::NodeHandle myNode;
+        
+        
+        bool expanded;
+        bool first; 
+        float firstTimeStamp;
+
         void linkWidgets();
         void linkWidget(std::string variableName, Gtk::Widget* widget);
         void on_landButton_clicked();
@@ -91,4 +117,6 @@ class debugUI: public Gtk::Window
         void on_speedScale_value_changed();
         void on_expandButton_clicked();
         void on_debugWindow_destroy();
+        void updateCallback(const std_msgs::Float32MultiArray::ConstPtr& msg);
+        void logCallback(const multi_drone_platform::droneLog::ConstPtr& msg);
 };
