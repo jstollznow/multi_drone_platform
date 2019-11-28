@@ -13,6 +13,7 @@ namespace mdp_conversions
         float Pitch;
         float Yaw;
     };
+    
     euler_rotation toEuler(geometry_msgs::Quaternion pQuaternion)
     {
         // do we need to consider gimbal lock case?
@@ -90,13 +91,12 @@ namespace mdp_conversions
 
         return returnVel;
     }
-}
-
-geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point& point)
-{
-    geometry_msgs::Vector3 v;
-    v.x = point.x;
-    v.y = point.y;
-    v.z = point.z;
-    return v;
+    geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point& point)
+    {
+        geometry_msgs::Vector3 v;
+        v.x = point.x;
+        v.y = point.y;
+        v.z = point.z;
+        return v;
+    }
 }

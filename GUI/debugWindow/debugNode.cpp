@@ -6,6 +6,11 @@
 #include "../../include/user_api.h"
 #include "debugUI.h"
 
+#define NUM_WINDOWS 20
+#define EXPANDED true
+
+// itds
+
 // #define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/GUI/debugWindow/debug.ui"
 // main window of the application
 std::array<int,2> getPosition(int droneNum, bool expanded)
@@ -46,7 +51,6 @@ std::array<int,2> getPosition(int droneNum, bool expanded)
     std::array<int, 2> position;
     position[0] = pos_x + xSplit * (x_index);
     position[1] = pos_y + ySplit * (y_index);
-    // std::cout<< "X: "<< position[0] << " Y: " << position[1] << std::endl;
     return position;
 }
 int main(int argc, char *argv[]) {
@@ -54,18 +58,22 @@ int main(int argc, char *argv[]) {
     auto app = Gtk::Application::create(argc, argv);
 
     // mdp_api::initialise(10);
+    // ros::init(argc, argv, "debugNode");
     std::vector<mdp_api::id> myDrones;
+    // myDrones = mdp_api::get_all_rigidbodies();
 
     std::vector<debugUI*> myUIs;
     
     mdp_api::id myId0;
-    myId0.name = "tubby_00";
     myId0.numeric_id = 0;
-    for(int i = 0; i < 8; i++)
+    for(int i = 0; i < NUM_WINDOWS; i++)
     {
+        myId0.name = "vflie_" + std::to_string(i);
         myDrones.push_back(myId0);
     }
-    bool expanded = true;
+
+
+    bool expanded = EXPANDED;
     for (size_t i = 0; i < myDrones.size(); i++)
     {
         debugUI *myWindow = 0;
@@ -80,9 +88,17 @@ int main(int argc, char *argv[]) {
         for(size_t i = 0; i < myUIs.size(); i++)
         {
             app->add_window(*myUIs[i]);
-        }
+            // myUIs[i]->mySpin.start();
+        }   
 
         });
-
-    return app->run();
+    app->run();
+    
+    // ros::Rate loop_rate(UPDATE_RATE);
+    // while (ros::ok())
+    // {
+    //     ros::spinOnce();
+        
+    //     loop_rate.sleep();
+    // }
 }

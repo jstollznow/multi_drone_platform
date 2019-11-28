@@ -6,6 +6,20 @@
 
 rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 {
+    // look for drone under tag namespace then vrpn output
+    std::string motionTopic = "/vrpn_client_node/" + tag + "/pose";
+    std::string logTopic = tag + "/log";
+    std::string updateTopic = tag + "/update";
+    std::string ApiTopic = tag + "/apiUpdate";
+
+    droneHandle = ros::NodeHandle();
+    droneHandle.setCallbackQueue(&myQueue);
+
+    ApiPublisher = droneHandle.advertise<multi_drone_platform::apiUpdate> (ApiTopic, 20);
+    ApiSubscriber = droneHandle.subscribe(ApiTopic, 20, &rigidBody::apiCallback, this);
+    LogPublisher = droneHandle.advertise<multi_drone_platform::droneLog> (logTopic, 20);
+    MotionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 10,&rigidBody::addMotionCapture, this);
+
     this->tag = tag;
     this->NumericID = id;
     // drone or obstacle
@@ -13,30 +27,22 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 
     this->batteryDying = false;
 
-    // look for drone under tag namespace then vrpn output
-    std::string optiTop = "/vrpn_client_node/" + tag + "/pose";
 
     // 1000 seconds on ground before timeout engaged 
     set_state("LANDED");
     resetTimeout(1000.0f);
 
-    droneHandle = ros::NodeHandle();
-
-    std::string ApiTopic = tag + "/apiUpdate";
-    ApiPublisher = droneHandle.advertise<multi_drone_platform::apiUpdate> (ApiTopic, 20);
-    ApiSubscriber = droneHandle.subscribe(ApiTopic, 20, &rigidBody::apiCallback, this);
-
-    std::string logTopic = tag + "/log";
-
-    logPublisher = droneHandle.advertise<multi_drone_platform::droneLog> (logTopic, 20);
-
-    droneHandle.setCallbackQueue(&myQueue);
     
-    motionSub = droneHandle.subscribe<geometry_msgs::PoseStamped>(optiTop, 10,&rigidBody::addMotionCapture, this);
+
+    
+    MotionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 10,&rigidBody::addMotionCapture, this);
     CurrentPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/CurrentPose", 1);
     DesiredPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/DesiredPose", 1);
 
-    ROS_INFO("Subscribing to %s for motion capture", optiTop.c_str());   
+    this->postLog(0, "Subscribing to motion topic: " + motionTopic);
+    this->postLog(0, "Subscrbing to API topic: " + ApiTopic);
+    this->postLog(0, "Publishing log data to: " + logTopic);
+    this->postLog(0, "Publishing updates to: " + updateTopic);   
 }
 
 rigidBody::~rigidBody()
@@ -51,7 +57,7 @@ void rigidBody::setID(uint32_t id)
 
 void rigidBody::set_state(const std::string& state)
 {
-    ROS_INFO("Setting state to %s", state.c_str());
+    this->postLog(0, "Setting state to " + state);
     this->State = state;
     droneHandle.setParam("mdp/drone_" + std::to_string(this->NumericID) + "/state", state);
 }
@@ -79,7 +85,7 @@ geometry_msgs::Vector3 rigidBody::predictCurrentPosition()
         time_since_mocap_update = 0.0;
     }
 
-    geometry_msgs::Vector3 pos = point_to_vector3(CurrentPose.position);
+    geometry_msgs::Vector3 pos = mdp_conversions::point_to_vector3(CurrentPose.position);
     pos.x += (CurrentVelocity.linear.x * time_since_mocap_update);
     pos.y += (CurrentVelocity.linear.y * time_since_mocap_update);
     pos.z += (CurrentVelocity.linear.z * time_since_mocap_update);
@@ -146,9 +152,9 @@ float duration, bool relativeXY, bool relativeZ)
     this->DesiredPose.position.y = pos.y;
     this->DesiredPose.position.z = pos.z;
     // @TODO: need to manage orientation
-    ROS_INFO("Desired:");
-    ROS_INFO("x: %f, y: %f, z: %f", DesiredPose.position.x, DesiredPose.position.y, DesiredPose.position.z);
-    ROS_INFO("Duration: %f", duration);
+
+    this->postLog(2, "DesPos: [" + std::to_string(DesiredPose.position.x) + ", " + std::to_string(DesiredPose.position.y) +
+    ", " + std::to_string(DesiredPose.position.z) + "] Dur: " + std::to_string(duration));
 
     this->onSetPosition(pos, yaw, duration, relativeXY);
 
@@ -202,9 +208,12 @@ void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg
         HomePosition.x = msg->pose.position.x;
         HomePosition.y = msg->pose.position.y;
         HomePosition.z = msg->pose.position.z;
-
-        ROS_INFO("HOME POS: [%f, %f, %f]", HomePosition.x, HomePosition.y, HomePosition.z);
-     }
+        
+        std::string homePosLog = "HOME POS: [" + std::to_string(HomePosition.x) + ", " 
+        + std::to_string(HomePosition.y) + ", " + std::to_string(HomePosition.z) + "]";
+        this->postLog(0, homePosLog);
+    }
+    
     motionCapture.push_back(*msg);
     if (motionCapture.size() >= 2){this->calculateVelocity();}
     CurrentPose = motionCapture.front().pose;
@@ -235,7 +244,7 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
                 this->set_state("IDLE");
             } else {
                 /* land drone because timeout */
-                ROS_WARN("Timeout stage 2");
+                this->postLog(1, "Timeout stage 2");
                 this->land();
             }
         }
@@ -297,13 +306,15 @@ TYPE
 2 DEBUG
 3 ERROR
 */
+
 void rigidBody::postLog(int type, std::string message)
 {
     multi_drone_platform::droneLog myLogPost;
     myLogPost.type = type;
+    myLogPost.timeStamp = ros::Time::now().toSec();
     myLogPost.logMessage = message;
 
-    logPublisher.publish(myLogPost);
+    LogPublisher.publish(myLogPost);
 
     switch (type)
     {
@@ -323,7 +334,7 @@ void rigidBody::postLog(int type, std::string message)
 }
 
 void rigidBody::handleCommand(){
-    //ROS_INFO("%s: %s",tag.c_str(),State.c_str());
+    this->postLog(0, tag + ": " + State);
     geometry_msgs::Vector3 noMove;
     noMove.x = noMove.y = noMove.z = 0.0f;
     multi_drone_platform::apiUpdate landMsg;
@@ -336,19 +347,25 @@ void rigidBody::handleCommand(){
         switch(APIMap[msg.msg_type]) {
             /* VELOCITY */
             case 0:
-                ROS_INFO("V: [%.2f, %.2f, %.2f] rel_Xy: %d, rel_z: %d, dur: %.1f", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relativeXY, msg.relativeZ, msg.duration);
+                this->postLog(2, "V: [" + std::to_string(msg.posvel.x) + ", " + std::to_string(msg.posvel.y) + ", " + 
+                std::to_string(msg.posvel.z) + "] rel_XY: " + std::to_string(msg.relativeXY) + " rel_Z: " + 
+                std::to_string(msg.relativeZ));
+
                 setDesVel(msg.posvel, msg.yawVal, msg.duration, msg.relativeXY, msg.relativeZ);
                 this->set_state("MOVING");
                 break;
             /* POSITION */
             case 1:
-                ROS_INFO("P: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posvel.x, msg.posvel.y, msg.posvel.z, msg.relativeXY, msg.relativeZ);
+                this->postLog(2, "V: [" + std::to_string(msg.posvel.x) + ", " + std::to_string(msg.posvel.y) + ", " + 
+                std::to_string(msg.posvel.z) + "] rel_XY: " + std::to_string(msg.relativeXY) + " rel_Z: " + 
+                std::to_string(msg.relativeZ));
+
                 setDesPos(msg.posvel, msg.yawVal, msg.duration, msg.relativeXY, msg.relativeZ);
                 this->set_state("MOVING");
                 break;
             /* TAKEOFF */
             case 2:
-                ROS_INFO("Height: %f", msg.posvel.z);
+                this->postLog(2, "Height: " + std::to_string(msg.posvel.z));
                 takeoff(msg.posvel.z, msg.duration);
                 break;
             /* LAND */
@@ -358,7 +375,7 @@ void rigidBody::handleCommand(){
                 break;
             /* HOVER */
             case 4:
-                ROS_INFO("message duration on hover %f", msg.duration);
+                this->postLog(2, "message duration on hover " + std::to_string(msg.duration));
                 if (msg.duration == 0.0f) msg.duration = 2.0f;
 
                 this->hover(msg.duration);
@@ -373,7 +390,7 @@ void rigidBody::handleCommand(){
                 break;
             /* GOTO_HOME */
             case 8:
-                ROS_INFO("message duration on goto home %f", msg.duration);
+                this->postLog(2, "message duration on goto home " + std::to_string(msg.duration));
                 setDesPos(HomePosition, msg.yawVal,msg.duration, false, true);
                 this->set_state("MOVING");
                 if (msg.posvel.z <= 0.0f)
@@ -382,7 +399,7 @@ void rigidBody::handleCommand(){
                 }
                 break;
             default:
-                ROS_ERROR_STREAM("The API command, '" << msg.msg_type << "' is not valid.");
+                this->postLog(2, "The API command, " + msg.msg_type + ", is not valid");
             break;
         }
         dequeueCommand();
@@ -410,7 +427,7 @@ void rigidBody::emergency()
 
 void rigidBody::land(float duration)
 {
-    set_state("LANDING");
+    this->set_state("LANDING");
     this->onLand(duration);
     resetTimeout(duration);
 }
@@ -432,7 +449,7 @@ void rigidBody::hover(float duration)
 
 void rigidBody::resetTimeout(float timeout)
 {
-    ROS_INFO("Reset timer to ~%f seconds", timeout);
+    this->postLog(0, "Reset timer to " + std::to_string(timeout) + " seconds");
     timeout = timeout - 0.2f;
     timeout = std::max(timeout, 0.0f);
     nextTimeoutGen = ros::Time::now().toSec() + timeout;
