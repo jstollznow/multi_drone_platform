@@ -9,8 +9,6 @@
 #define NUM_WINDOWS 20
 #define EXPANDED true
 
-// itds
-
 // #define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/GUI/debugWindow/debug.ui"
 // main window of the application
 std::array<int,2> getPosition(int droneNum, bool expanded)
@@ -56,7 +54,7 @@ std::array<int,2> getPosition(int droneNum, bool expanded)
 int main(int argc, char *argv[]) {
 
     auto app = Gtk::Application::create(argc, argv);
-
+    // Gtk::Application app = Gtk::Application(argc, argv);
     // mdp_api::initialise(10);
     // ros::init(argc, argv, "debugNode");
     std::vector<mdp_api::id> myDrones;
