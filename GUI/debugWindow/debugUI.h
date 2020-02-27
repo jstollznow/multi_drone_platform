@@ -102,8 +102,8 @@ class debugUI: public Gtk::Window
         mdp_api::id myDrone;
         std_msgs::Float32MultiArray updateMsg;
         
-        // ros::Subscriber logSubscriber;
-        // ros::NodeHandle myNode;
+        ros::Subscriber logSubscriber;
+        ros::NodeHandle myNode;
         
         
         bool expanded;
