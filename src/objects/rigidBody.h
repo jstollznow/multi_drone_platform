@@ -34,7 +34,7 @@ class rigidBody
         ros::Subscriber ApiSubscriber;
         ros::Publisher LogPublisher;
         ros::Publisher CurrentPosePublisher;
-        ros::Publisher DesiredPosePublisher;
+        ros::Publisher CurrentVelocityPublisher;
         uint32_t NumericID;
         
     protected:
@@ -59,6 +59,7 @@ class rigidBody
         geometry_msgs::Pose DesiredPose;
         geometry_msgs::Pose CurrentPose;
         geometry_msgs::Vector3 HomePosition;
+
         ros::Subscriber MotionSubscriber;
         ros::NodeHandle droneHandle;
 
@@ -71,8 +72,8 @@ class rigidBody
 /* FUNCTIONS */
     private:
         void calculateVelocity();
-        float getYaw(geometry_msgs::Pose& pos);
         void set_state(const std::string& state);
+        void publishPhysicalState() const;
         
     protected:
         void handleCommand();

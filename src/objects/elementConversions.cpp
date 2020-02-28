@@ -1,6 +1,5 @@
 #include <string>
 #include <vector>
-#include "ros/ros.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Twist.h"
@@ -49,10 +48,12 @@ namespace mdp_conversions
         v.z = 1 - 2 * (pQuaternion.x*pQuaternion.x + pQuaternion.y*pQuaternion.y);
         return v;
     }
+
     float min(float a, float b)
     {
         return (a > b)? b: a;
     }
+
     geometry_msgs::Twist calcVel(geometry_msgs::PoseStamped& lastPos, geometry_msgs::PoseStamped& firstPos)
     {
         geometry_msgs::Twist returnVel;
@@ -91,6 +92,7 @@ namespace mdp_conversions
 
         return returnVel;
     }
+
     geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point& point)
     {
         geometry_msgs::Vector3 v;
@@ -98,5 +100,10 @@ namespace mdp_conversions
         v.y = point.y;
         v.z = point.z;
         return v;
+    }
+
+    float getYaw(const geometry_msgs::Pose& pos)
+    {
+        return toEuler(pos.orientation).Yaw;
     }
 }

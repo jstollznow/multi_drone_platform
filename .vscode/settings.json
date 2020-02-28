@@ -61,7 +61,8 @@
         "csignal": "cpp",
         "geometry": "cpp",
         "mutex": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "random": "cpp"
     },
     "cSpell.words": [
         "opti"

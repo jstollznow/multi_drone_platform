@@ -22,8 +22,8 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
     ApiSubscriber = droneHandle.subscribe(ApiTopic, 2, &rigidBody::apiCallback, this);
     LogPublisher = droneHandle.advertise<multi_drone_platform::droneLog> (logTopic, 20);
     MotionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 1,&rigidBody::addMotionCapture, this);
-    CurrentPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/CurrentPose", 1);
-    DesiredPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/DesiredPose", 1);
+    CurrentPosePublisher = droneHandle.advertise<geometry_msgs::PoseStamped> ("mdp/drone_" + std::to_string(NumericID) + "/pose", 1);
+    CurrentVelocityPublisher = droneHandle.advertise<geometry_msgs::TwistStamped> ("mdp/drone_" + std::to_string(NumericID) + "/velocity", 1);
 
     this->postLog(0, "Subscribing to motion topic: " + motionTopic);
     this->postLog(0, "Subscrbing to API topic: " + ApiTopic);
@@ -38,6 +38,13 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 rigidBody::~rigidBody()
 {
     ROS_INFO("Shutting down rigid body %s", tag.c_str());
+
+    ApiPublisher.shutdown();
+    ApiSubscriber.shutdown();
+    LogPublisher.shutdown();
+    MotionSubscriber.shutdown();
+    CurrentPosePublisher.shutdown();
+    CurrentVelocityPublisher.shutdown();
 }
 
 void rigidBody::setID(uint32_t id)
@@ -60,11 +67,6 @@ bool rigidBody::getControllable()
 std::string rigidBody::getName()
 {
     return this->tag;
-}
-
-float rigidBody::getYaw(geometry_msgs::Pose& pos)
-{
-    return mdp_conversions::toEuler(pos.orientation).Yaw;
 }
 
 geometry_msgs::Vector3 rigidBody::predictCurrentPosition()
@@ -91,7 +93,7 @@ double rigidBody::predictCurrentYaw()
         time_since_mocap_update = 0.0;
     }
 
-    double yaw = getYaw(CurrentPose);
+    double yaw = mdp_conversions::getYaw(CurrentPose);
     yaw += (CurrentVelocity.angular.z * time_since_mocap_update);
 
     return yaw;
@@ -243,6 +245,8 @@ void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg
     // ROS_INFO("Current Position: x: %f, y: %f, z: %f",currPos.position.x, currPos.position.y, currPos.position.z);
     // @TODO: Orientation implementation
 
+    this->publishPhysicalState();
+
     this->lastUpdate = ros::Time::now();
     this->onMotionCapture(msg);
 }
@@ -277,32 +281,16 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
         handleCommand();
     }
 
-    /* publish desired pose and velocity */
-    std_msgs::Float64MultiArray Arr;
-    Arr.layout.data_offset = 0;
-    Arr.data.resize(8);
-    Arr.data[0] = this->DesiredPose.position.x;
-    Arr.data[1] = this->DesiredPose.position.y;
-    Arr.data[2] = this->DesiredPose.position.z;
-    Arr.data[3] = getYaw(this->DesiredPose);
-    Arr.data[4] = this->DesiredVelocity.linear.x;
-    Arr.data[5] = this->DesiredVelocity.linear.y;
-    Arr.data[6] = this->DesiredVelocity.linear.z;
-    Arr.data[7] = this->DesiredVelocity.angular.y;  // @FIX, is this yawrate?
-    DesiredPosePublisher.publish(Arr);
-
-    /* publish current pose and velocity */
-    Arr.data[0] = this->CurrentPose.position.x;
-    Arr.data[1] = this->CurrentPose.position.y;
-    Arr.data[2] = this->CurrentPose.position.z;
-    Arr.data[3] = getYaw(this->CurrentPose);
-    Arr.data[4] = this->CurrentVelocity.linear.x;
-    Arr.data[5] = this->CurrentVelocity.linear.y;
-    Arr.data[6] = this->CurrentVelocity.linear.z;
-    Arr.data[7] = this->CurrentVelocity.angular.y;  // @FIX, is this yawrate?
-    CurrentPosePublisher.publish(Arr);
-
     this->onUpdate();
+}
+
+void rigidBody::publishPhysicalState() const
+{
+    CurrentPosePublisher.publish(this->CurrentPose);
+
+    geometry_msgs::TwistStamped StampedVel = {};
+    StampedVel.twist = this->CurrentVelocity;
+    CurrentVelocityPublisher.publish(StampedVel);
 }
 
 void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)

@@ -16,6 +16,7 @@ namespace mdp_api {
     };
 
     struct position_data {
+        uint64_t time_stamp_nsec;
         float x, y, z;
         float yaw;
     };
