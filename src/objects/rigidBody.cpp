@@ -1,5 +1,6 @@
 #include "rigidBody.h"
 #include "elementConversions.cpp"
+#include "../../include/logger.h"
 
 rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 {
@@ -25,10 +26,10 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
     CurrentPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/CurrentPose", 1);
     DesiredPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(NumericID) + "/DesiredPose", 1);
 
-    this->postLog(0, "Subscribing to motion topic: " + motionTopic);
-    this->postLog(0, "Subscrbing to API topic: " + ApiTopic);
-    this->postLog(0, "Publishing log data to: " + logTopic);
-    this->postLog(0, "Publishing updates to: " + updateTopic);
+    this->log(logger::INFO, "Subscribing to motion topic: " + motionTopic);
+    this->log(logger::INFO, "Subscrbing to API topic: " + ApiTopic);
+    this->log(logger::INFO, "Publishing log data to: " + logTopic);
+    this->log(logger::INFO, "Publishing updates to: " + updateTopic);
 
     // 1000 seconds on ground before timeout engaged 
     set_state("LANDED");
@@ -37,17 +38,12 @@ rigidBody::rigidBody(std::string tag, uint32_t id):mySpin(1,&myQueue)
 
 rigidBody::~rigidBody()
 {
-    ROS_INFO("Shutting down rigid body %s", tag.c_str());
-}
-
-void rigidBody::setID(uint32_t id)
-{
-    this->NumericID = id;
+    this->log(logger::INFO, "Shutting down...");
 }
 
 void rigidBody::set_state(const std::string& state)
 {
-    this->postLog(0, "Setting state to " + state);
+    this->log(logger::INFO, "Setting state to " + state);
     this->State = state;
     droneHandle.setParam("mdp/drone_" + std::to_string(this->NumericID) + "/state", state);
 }
@@ -161,7 +157,7 @@ float duration, bool relativeXY, bool relativeZ)
     this->DesiredPose.position.z = abs_pos.z;
     // @TODO: need to manage orientation
 
-    this->postLog(2, "DesPos: [" + std::to_string(DesiredPose.position.x) + ", " + std::to_string(DesiredPose.position.y) +
+    this->log(logger::DEBUG, "DesPos: [" + std::to_string(DesiredPose.position.x) + ", " + std::to_string(DesiredPose.position.y) +
     ", " + std::to_string(DesiredPose.position.z) + "] Dur: " + std::to_string(duration));
 
     this->onSetPosition(pos, yaw, duration, relativeXY);
@@ -234,7 +230,7 @@ void rigidBody::addMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg
         
         std::string homePosLog = "HOME POS: [" + std::to_string(HomePosition.x) + ", " 
         + std::to_string(HomePosition.y) + ", " + std::to_string(HomePosition.z) + "]";
-        this->postLog(0, homePosLog);
+        this->log(logger::INFO, homePosLog);
     }
     
     motionCapture.push_back(*msg);
@@ -261,13 +257,13 @@ void rigidBody::update(std::vector<rigidBody*>& rigidBodies)
         } else {
             if (State != "IDLE") {
                 /* Go to hover */
-                this->postLog(1, "Timeout stage 1");
-                this->postLog(2, "Timeout hover");
+                this->log(logger::DEBUG, "Timeout stage 1");
+                this->log(logger::WARN, "Timeout hover");
                 this->hover(TIMEOUT_HOVER);
                 this->set_state("IDLE");
             } else {
                 /* land drone because timeout */
-                this->postLog(1, "Timeout stage 2");
+                this->log(logger::DEBUG, "Timeout stage 2");
                 this->land();
             }
         }
@@ -317,47 +313,13 @@ void rigidBody::apiCallback(const multi_drone_platform::apiUpdate& msg)
     }
     else
     {
-        this->postLog(1, "Battery Timeout");
+        this->log(logger::ERROR, "Battery Timeout");
     }
     handleCommand();
 }
 
-/*
-TYPE 
-0 INFO
-1 WARN
-2 DEBUG
-3 ERROR
-*/
-
-void rigidBody::postLog(int type, std::string message)
-{
-    multi_drone_platform::droneLog myLogPost;
-    myLogPost.type = type;
-    myLogPost.timeStamp = ros::Time::now().toSec();
-    myLogPost.logMessage = message;
-
-    LogPublisher.publish(myLogPost);
-
-    switch (type)
-    {
-        case 0:
-        case 2:
-            ROS_INFO("%s: %s", tag.c_str(),message.c_str());
-            break;
-        case 1:
-            ROS_WARN("%s: %s", tag.c_str(),message.c_str());
-            break;
-        case 3:
-            ROS_ERROR("%s: %s", tag.c_str(),message.c_str());
-            break;
-    }
-
-
-}
-
 void rigidBody::handleCommand(){
-    this->postLog(0, tag + ": " + State);
+    this->log(logger::INFO, "State: " + State);
     geometry_msgs::Vector3 noMove;
     noMove.x = noMove.y = noMove.z = 0.0f;
     multi_drone_platform::apiUpdate landMsg;
@@ -368,7 +330,7 @@ void rigidBody::handleCommand(){
     {
         multi_drone_platform::apiUpdate msg = this->CommandQueue.front();
         if (isMsgSignificantlyDifferent(msg)) {
-            ROS_INFO("%s: sending msg: %s", tag.c_str(), msg.msg_type.c_str());
+            this->log(logger::INFO, "Sending msg- " + msg.msg_type);
             this->lastRecievedApiUpdate = msg;
             this->timeOfLastApiUpdate = ros::Time::now();
             switch(APIMap[msg.msg_type]) {
@@ -420,7 +382,7 @@ void rigidBody::handleCommand(){
                     }
                     break;
                 default:
-                    this->postLog(2, "The API command, " + msg.msg_type + ", is not valid");
+                    this->log(logger::WARN, "The API command, " + msg.msg_type + ", is not valid");
                 break;
             }
         }
@@ -455,15 +417,13 @@ void rigidBody::land(float duration)
     resetTimeout(duration);
 }
 
-void rigidBody::takeoff(float height, float duration)
-{
+void rigidBody::takeoff(float height, float duration) {
     this->set_state("TAKING OFF");
     this->onTakeoff(height, duration);
     resetTimeout(duration);
 }
 
-void rigidBody::hover(float duration)
-{
+void rigidBody::hover(float duration) {
     this->set_state("HOVER");
     // set the hover point based on current velocity
     // auto pos = this->CurrentPose.position;
@@ -474,11 +434,14 @@ void rigidBody::hover(float duration)
     setDesPos(pos, 0.0f, duration, true, true);
 }
 
-void rigidBody::resetTimeout(float timeout)
-{
-    this->postLog(0, "Reset timer to " + std::to_string(timeout) + " seconds");
+void rigidBody::resetTimeout(float timeout) {
+    this->log(logger::INFO, "Reset timer to " + std::to_string(timeout) + " seconds");
     timeout = timeout - 0.2f;
     timeout = std::max(timeout, 0.0f);
     nextTimeoutGen = ros::Time::now().toSec() + timeout;
     lastCommandSet = ros::Time::now();
+}
+
+void rigidBody::log(logger::logType msgType, std::string message) {
+    logger::postLog(msgType, this->tag, message, LogPublisher);
 }

@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC -g  -shared -Wl,-soname,libDEBUGWINDOW.so -o devel/lib/libDEBUGWINDOW.so CMakeFiles/DEBUGWINDOW.dir/src/debug/debug_window/debugUI.cpp.o 

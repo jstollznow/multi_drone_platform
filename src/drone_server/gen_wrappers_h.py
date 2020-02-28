@@ -1,5 +1,5 @@
 import glob, os
-
+print("Generating drone wrapper header file")
 wrappers_dir_rel = "../wrappers"
 wrappers_dir = os.path.dirname(os.path.realpath(__file__)) + "/" + wrappers_dir_rel
 

@@ -12,8 +12,8 @@
 #include "sensor_msgs/Imu.h"
 #include "std_msgs/Float64MultiArray.h"
 
+
 #include "multi_drone_platform/apiUpdate.h"
-#include "multi_drone_platform/droneLog.h"
 
 #define DEFAULT_QUEUE 10
 #define TIMEOUT_HOVER 20
@@ -73,6 +73,7 @@ class rigidBody
         void calculateVelocity();
         float getYaw(geometry_msgs::Pose& pos);
         void set_state(const std::string& state);
+        void log(logger::logType msgType, std::string message);
         
     protected:
         void handleCommand();
@@ -114,8 +115,6 @@ class rigidBody
 
         void update(std::vector<rigidBody*>& rigidBodies);
         void apiCallback(const multi_drone_platform::apiUpdate& msg);
-  
-        void postLog(int type, std::string message);
   
         void emergency();
         void land(float duration = 5.0f);

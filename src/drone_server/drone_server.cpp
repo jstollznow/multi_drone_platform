@@ -1,7 +1,7 @@
 #include "drone_server.h"
 #include "multi_drone_platform/apiUpdate.h"
 
-// constructor
+
 drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
 {
     ROS_INFO("Initialising drone server1");
@@ -11,35 +11,16 @@ drone_server::drone_server() : Node(), LoopRate(LOOP_RATE_HZ)
     ListServer = Node.advertiseService(LIST_SRV_TOPIC, &drone_server::APIListService, this);
     std::string droneName1;
     std::string droneName2;
-    // if (Node.hasParam("cflie_test"))
-    // {
-    //     Node.getParam("cflie_test", droneName1);
-    //     ROS_INFO("Adding %s", droneName1.c_str());
-    //     addNewRigidbody(droneName1);
-    // }
-    // ROS_INFO("Adding next drone");
     // if (Node.hasParam("cflie_test1"))
     // {
     //     Node.getParam("cflie_test1", droneName2);
     //     ROS_INFO("Adding %s", droneName2.c_str());
     //     addNewRigidbody(droneName2);
     // }
-    // addNewRigidbody("cflie_00");
-    // addNewRigidbody("cflie_E7");
-    // addNewRigidbody("object_00");
-
-    // addNewRigidbody("cflie_15");
-    // addNewRigidbody("cflie_03");
-    // ros::Duration d(2.0);
-    // d.sleep();
     addNewRigidbody("vflie_00");
     addNewRigidbody("vflie_01");
-    // addNewRigidbody("vflie_02");
-    // addNewRigidbody("vflie_03");
-    // addNewRigidbody("vflie_04");
 }
 
-// deconstructor
 drone_server::~drone_server()
 {
     this->shutdown();
@@ -47,7 +28,6 @@ drone_server::~drone_server()
 
 void drone_server::shutdown()
 {
-    /* cleanup all drone pointers in the rigidbody list */
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         removeRigidbody(i);
     }
@@ -73,9 +53,7 @@ mdp_id drone_server::addNewRigidbody(std::string pTag)
 
         RigidBodyList.push_back(RB);
         ID.name = pTag.c_str();
-        ID.numeric_id = RigidBodyList.size()-1;
-        RB->setID(ID.numeric_id);
-        // setup VRPN Callback Queue
+        
         RB->mySpin.start();
 
         ROS_INFO_STREAM("Successfully added drone with the tag: " << pTag);
@@ -97,12 +75,12 @@ void drone_server::removeRigidbody(unsigned int pDroneID)
             /* update drone state on param server */
             // @FIX: shoudn't we just remove the parameter?
             // Node.param.deleteParam?
-            Node.setParam("mdp/drone_" + std::to_string(pDroneID) + "/state", "DELETED");
+            Node.deleteParam("mdp/drone_" + std::to_string(pDroneID) + "/state");
         }
     }
 }
 
-bool drone_server::getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigidbody)
+bool drone_server::getRigidbodyFromDroneID(uint32_t pID, rigidBody*& pReturnRigidbody)
 {
     if (pID >= RigidBodyList.size()) {
         ROS_WARN("supplied ID is greater than size of rigidbody list: %d >= %d", pID, RigidBodyList.size());
@@ -156,7 +134,9 @@ void drone_server::run()
             float avgDroneUpdate = TimeToUpdateDrones/timingPrint;
             timingPrint = 0;
             ROS_INFO("Avg. Loop Info--");
-            ROS_INFO("Actual [Hz]: %.2f, Wait [s]: %.4f, Drones [s]: %.4f",avgLoopRate, avgWaitTime, avgDroneUpdate);
+            ROS_INFO("Actual [Hz]: %.2f, Wait [s]: %.4f, Drones [s]: %.4f",
+            avgLoopRate, avgWaitTime, avgDroneUpdate);
+
             AchievedLoopRate = 0.0f;
             WaitTime = 0.0f;
             TimeToUpdateDrones = 0.0f;
@@ -165,29 +145,20 @@ void drone_server::run()
     }
     ros::Duration d(2.0);
     d.sleep();
-    // for formatting
-    printf("\n");
+    std::cout<<std::endl;
 }
-
-// static std::map<std::string, int> APIMap = {
-//     {"VELOCITY", 0},    {"POSITION", 1},    {"TAKEOFF", 2},
-//     {"LAND", 3},        {"HOVER", 4},       {"EMERGENCY", 5},
-//     {"SET_HOME", 6},    {"GET_HOME", 7},    {"GOTO_HOME", 8},
-//     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
-// };
 
 void drone_server::EmergencyCallback(const std_msgs::Empty::ConstPtr& msg)
 {
+    // twice for assurance
     ROS_ERROR("EMERGENCY CALLED ON DRONE SERVER");
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] != nullptr) {
-            // is there any reason why this is called twice?
             RigidBodyList[i]->emergency();
         }
     }
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] != nullptr) {
-            // is there any reason why this is called twice?
             RigidBodyList[i]->emergency();
         }
     }
@@ -309,7 +280,6 @@ bool drone_server::APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::
     Res.frame_yaml = "";
     for (size_t i = 0; i < RigidBodyList.size(); i++) {
         if (RigidBodyList[i] == nullptr) continue;
-        // printf("adding RB to list: %d, %s\n", i, RigidBodyList[i]->getName().c_str());
         Res.frame_yaml += std::to_string(i) + ":" + RigidBodyList[i]->getName() + " ";
     }
     return true;

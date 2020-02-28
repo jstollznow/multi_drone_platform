@@ -20,7 +20,6 @@
 struct mdp_id{
     std::string name = "";
     uint32_t numeric_id = 0;
-    bool isValid() const {return (name.length() != 0);}
 };
 
 class drone_server
