@@ -6,7 +6,7 @@
 #include <geometry_msgs/Vector3.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <ros/callback_queue.h>
-#include <multi_drone_platform/droneLog.h>
+#include "multi_drone_platform/log.h"
 #include "gtkRef.h"
 #include "../../../include/user_api.h"
 
