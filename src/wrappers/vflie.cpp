@@ -1,4 +1,4 @@
-#include "../objects/rigidBody.h"
+#include "rigidBody.h"
 
 std::string getPoseTopic(std::string& tag)
 {

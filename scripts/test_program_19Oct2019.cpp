@@ -1,4 +1,4 @@
-#include "../include/user_api.h"
+#include "user_api.h"
 #include "ros/ros.h"
 
 #define DO_FLIGHT_TEST      0

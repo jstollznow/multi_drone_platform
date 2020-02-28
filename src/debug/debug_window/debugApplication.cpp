@@ -40,14 +40,18 @@ std::array<int,2> debugApplication::getWindowPosition(int droneNum, bool expande
     position[1] = pos_y + ySplit * (y_index);
     return position;
 }
-
+void debugApplication::showWindows() {
+    for(auto& it : droneDebugUIs) {
+        it.second->show();
+    }
+}
 debugApplication::debugApplication(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID):Gtk::Application(argc, argv, appID)
 {
     bool expanded = EXPANDED;
     // node stuff, create myDrones
     ros::init(argc, argv, NODE_NAME);
 
-    for (size_t i = 0; i < droneDebugUIs.size(); i++)
+    for (size_t i = 0; i < myDrones.size(); i++)
     {
         debugUI *myWindow = 0;
         auto ui = Gtk::Builder::create_from_file(UI_PATH);
@@ -60,11 +64,10 @@ debugApplication::debugApplication(std::vector<mdp_api::id> myDrones, int argc, 
     //                                   unsigned int interval, int priority = Glib::PRIORITY_DEFAULT);
 
     this->signal_startup().connect([&]{
-        auto it = droneDebugUIs.begin();
-        while (it != droneDebugUIs.end())
+        for(auto& it : droneDebugUIs)
         {
-            this->add_window(*(it->second));  
-            it++;
+            this->add_window(*(it.second));
         }
     });
+    this->run();
 }

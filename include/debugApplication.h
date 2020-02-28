@@ -3,7 +3,7 @@
 #include <vector>
 #include <array>
 
-#include "../../../include/user_api.h"
+#include "user_api.h"
 #include "debugUI.h"
 
 #define NODE_NAME "debugApplication"
@@ -13,10 +13,10 @@
 class debugApplication: public Gtk::Application {
     private:
         std::array<int,2> getWindowPosition(int droneNum, bool expanded);
+        void showWindows();
     protected:
         ros::NodeHandle myAppNode;
         std::map<std::string, debugUI*> droneDebugUIs;
     public:
-        debugApplication(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID = "DebugApp");
-        void run();
+        debugApplication(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID = "debugApp");
 };

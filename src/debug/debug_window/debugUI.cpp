@@ -32,6 +32,7 @@ void debugUI::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool
     droneNameLabel->set_label(myDrone.name);
     speedScale->set_value(1.0);
     this->show();
+
 }
 
 void debugUI::updateStats()
@@ -48,7 +49,7 @@ void debugUI::on_emergencyButton_clicked()
 
 }
 
-void debugUI::logCallback(const multi_drone_platform::droneLog::ConstPtr& msg)
+void debugUI::logCallback(const multi_drone_platform::log::ConstPtr& msg)
 {
     if (first)
     {
@@ -64,7 +65,7 @@ void debugUI::logCallback(const multi_drone_platform::droneLog::ConstPtr& msg)
 	streamObj << time;
 
     
-    std::string newLogLine = streamObj.str() + ": " + logType[msg->type] + " " + msg->logMessage + "\n";
+    std::string newLogLine = streamObj.str() + ": " + msg->type + " " + msg->logMessage + "\n";
 
     logTextBuffer->insert(logTextBuffer->end(), newLogLine);
 

@@ -1,5 +1,5 @@
 # log type
-int16 type
+string type
 
 float32 timeStamp
 

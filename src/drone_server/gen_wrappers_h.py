@@ -3,15 +3,17 @@ print("Generating drone wrapper header file")
 wrappers_dir_rel = "../wrappers"
 wrappers_dir = os.path.dirname(os.path.realpath(__file__)) + "/" + wrappers_dir_rel
 
-wrapper_h = open(os.path.dirname(os.path.realpath(__file__)) + "/wrappers.h", 'wt')
-wrapper_h.write("#pragma once\n\n#include <map>\n#include <string>\n#include \"../objects/rigidBody.h\"\n\n")
+wrapper_h_dir_rel = "../../include"
+wrapper_h_path = os.path.dirname(os.path.realpath(__file__)) + "/" + wrapper_h_dir_rel
+wrapper_h = open(wrapper_h_path + "/wrappers.h", 'wt')
+wrapper_h.write("#pragma once\n\n#include <map>\n#include <string>\n#include \"rigidBody.h\"\n\n")
 
 os.chdir(wrappers_dir)
 wrapper_files = glob.glob("*.cpp")
 
 # include all the wrapper files
 for file in wrapper_files:
-    wrapper_h.write("#include \"" + wrappers_dir_rel + "/" + file + "\"\n")
+    wrapper_h.write("#include \"../src/wrappers/" + file + "\"\n")
 
 # fill out the map
 wrapper_h.write("\nstd::map<std::string, unsigned int> drone_type_map = {\n")

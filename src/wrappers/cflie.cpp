@@ -1,4 +1,4 @@
-#include "../objects/rigidBody.h"
+#include "rigidBody.h"
 #include "crazyflie_driver/AddCrazyflie.h"
 #include "crazyflie_driver/RemoveCrazyflie.h"
 #include "std_srvs/Empty.h"

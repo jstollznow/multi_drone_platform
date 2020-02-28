@@ -1,6 +1,6 @@
 
 #include <ros/ros.h>
-#include "multi_drone_platform/droneLog.h"
+#include "multi_drone_platform/log.h"
 
 class logger {
     public:

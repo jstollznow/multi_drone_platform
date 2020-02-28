@@ -8,22 +8,10 @@
 #include <ros/callback_queue.h>
 #include "multi_drone_platform/log.h"
 #include "gtkRef.h"
-#include "../../../include/user_api.h"
+#include "user_api.h"
 
 #define UPDATE_RATE 10
-#define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/GUI/debugWindow/debug.ui"
-
-static std::map<int, std::string> logType = {
-    {0, "INFO"}, {1, "WARN"}, {2, "DEBUG"},{3, "ERROR"}
-};
-/*
-TYPE 
-0 INFO
-1 WARN
-2 DEBUG
-3 ERROR
-*/
-
+#define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/src/debug/debug_window/debug.ui"
 
 class debugUI: public Gtk::Window
 {
@@ -118,5 +106,5 @@ class debugUI: public Gtk::Window
         void on_expandButton_clicked();
         void on_debugWindow_destroy();
         void updateCallback(const std_msgs::Float32MultiArray::ConstPtr& msg);
-        void logCallback(const multi_drone_platform::droneLog::ConstPtr& msg);
+        void logCallback(const multi_drone_platform::log::ConstPtr& msg);
 };

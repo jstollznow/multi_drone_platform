@@ -3,7 +3,7 @@
 #include <vector>
 #include <array>
 
-#include "../../include/user_api.h"
+#include "user_api.h"
 #include "debugUI.h"
 
 #define NUM_WINDOWS 20

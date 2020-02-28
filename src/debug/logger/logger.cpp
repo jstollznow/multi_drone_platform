@@ -1,8 +1,8 @@
-#include "../../../include/logger.h"
+#include "logger.h"
 
 void logger::postLog(logType type, std::string caller, std::string message, ros::Publisher LogPublisher)
 {
-    multi_drone_platform::droneLog myLogPost;
+    multi_drone_platform::log myLogPost;
     myLogPost.type = type;
     myLogPost.timeStamp = ros::Time::now().toSec();
     myLogPost.logMessage = message;

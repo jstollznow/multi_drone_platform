@@ -2,10 +2,9 @@
 #include <vector>
 #include <memory>
 
-#include "drone_server_msg_translations.cpp"
-
-#include "../objects/rigidBody.h"
+#include "rigidBody.h"
 #include "wrappers.h"
+#include "../src/drone_server/drone_server_msg_translations.cpp"
 
 #define LOOP_RATE_HZ 100
 #define TIMING_UPDATE 5
