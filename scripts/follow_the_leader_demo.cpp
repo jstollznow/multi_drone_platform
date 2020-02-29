@@ -27,7 +27,7 @@ input lastInput;
 std::vector<mdp_api::id> drones;
 int droneID;
 bool localCoord;
-bool hlCommand;
+bool highLevelCommand;
 bool shouldFinish = false;
 
 bool sync;
@@ -70,7 +70,7 @@ bool ps4_remote::emergency_handle(int allDrones, int oneDrone) {
 
     // PS Button
     if (allDrones == 1) {   
-        hlCommand = true;
+        highLevelCommand = true;
         ROS_INFO("ALL EMERGENCY butt");
         for(size_t i = 0; i < drones.size(); i++)
         {
@@ -80,7 +80,7 @@ bool ps4_remote::emergency_handle(int allDrones, int oneDrone) {
     }
     // Share Button
     else if (oneDrone == 1) {
-        hlCommand = true;
+        highLevelCommand = true;
         ROS_INFO("%s: EMERGENCY butt", drones[droneID].name.c_str());
         if (drones.size() > droneID) {
            mdp_api::cmd_emergency(drones[droneID]);
@@ -95,7 +95,7 @@ bool ps4_remote::emergency_handle(int allDrones, int oneDrone) {
 bool ps4_remote::option_change_handle(float idChange, int coordChange) {
     
     if (coordChange != 0) {
-        hlCommand = true;   
+        highLevelCommand = true;   
         if (localCoord) {
             localCoord = false;
             ROS_INFO("%s: Changing control to POS", drones[droneID].name.c_str());
@@ -113,7 +113,7 @@ bool ps4_remote::option_change_handle(float idChange, int coordChange) {
 bool ps4_remote::high_lvl_command_handle(int takeoff, int land, int hover, int goToHome) { 
     // cross
     if (takeoff == 1) {
-        hlCommand = true;
+        highLevelCommand = true;
         ROS_INFO("%s: Takeoff butt", drones[droneID].name.c_str());
         mdp_api::cmd_takeoff(drones[droneID], 0.5f, TAKEOFF_TIME);
         return true;
@@ -127,14 +127,14 @@ bool ps4_remote::high_lvl_command_handle(int takeoff, int land, int hover, int g
     }
     // triangle
     else if (hover == 1) {
-        hlCommand = true;
+        highLevelCommand = true;
         ROS_INFO("%s: Hover butt", drones[droneID].name.c_str());
         mdp_api::cmd_hover(drones[droneID]);
         return true;
     }
     // square
     else if (goToHome == 1) {
-        hlCommand = true;
+        highLevelCommand = true;
         ROS_INFO("%s: GoToHome butt", drones[droneID].name.c_str());
         shouldFinish = true;
         return true;
@@ -192,7 +192,7 @@ void ps4_remote::control_update() {
         lastInput.axesInput[2] != 0.0f || 
         lastInput.yaw != 0.0f) {
         ROS_INFO("Control update: %d", lastInput.lastUpdate.nsec);
-        hlCommand = false;
+        highLevelCommand = false;
         if (!localCoord) {
             ROS_INFO("%s: Change position by [%.2f, %.2f, %.2f] and yaw by %f", drones[droneID].name.c_str(),
             lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
@@ -206,7 +206,7 @@ void ps4_remote::control_update() {
         }
     }
     else {
-        if (!hlCommand) {
+        if (!highLevelCommand) {
             mdp_api::cmd_hover(drones[droneID]);
         }
     }
@@ -242,7 +242,7 @@ void ps4_remote::run(int argc, char **argv) {
     int count = 0;
  
     sync = false;
-    hlCommand = true;
+    highLevelCommand = true;
     localCoord = false;
 
     ltMax = 0.0f;

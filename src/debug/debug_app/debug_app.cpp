@@ -37,6 +37,7 @@ std::array<int,2> debug_app::get_window_position(int droneNum, bool expanded) {
     position[1] = pos_y + ySplit * (y_index);
     return position;
 }
+
 void debug_app::show_windows() {
     for(auto& it : droneDebugWindows) {
         it.second->show();

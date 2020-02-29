@@ -95,8 +95,7 @@ double rigidbody::vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3
 }
 
 void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw,
-float duration, bool relativeXY, bool relativeZ)
-{
+float duration, bool relativeXY, bool relativeZ) {
     auto currentPosition = predict_current_position();
     // ROS_INFO("Current:");
     // ROS_INFO("x: %f, y: %f, z: %f", CurrentPosition.position.x, CurrentPosition.position.y, CurrentPosition.position.z);
@@ -187,13 +186,11 @@ geometry_msgs::Vector3 rigidbody::get_home_coordinates() {
 
 void rigidbody::set_home_coordiates(geometry_msgs::Vector3 pos, bool relative) {
     // z coord does not matter for home position, will be set in each case
-    if (relative)
-    {
+    if (relative) {
         homePosition.x = currentPose.position.x + pos.x;
         homePosition.y = currentPose.position.y + pos.y;
     }
-    else
-    {
+    else {
         homePosition.x = pos.x;
         homePosition.y = pos.y;
     }
@@ -209,9 +206,8 @@ void rigidbody::calculate_velocity()
     // ROS_INFO("%s linear velocity [x: %f,y: %f,z: %f]", tag.c_str(), currVel.linear.x, currVel.linear.y, currVel.linear.z);
 }
 
-void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg)
-{
-    if(motionCapture.size() == 0){
+void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    if(motionCapture.size() == 0) {
         homePosition.x = msg->pose.position.x;
         homePosition.y = msg->pose.position.y;
         homePosition.z = msg->pose.position.z;
@@ -231,13 +227,11 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     this->on_motion_capture(msg);
 }
 
-geometry_msgs::PoseStamped rigidbody::get_motion_capture()
-{
+geometry_msgs::PoseStamped rigidbody::get_motion_capture() {
     return motionCapture.front();
 }
 
-void rigidbody::update(std::vector<rigidbody*>& rigidbodies)
-{
+void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
     if (ros::Time::now().toSec() >= nextTimeoutGen) {
         if (state == "LANDING" || state == "LANDED") {
             set_state("LANDED");
@@ -387,14 +381,12 @@ void rigidbody::dequeue_command() {
     }
 }
 
-void rigidbody::emergency()
-{
+void rigidbody::emergency() {
     this->set_state("EMERGENCY");
     this->on_emergency();
 }
 
-void rigidbody::land(float duration)
-{
+void rigidbody::land(float duration) {
     this->set_state("LANDING");
     this->on_land(duration);
     reset_timeout(duration);

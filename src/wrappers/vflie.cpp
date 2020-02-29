@@ -204,8 +204,7 @@ public:
         on_set_position(pos, this->yaw, duration, false);
     }
 
-    void on_emergency() override
-    {
+    void on_emergency() override {
         geometry_msgs::Vector3 pos;
         pos.x = this->currentPose.position.x;
         pos.y = this->currentPose.position.y;

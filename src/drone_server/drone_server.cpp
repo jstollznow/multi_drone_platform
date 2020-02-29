@@ -118,9 +118,8 @@ void drone_server::run() {
         waitTime += (waitTimeEnd.toSec() - waitTimeStart.toSec());
         timeToUpdateDrones += (rigidbodyEnd.toSec() - rigidbodyStart.toSec());
 
-
-        if (timingPrint >= TIMING_UPDATE*LOOP_RATE_HZ) // 5 seconds
-        {
+        // 5 Seconds
+        if (timingPrint >= TIMING_UPDATE*LOOP_RATE_HZ) {
             float avgLoopRate = achievedLoopRate/timingPrint;
             float avgWaitTime = waitTime/timingPrint;
             float avgDroneUpdate = timeToUpdateDrones/timingPrint;

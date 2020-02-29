@@ -46,9 +46,11 @@ geometry_msgs::Vector3 get_up_vector(geometry_msgs::Quaternion pQuaternion) {
     v.z = 1 - 2 * (pQuaternion.x*pQuaternion.x + pQuaternion.y*pQuaternion.y);
     return v;
 }
+
 float min(float a, float b) {
     return (a > b)? b: a;
 }
+
 geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped& lastPos, geometry_msgs::PoseStamped& firstPos) {
     geometry_msgs::Twist returnVel;
     
@@ -86,6 +88,7 @@ geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped& lastPos, geometry_msgs
 
     return returnVel;
 }
+
 geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point& point) {
     geometry_msgs::Vector3 v;
     v.x = point.x;

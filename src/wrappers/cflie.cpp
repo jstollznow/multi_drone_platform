@@ -38,8 +38,7 @@
 ***************************************************************************************************************************************/
 
 
-class cflie : public rigidbody
-{
+class cflie : public rigidbody {
     private:
     const std::string linkUri = "radio://0/80/2M";
     
@@ -62,8 +61,7 @@ class cflie : public rigidbody
 
     bool doOnce = false;
 
-    void go_to(geometry_msgs::Vector3 goal, float yaw, float duration, bool isRelative)
-    {
+    void go_to(geometry_msgs::Vector3 goal, float yaw, float duration, bool isRelative) {
         crazyflie_driver::GoTo goToMsg;
         goToMsg.request.goal.x = goal.x;
         goToMsg.request.goal.y = goal.y;
@@ -84,21 +82,17 @@ class cflie : public rigidbody
 
         reset_timeout(duration);
     }
-    void battery_log(const std_msgs::Float32::ConstPtr &msg)
-    {
-        if (msg->data <= 3.15f)
-        {
+    void battery_log(const std_msgs::Float32::ConstPtr &msg) {
+        if (msg->data <= 3.15f) {
             ROS_WARN("Battery dying soon...");
             batteryDying = true;
         }
-        else 
-        {
+        else {
             batteryDying = false;
         }
     }
     public:
-    cflie(std::string tag, uint32_t id):rigidbody(tag, id)
-    {
+    cflie(std::string tag, uint32_t id):rigidbody(tag, id) {
         ROS_INFO("I am here, its %s", tag.c_str());
         droneAddress = (tag.substr(tag.find_first_of('_')+1, tag.length()));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
@@ -118,12 +112,10 @@ class cflie : public rigidbody
         msg.request.enable_logging_pose = false;
         msg.request.enable_logging_packets = false;
 
-        if (addCrazyflieService.call(msg)) 
-        {
+        if (addCrazyflieService.call(msg)) {
             ROS_INFO("%s launched on Crazyflie Server", tag.c_str());
         }
-        else
-        {
+        else {
             ROS_ERROR("Could not add %s to Crazyflie Server, please check the drone tag", tag.c_str());
         }
 
@@ -143,8 +135,7 @@ class cflie : public rigidbody
 
     };
 
-    ~cflie() 
-    {
+    ~cflie() {
         // use remove service, need to keep ros alive for a bit, ctrl c closes the crazyflie server before we have a chance to remove the crazyflie.
         // will need to make a workaround which keeps the server up long enough for us to remove the crazyflie...
 
@@ -157,8 +148,7 @@ class cflie : public rigidbody
         //     ROS_INFO("Failed to remove %s from the crazyflie server", tag.c_str());
         // }
     }
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg)
-    {
+    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {
         // external_pose.publish(msg);
         geometry_msgs::PointStamped pointMsg;
         pointMsg.header = msg->header;
@@ -166,8 +156,7 @@ class cflie : public rigidbody
         externalPosition.publish(pointMsg);
     }
     
-    void on_update() override
-    {
+    void on_update() override {
         if (doOnce == false) {
             droneHandle.setParam( "/" + tag + "/commander/enHighLevel", 1);
             droneHandle.setParam("/" + tag + "/stabilizer/estimator", 2);
@@ -187,13 +176,11 @@ class cflie : public rigidbody
         
     }
 
-    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override
-    {
+    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override {
         go_to(pos, yaw, duration, isRelative);
     }
 
-    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override
-    {
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override {
         geometry_msgs::Vector3 positionGoal;
         positionGoal.x = (vel.x * duration);
         positionGoal.y = (vel.y * duration);
@@ -202,8 +189,7 @@ class cflie : public rigidbody
         go_to(positionGoal, yawrate , duration, true);
     }
 
-    void on_takeoff(float height, float duration) override
-    {
+    void on_takeoff(float height, float duration) override {
         ROS_INFO("Takeoff sent to %s", tag.c_str());
         crazyflie_driver::Takeoff msg;
         msg.request.duration = ros::Duration(duration);
@@ -213,8 +199,7 @@ class cflie : public rigidbody
         }
     }
 
-    void on_land(float duration) override
-    {
+    void on_land(float duration) override {
         ROS_INFO("Land sent to %s", tag.c_str());
         crazyflie_driver::Land msg;
         msg.request.duration = ros::Duration(duration);
@@ -225,16 +210,13 @@ class cflie : public rigidbody
         }
     }
 
-    void on_emergency() override
-    {
+    void on_emergency() override {
         ROS_INFO("Emergency sent to %s", tag.c_str());
         std_srvs::Empty msg;
-        if(emergencyService.call(msg))
-        {
+        if(emergencyService.call(msg)) {
             ROS_INFO("Emergency land for %s successful", tag.c_str());
         }
-        else
-        {
+        else {
             ROS_INFO("Emergency land for %s not successful", tag.c_str());
         }
     }

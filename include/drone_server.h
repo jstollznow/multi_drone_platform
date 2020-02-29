@@ -16,13 +16,12 @@
 #define EMERGENCY_TOPIC "mdp_api_emergency"
 
 
-struct mdp_id{
+struct mdp_id {
     std::string name = "";
     uint32_t numeric_id = 0;
 };
 
-class drone_server
-{
+class drone_server {
     private:
         std::vector<rigidbody*> rigidbodyList;
 

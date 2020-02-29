@@ -13,8 +13,7 @@
 #define UPDATE_RATE 10
 #define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/src/debug/debug_window/debug.ui"
 
-class debug_window: public Gtk::Window
-{
+class debug_window: public Gtk::Window {
     private:
         Glib::RefPtr<Gtk::Builder> builder;
         Gtk::Label* droneNameLabel;
