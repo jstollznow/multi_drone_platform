@@ -11,7 +11,7 @@
 #include "user_api.h"
 
 #define UPDATE_RATE 10
-#define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/src/debug/debug_window/debug.ui"
+#define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/src/debug/debug_app/debug.ui"
 
 class debug_window: public Gtk::Window {
     private:
