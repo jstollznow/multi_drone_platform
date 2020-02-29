@@ -28,6 +28,7 @@ class drone_server {
         ros::NodeHandle node;
         ros::Subscriber inputAPISub;
         ros::Subscriber emergencySub;
+        ros::Publisher logPublisher;
         ros::ServiceServer listServer;
         ros::ServiceServer dataServer;
 
@@ -42,6 +43,8 @@ class drone_server {
 
         mdp_id add_new_rigidbody(std::string pTag);
         void remove_rigidbody(unsigned int pDroneID);
+
+        void log(logger::log_type logType, std::string message);
 
         bool get_rigidbody_from_drone_id(uint32_t pID, rigidbody* &pReturnRigidbody);
 

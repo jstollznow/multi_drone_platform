@@ -3,13 +3,19 @@
 
 
 drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
-    ROS_INFO("Initialising drone server1");
     inputAPISub = node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 2, &drone_server::api_callback, this);
     emergencySub = node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::emergency_callback, this);
+    std::string logTopic = NODE_NAME;
+    logTopic += "/log";
+    logPublisher = node.advertise<multi_drone_platform::log> (logTopic, 10);
+    
+    this->log(logger::INFO, "Initialising");
+    
     dataServer = node.advertiseService(SRV_TOPIC, &drone_server::api_get_data_service, this);
     listServer = node.advertiseService(LIST_SRV_TOPIC, &drone_server::api_list_service, this);
-    std::string droneName1;
-    std::string droneName2;
+    
+    // std::string droneName1;
+    // std::string droneName2;
     // if (Node.hasParam("cflie_test1"))
     // {
     //     Node.getParam("cflie_test1", droneName2);
@@ -29,12 +35,16 @@ void drone_server::shutdown() {
         remove_rigidbody(i);
     }
     rigidbodyList.clear();
+    // is shutdown called before or after ROS is killed?
+    // if after uncomment following line and comment printf
+    // this->log(logger::INFO, "Shutting down");
     printf("Shutting down drone server\n");
 }
 
 // @TODO: implementation task on Trello
 void drone_server::init_rigidbodies_from_VRPN() {
-    ROS_WARN("Initialising drones from vrpn is currently not supported, please add drones manually");
+    this->log(logger::WARN, "Initialising drones from vrpn is \
+    currently not supported, please add drones manually");
 }
 
 
@@ -51,9 +61,9 @@ mdp_id drone_server::add_new_rigidbody(std::string pTag) {
         
         RB->mySpin.start();
 
-        ROS_INFO_STREAM("Successfully added drone with the tag: " << pTag);
+        this->log(logger::DEBUG, "Successfully added '" + pTag + "'");
     } else {
-        ROS_ERROR_STREAM("Unable to add drone with tag: '" << pTag << "', check if drone type naming is correct.");
+        this->log(logger::ERROR, "Unable to add '" + pTag + "', check if drone type naming is correct.");
     }
     return ID;
 }
@@ -62,6 +72,9 @@ void drone_server::remove_rigidbody(unsigned int pDroneID) {
     /* if pDroneID is a valid index and the object at that location is not null, delete */
     if (pDroneID < rigidbodyList.size()) {
         if (rigidbodyList[pDroneID] != nullptr) {
+            
+            this->log(logger::WARN, "Removing '" + rigidbodyList[pDroneID]->get_name() + "'");
+
             delete rigidbodyList[pDroneID];
             /* and set to null */
             rigidbodyList[pDroneID] = nullptr;
@@ -76,7 +89,8 @@ void drone_server::remove_rigidbody(unsigned int pDroneID) {
 
 bool drone_server::get_rigidbody_from_drone_id(uint32_t pID, rigidbody*& pReturnRigidbody) {
     if (pID >= rigidbodyList.size()) {
-        ROS_WARN("supplied ID is greater than size of rigidbody list: %d >= %d", pID, rigidbodyList.size());
+        this->log(logger::WARN, "Supplied ID is greater than size of rigidbody list: " + 
+        std::to_string(pID) + " >= " + std::to_string(rigidbodyList.size()));
         return false;
     }
 
@@ -124,9 +138,13 @@ void drone_server::run() {
             float avgWaitTime = waitTime/timingPrint;
             float avgDroneUpdate = timeToUpdateDrones/timingPrint;
             timingPrint = 0;
-            ROS_INFO("Avg. Loop Info--");
-            ROS_INFO("Actual [Hz]: %.2f, Wait [s]: %.4f, Drones [s]: %.4f",
-            avgLoopRate, avgWaitTime, avgDroneUpdate);
+
+            std::string loopInfo = "Avg. Loop Info--\n";
+            loopInfo += "Actual [Hz]: " + std::to_string(avgLoopRate) + 
+            ", Wait [s]: " + std::to_string(avgWaitTime) + ", Drones [s]: " 
+            + std::to_string(avgDroneUpdate);
+
+            this->log(logger::INFO, loopInfo);
 
             achievedLoopRate = 0.0f;
             waitTime = 0.0f;
@@ -141,7 +159,7 @@ void drone_server::run() {
 
 void drone_server::emergency_callback(const std_msgs::Empty::ConstPtr& msg) {
     // twice for assurance
-    ROS_ERROR("EMERGENCY CALLED ON DRONE SERVER");
+    this->log(logger::ERROR, "EMERGENCY CALLED");
     for (size_t i = 0; i < rigidbodyList.size(); i++) {
         if (rigidbodyList[i] != nullptr) {
             rigidbodyList[i]->emergency();
@@ -166,7 +184,6 @@ void drone_server::api_callback(const geometry_msgs::TransformStamped::ConstPtr&
     mdp::input_msg inputMsg((geometry_msgs::TransformStamped*)input.get());
     multi_drone_platform::api_update msg;
 
-    // ROS_INFO("drone server recieved %s", Input.msg_type().c_str());
 
     rigidbody* RB;
     if (!get_rigidbody_from_drone_id(inputMsg.drone_id().numeric_id(), RB)) {
@@ -193,7 +210,7 @@ void drone_server::api_callback(const geometry_msgs::TransformStamped::ConstPtr&
 bool drone_server::api_get_data_service(nav_msgs::GetPlan::Request &pReq, nav_msgs::GetPlan::Response &pRes) {
     mdp::drone_feedback_srv_req req(&pReq);
     mdp::drone_feedback_srv_res res(&pRes);
-    ROS_INFO_STREAM("Server recieved get data service of type: " << req.msgType());
+    this->log(logger::INFO, "Server recieved get data service of type: " + req.msgType());
     
     rigidbody* RB;
     if (!get_rigidbody_from_drone_id(req.drone_id().numeric_id(), RB)) return false;
@@ -233,13 +250,13 @@ bool drone_server::api_get_data_service(nav_msgs::GetPlan::Request &pReq, nav_ms
             res.vec3().x = Pos.x;
             res.vec3().y = Pos.y;
             res.vec3().z = Pos.z;
-            ROS_INFO_STREAM("Server completed get data service of type: " << req.msgType());
+            this->log(logger::DEBUG, "Server completed get data service of type: " + req.msgType());
             return true;
         } break;
         case 9: {   /* ORIENTATION */
         // RB SIDE
 
-            ROS_INFO_STREAM("Server completed get data service of type: " << req.msgType());
+            this->log(logger::DEBUG, "Server completed get data service of type: " + req.msgType());
             return true;
         } break;
         case 10: {  /* TIME */
@@ -249,14 +266,14 @@ bool drone_server::api_get_data_service(nav_msgs::GetPlan::Request &pReq, nav_ms
             res.vec3().z = motionCaptureUpdateRate;
             res.forward_x() = timeToUpdateDrones;
             res.forward_y() = waitTime;
-            ROS_INFO_STREAM("Server completed get data service of type: " << req.msgType());
+            this->log(logger::DEBUG, "Server completed get data service of type: " + req.msgType());
             return true;
         } break;
         default: {
-            ROS_ERROR_STREAM("The API command '" << req.msgType() << "' is not a valid command for dataFeedbackSRV");
+            this->log(logger::ERROR, "The API command '" + req.msgType() + "' is not a valid command for dataFeedbackSRV");
         } break;
     }
-    ROS_WARN_STREAM("Server failed get data service of type: " << req.msgType());
+    this->log(logger::WARN, "Server failed get data service of type: " + req.msgType());
     return false;
 }
 
@@ -271,6 +288,9 @@ bool drone_server::api_list_service(tf2_msgs::FrameGraph::Request &req, tf2_msgs
     return true;
 }
 
+void drone_server::log(logger::log_type logType, std::string message) {
+    logger::post_log(logType, "Drone Server", message, logPublisher);
+}
 
 
 int main(int argc, char **argv) {
