@@ -5,9 +5,7 @@
 
 namespace mdp {
 
-
-class id
-{
+class id {
     private:
         bool owner = false;
         std_msgs::Header* data;
@@ -19,11 +17,10 @@ class id
 
         uint32_t& numeric_id() {return data->stamp.sec;}
 
-        std_msgs::Header getData() {return *data;}
+        std_msgs::Header get_data() {return *data;}
 };
 
-class input_msg
-{
+class input_msg {
     private:
         geometry_msgs::TransformStamped* data;
 
@@ -33,7 +30,7 @@ class input_msg
 
         id drone_id() { return id(&data->header); }
         std::string& msg_type() { return data->child_frame_id; }
-        geometry_msgs::Vector3& posvel() { return data->transform.translation; }
+        geometry_msgs::Vector3& pos_vel() { return data->transform.translation; }
         double& relative()  { return data->transform.rotation.x; }
         double& target()    { return data->transform.rotation.y; }
         double& yaw_rate()  { return data->transform.rotation.z; }
@@ -42,8 +39,7 @@ class input_msg
 
 };
 
-class drone_feedback_srv
-{
+class drone_feedback_srv {
     private:
         nav_msgs::GetPlan* data;
         
@@ -60,8 +56,7 @@ class drone_feedback_srv
         double& yaw_rate()  {return data->response.plan.poses[0].pose.orientation.z;}
 };
 
-class drone_feedback_srv_req
-{
+class drone_feedback_srv_req {
     private:
         nav_msgs::GetPlan::Request* req;
     public:
@@ -69,12 +64,11 @@ class drone_feedback_srv_req
         ~drone_feedback_srv_req() {}
 
         id drone_id() {return id(&req->start.header);}
-        std::string& msg_type() {return req->goal.header.frame_id;}
+        std::string& msgType() {return req->goal.header.frame_id;}
 
 };
 
-class drone_feedback_srv_res
-{
+class drone_feedback_srv_res {
     private:
         nav_msgs::GetPlan::Response* res;
     public:
@@ -87,6 +81,5 @@ class drone_feedback_srv_res
         double& forward_y() {return res->plan.poses[0].pose.orientation.y;}
         double& yaw_rate()  {return res->plan.poses[0].pose.orientation.z;}
 };
-
 
 }

@@ -1,11 +1,11 @@
-#include "rigidBody.h"
+#include "rigidbody.h"
 
-class object : public rigidBody
+class object : public rigidbody
 {
-private:
+    private:
 
-public:
-    object(std::string tag, uint32_t id) : rigidBody(tag, id)
+    public:
+    object(std::string tag, uint32_t id) : rigidbody(tag, id)
     {
 
     };
@@ -15,37 +15,37 @@ public:
 
     }
 
-    void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override
+    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override
     {
 
     }
 
-    void onSetVelocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override
     {
 
     }
 
-    void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg)
+    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg)
     {
 
     }
     
-    void onUpdate() override
+    void on_update() override
     {
 
     }
 
-    void onTakeoff(float height, float duration) override
+    void on_takeoff(float height, float duration) override
     {
 
     }
 
-    void onLand(float duration) override
+    void on_land(float duration) override
     {
 
     }
 
-    void onEmergency() override
+    void on_emergency() override
     {
 
     }

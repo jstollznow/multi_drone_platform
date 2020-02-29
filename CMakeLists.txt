@@ -30,7 +30,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_message_files(
   FILES
-  apiUpdate.msg
+  api_update.msg
   log.msg
 )
 
@@ -86,25 +86,27 @@ file(GLOB obj_src
 file(GLOB test_src
   "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.cpp"
 )
+
 # Declare a C++ library
 add_library(LOGGER
   ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/logger/logger.cpp
 )
+
 target_link_libraries(LOGGER ${catkin_LIBRARIES})
 add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
 
 add_library(RIGIDBODY
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/objects/rigidBody.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/objects/rigidbody.cpp
 )
 target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
 add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
 
 
 add_library(DEBUGAPP
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_window/debugApplication.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_app.cpp
 )
 add_library(DEBUGWINDOW
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_window/debugUI.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_window.cpp
 )
 target_link_libraries(DEBUGWINDOW ${catkin_LIBRARIES})
 add_dependencies(DEBUGWINDOW multi_drone_platform_generate_messages_cpp)
@@ -146,8 +148,5 @@ target_link_libraries(tst_program ${catkin_LIBRARIES} MDP_API)
 add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
 
-add_executable(debug src/debug/debug_window/debugNode.cpp)
-target_link_libraries(debug ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW RIGIDBODY LOGGER) 
-
-add_executable(debugApp src/debug/debug_window/debugAppTest.cpp)
-target_link_libraries(debugApp ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW RIGIDBODY LOGGER) 
+add_executable(debugAppTest src/debug/debug_app/debug_app_test.cpp)
+target_link_libraries(debugAppTest ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW RIGIDBODY LOGGER) 

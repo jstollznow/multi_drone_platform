@@ -12,7 +12,7 @@
 namespace mdp_api {
     struct drone_data
     {
-        ros::Subscriber pose_subscriber;
+        ros::Subscriber poseSubscriber;
         std::array<double, 8> pose;
 
         void pose_data_callback(const std_msgs::Float64MultiArray::ConstPtr& msg)
@@ -67,7 +67,7 @@ namespace mdp_api {
 
         ROS_INFO("Finished Client API Connection");
         for (auto it = NodeData.DroneData.begin(); it != NodeData.DroneData.end(); it++) {
-            it->second.pose_subscriber.shutdown();
+            it->second.poseSubscriber.shutdown();
         }
         delete NodeData.LoopRate;
         delete NodeData.Node;
@@ -88,7 +88,7 @@ namespace mdp_api {
                     std::vector<std::string> id_str;
                     boost::split(id_str, str, [](char c){return c == ':';});
                     mdp_api::id ID;
-                    ID.numeric_id = atoi(id_str[0].c_str());
+                    ID.numericID = atoi(id_str[0].c_str());
                     ID.name = id_str[1];
                     Vec.push_back(ID);
                 }
@@ -96,12 +96,12 @@ namespace mdp_api {
 
             // add drone data for each drone
             for (size_t i = 0; i < Vec.size(); i++) {
-                if (NodeData.DroneData.count(Vec[i].numeric_id) == 0) {
-                    NodeData.DroneData[Vec[i].numeric_id] = {};
-                    NodeData.DroneData[Vec[i].numeric_id].pose_subscriber = 
+                if (NodeData.DroneData.count(Vec[i].numericID) == 0) {
+                    NodeData.DroneData[Vec[i].numericID] = {};
+                    NodeData.DroneData[Vec[i].numericID].poseSubscriber = 
                     NodeData.Node->subscribe<std_msgs::Float64MultiArray> 
-                    ("mdp/drone_" + std::to_string(Vec[i].numeric_id) + "/CurrentPose", 1, 
-                    &drone_data::pose_data_callback, &NodeData.DroneData[Vec[i].numeric_id]);
+                    ("mdp/drone_" + std::to_string(Vec[i].numericID) + "/CurrentPose", 1, 
+                    &drone_data::pose_data_callback, &NodeData.DroneData[Vec[i].numericID]);
                 }
             }
         } else {
@@ -121,15 +121,15 @@ namespace mdp_api {
         geometry_msgs::TransformStamped Msg_data;
         mdp::input_msg Msg(&Msg_data);
 
-        Msg.drone_id().numeric_id() = pDroneID.numeric_id;
+        Msg.drone_id().numeric_id() = pDroneID.numericID;
         Msg.msg_type() = "VELOCITY";
 
-        Msg.posvel().x = pMsg.velocity[0];
-        Msg.posvel().y = pMsg.velocity[1];
-        Msg.posvel().z = pMsg.velocity[2];
-        Msg.yaw_rate() = pMsg.yaw_rate;
+        Msg.pos_vel().x = pMsg.velocity[0];
+        Msg.pos_vel().y = pMsg.velocity[1];
+        Msg.pos_vel().z = pMsg.velocity[2];
+        Msg.yaw_rate() = pMsg.yawRate;
         Msg.duration() = pMsg.duration;
-        Msg.relative() = encode_relative_array_to_double(pMsg.relative, pMsg.keep_height);
+        Msg.relative() = encode_relative_array_to_double(pMsg.relative, pMsg.keepHeight);
 
         NodeData.Pub.publish(Msg_data);
     }
@@ -139,15 +139,15 @@ namespace mdp_api {
         geometry_msgs::TransformStamped Msg_data;
         mdp::input_msg Msg(&Msg_data);
 
-        Msg.drone_id().numeric_id() = pDroneID.numeric_id;
+        Msg.drone_id().numeric_id() = pDroneID.numericID;
         Msg.msg_type() = "POSITION";
 
-        Msg.posvel().x  = pMsg.position[0];
-        Msg.posvel().y  = pMsg.position[1];
-        Msg.posvel().z  = pMsg.position[2];
+        Msg.pos_vel().x  = pMsg.position[0];
+        Msg.pos_vel().y  = pMsg.position[1];
+        Msg.pos_vel().z  = pMsg.position[2];
         Msg.duration()  = pMsg.duration;
         Msg.yaw()       = pMsg.yaw;
-        Msg.relative()  = encode_relative_array_to_double(pMsg.relative, pMsg.keep_height);
+        Msg.relative()  = encode_relative_array_to_double(pMsg.relative, pMsg.keepHeight);
 
         NodeData.Pub.publish(Msg_data);
     }
@@ -156,9 +156,9 @@ namespace mdp_api {
     {
         position_data Data;
         // if the drone id does not exist, return
-        if (NodeData.DroneData.count(pRigidbodyID.numeric_id) == 0) return Data;
+        if (NodeData.DroneData.count(pRigidbodyID.numericID) == 0) return Data;
 
-        std::array<double, 8>* PoseData = &NodeData.DroneData[pRigidbodyID.numeric_id].pose;
+        std::array<double, 8>* PoseData = &NodeData.DroneData[pRigidbodyID.numericID].pose;
         Data.x =    (*PoseData)[0];
         Data.y =    (*PoseData)[1];
         Data.z =    (*PoseData)[2];
@@ -170,9 +170,9 @@ namespace mdp_api {
     {
         velocity_data Data;
         // if the drone id does not exist, return
-        if (NodeData.DroneData.count(pRigidbodyID.numeric_id) == 0) return Data;
+        if (NodeData.DroneData.count(pRigidbodyID.numericID) == 0) return Data;
 
-        std::array<double, 8>* PoseData = &NodeData.DroneData[pRigidbodyID.numeric_id].pose;
+        std::array<double, 8>* PoseData = &NodeData.DroneData[pRigidbodyID.numericID].pose;
         Data.x =    (*PoseData)[4];
         Data.y =    (*PoseData)[5];
         Data.z =    (*PoseData)[6];
@@ -185,9 +185,9 @@ namespace mdp_api {
         geometry_msgs::TransformStamped Msg_data;
         mdp::input_msg Msg(&Msg_data);
 
-        Msg.drone_id().numeric_id() = pDroneID.numeric_id;
+        Msg.drone_id().numeric_id() = pDroneID.numericID;
         Msg.msg_type() = "TAKEOFF";
-        Msg.posvel().z = pHeight;
+        Msg.pos_vel().z = pHeight;
         Msg.duration() = pDuration;
 
         NodeData.Pub.publish(Msg_data);
@@ -198,7 +198,7 @@ namespace mdp_api {
         geometry_msgs::TransformStamped Msg_data;
         mdp::input_msg Msg(&Msg_data);
 
-        Msg.drone_id().numeric_id() = pDroneID.numeric_id;
+        Msg.drone_id().numeric_id() = pDroneID.numericID;
         Msg.msg_type() = "LAND";
 
         NodeData.Pub.publish(Msg_data);
@@ -209,7 +209,7 @@ namespace mdp_api {
         geometry_msgs::TransformStamped Msg_data;
         mdp::input_msg Msg(&Msg_data);
 
-        Msg.drone_id().numeric_id() = pDroneID.numeric_id;
+        Msg.drone_id().numeric_id() = pDroneID.numericID;
         Msg.msg_type() = "EMERGENCY";
 
         NodeData.Pub.publish(Msg_data);
@@ -220,7 +220,7 @@ namespace mdp_api {
         geometry_msgs::TransformStamped Msg_data;
         mdp::input_msg Msg(&Msg_data);
 
-        Msg.drone_id().numeric_id() = pDroneID.numeric_id;
+        Msg.drone_id().numeric_id() = pDroneID.numericID;
         Msg.msg_type() = "HOVER";
         Msg.duration() = 10.0f;
 
@@ -233,14 +233,14 @@ namespace mdp_api {
         geometry_msgs::TransformStamped Msg_data;
         mdp::input_msg Msg(&Msg_data);
 
-        Msg.drone_id().numeric_id() = pDroneID.numeric_id;
+        Msg.drone_id().numeric_id() = pDroneID.numericID;
         Msg.msg_type() = "SET_HOME";
 
-        Msg.posvel().x = pMsg.position[0];
-        Msg.posvel().y = pMsg.position[1];
-        Msg.posvel().z = pMsg.position[2];
+        Msg.pos_vel().x = pMsg.position[0];
+        Msg.pos_vel().y = pMsg.position[1];
+        Msg.pos_vel().z = pMsg.position[2];
 
-        Msg.relative() = encode_relative_array_to_double(pMsg.relative, pMsg.keep_height);
+        Msg.relative() = encode_relative_array_to_double(pMsg.relative, pMsg.keepHeight);
         Msg.yaw() = pMsg.yaw;
 
         NodeData.Pub.publish(Msg_data);
@@ -252,9 +252,9 @@ namespace mdp_api {
         mdp::drone_feedback_srv Srv(&Srv_data);
 
         mdp::id ID;
-        ID.numeric_id() = pDroneID.numeric_id;
+        ID.numeric_id() = pDroneID.numericID;
 
-        Srv.drone_id().numeric_id() = pDroneID.numeric_id;
+        Srv.drone_id().numeric_id() = pDroneID.numericID;
         Srv.msg_type() = "GET_HOME";
 
         position_data Data;
@@ -269,14 +269,14 @@ namespace mdp_api {
         return Data;
     }
 
-    void goto_home(mdp_api::id pDroneID, float duration, float pHeight)
+    void go_to_home(mdp_api::id pDroneID, float duration, float pHeight)
     {
         geometry_msgs::TransformStamped Msg_data;
         mdp::input_msg Msg(&Msg_data);
 
-        Msg.drone_id().numeric_id() = pDroneID.numeric_id;
+        Msg.drone_id().numeric_id() = pDroneID.numericID;
         Msg.msg_type() = "GOTO_HOME";
-        Msg.posvel().z = pHeight;
+        Msg.pos_vel().z = pHeight;
         Msg.duration() = duration;
 
         Msg.relative() = encode_relative_array_to_double(false, (pHeight < 0.0f));
@@ -290,7 +290,7 @@ namespace mdp_api {
         mdp::input_msg Msg(&Msg_data);
 
         Msg.msg_type() = "DRONE_SERVER_FREQ";
-        Msg.posvel().x = pUpdateFrequency;
+        Msg.pos_vel().x = pUpdateFrequency;
 
         NodeData.Pub.publish(Msg_data);
     }
@@ -304,11 +304,11 @@ namespace mdp_api {
 
         timings Data;
         if (NodeData.DataClient.call(Srv_data)) {
-            Data.desired_drone_server_update_rate = Srv.vec3().x;
-            Data.achieved_drone_server_update_rate = Srv.vec3().y;
-            Data.motion_capture_update_rate = Srv.vec3().z;
-            Data.time_to_update_drones = Srv.forward_x();
-            Data.wait_time_per_frame = Srv.forward_y();
+            Data.desDroneServerUpdateRate = Srv.vec3().x;
+            Data.actualDroneServerUpdateRate = Srv.vec3().y;
+            Data.moCapUpdateRate = Srv.vec3().z;
+            Data.timeToUpdateDrones = Srv.forward_x();
+            Data.waitTimePerFrame = Srv.forward_y();
         } else {
             ROS_WARN("Failed to call api data service");
         }
@@ -332,10 +332,10 @@ namespace mdp_api {
         NodeData.LoopRate->sleep();
         // why two?
         NodeData.LoopRate->sleep();
-        std::string state_param = "mdp/drone_" + std::to_string(pDroneID.numeric_id) + "/state";
+        std::string state_param = "mdp/drone_" + std::to_string(pDroneID.numericID) + "/state";
         std::string drone_state = "";
         if (!ros::param::get(state_param, drone_state)) {
-            ROS_WARN("Failed to get current state of drone id: %d", pDroneID.numeric_id);
+            ROS_WARN("Failed to get current state of drone id: %d", pDroneID.numericID);
             return;
         }
         while (true) {
@@ -350,12 +350,12 @@ namespace mdp_api {
 
     std::string get_state(mdp_api::id pDroneID)
     {
-        std::string state_param = "mdp/drone_" + std::to_string(pDroneID.numeric_id) + "/state";
+        std::string state_param = "mdp/drone_" + std::to_string(pDroneID.numericID) + "/state";
         std::string drone_state;
         if (ros::param::get(state_param, drone_state)) {
             return drone_state;
         } else {
-            ROS_WARN("Failed to get current state of drone id: %d", pDroneID.numeric_id);
+            ROS_WARN("Failed to get current state of drone id: %d", pDroneID.numericID);
             return "DELETED";
         }
     }

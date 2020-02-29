@@ -4,14 +4,12 @@
 #include <array>
 
 #include "user_api.h"
-#include "debugUI.h"
+#include "debug_window.h"
 
 #define NUM_WINDOWS 20
 #define EXPANDED true
 
-// main window of the application
-std::array<int,2> getPosition(int droneNum, bool expanded)
-{
+std::array<int,2> get_position(int droneNum, bool expanded) {
     int startPosX = 50;
     int startPosY = 30;
     int xSplit = 0;
@@ -23,8 +21,7 @@ std::array<int,2> getPosition(int droneNum, bool expanded)
     int pos_y = 0;
     int indent = 25;
 
-    if (expanded)
-    {
+    if (expanded) {
         xSplit = 900;
         ySplit = 500;
         maxWindows = 4;
@@ -59,31 +56,28 @@ int main(int argc, char *argv[]) {
     std::vector<mdp_api::id> myDrones;
     // myDrones = mdp_api::get_all_rigidbodies();
 
-    std::vector<debugUI*> myUIs;
+    std::vector<debug_window*> myUIs;
     
     mdp_api::id myId0;
-    myId0.numeric_id = 0;
-    for(int i = 0; i < NUM_WINDOWS; i++)
-    {
+    myId0.numericID = 0;
+    for(int i = 0; i < NUM_WINDOWS; i++) {
         myId0.name = "vflie_" + std::to_string(i);
         myDrones.push_back(myId0);
     }
 
 
     bool expanded = EXPANDED;
-    for (size_t i = 0; i < myDrones.size(); i++)
-    {
-        debugUI *myWindow = 0;
+    for (size_t i = 0; i < myDrones.size(); i++) {
+        debug_window *myWindow = 0;
         auto ui = Gtk::Builder::create_from_file(UI_PATH);
         ui->get_widget_derived("debugWindow", myWindow);
-        myWindow->init(myDrones[i],getPosition((int)i, expanded), expanded);
+        myWindow->init(myDrones[i],get_position((int)i, expanded), expanded);
         myUIs.push_back(myWindow);
     }
 
-    app->signal_startup().connect([&]{
+    app->signal_startup().connect([&] {
         
-        for(size_t i = 0; i < myUIs.size(); i++)
-        {
+        for(size_t i = 0; i < myUIs.size(); i++) {
             app->add_window(*myUIs[i]);
             // myUIs[i]->mySpin.start();
         }   

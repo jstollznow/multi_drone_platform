@@ -1,12 +1,10 @@
-#include "debugUI.h"
+#include "debug_window.h"
 
 #define VNAME(x) #x
 
-debugUI::debugUI(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade): 
-Gtk::Window(cobject), builder(refGlade)
-// , mySpin(1,&myQueue)
-{
-    linkWidgets();
+debug_window::debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade): 
+Gtk::Window(cobject), builder(refGlade) {
+    link_widgets();
     first = true;
     firstTimeStamp = 0.0f;
     std::string logTopic = myDrone.name + "/log";
@@ -15,44 +13,36 @@ Gtk::Window(cobject), builder(refGlade)
     // myNode.setCallbackQueue(&myQueue);
     
 }
-void debugUI::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool expanded)
-{
+void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool expanded) {
     this->expanded = false;
-    if (expanded)
-    {
-        on_expandButton_clicked();
-        // this->expanded = true;
-    }
-    if (startLocation != std::array<int,2>({0, 0}))
-    {
+    if (expanded) on_expandButton_clicked();
+
+    if (startLocation != std::array<int,2>({0, 0})) {
         this->move(startLocation[0], startLocation[1]);
     }
+
     myDrone = droneName;
     this->set_title(myDrone.name);
     droneNameLabel->set_label(myDrone.name);
-    speedScale->set_value(1.0);
+    speedScale->set_round_digits(0);
+    speedScale->set_value(5);
+    speedMultiplierLabel->set_text("5");
     this->show();
-
 }
 
-void debugUI::updateStats()
-{
+void debug_window::update_stats() {
     
 }
 
-void debugUI::on_landButton_clicked()
-{
+void debug_window::on_landButton_clicked() {
     
 }
-void debugUI::on_emergencyButton_clicked()
-{
+void debug_window::on_emergencyButton_clicked() {
 
 }
 
-void debugUI::logCallback(const multi_drone_platform::log::ConstPtr& msg)
-{
-    if (first)
-    {
+void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) {
+    if (first) {
         first = false;
         firstTimeStamp = msg->timeStamp;
         logTextBuffer->set_text("");
@@ -71,17 +61,15 @@ void debugUI::logCallback(const multi_drone_platform::log::ConstPtr& msg)
 
 }
 
-void debugUI::on_speedScale_value_changed()
-{
+void debug_window::on_speedScale_value_changed() {
     std::ostringstream streamObj;
 	streamObj << std::fixed;
-	streamObj << std::setprecision(2);
+	streamObj << std::setprecision(0);
 	streamObj << speedScale->get_value();
   
     speedMultiplierLabel->set_label(streamObj.str());
 }
-void debugUI::on_expandButton_clicked()
-{
+void debug_window::on_expandButton_clicked() {
     sidePanelGrid->set_visible(!expanded);
     logScroll->set_visible(!expanded);
     expandButton->set_image(expanded ? *expandImage : *compressImage);
@@ -89,15 +77,12 @@ void debugUI::on_expandButton_clicked()
     expanded = !expanded;
 }
 
-void debugUI::on_debugWindow_destroy()
-{
+void debug_window::on_debugWindow_destroy() {
     std::cout<<"TCHUSSSS"<<std::endl;
 }
 
-void debugUI::linkWidgets()
-{
-    try
-    {
+void debug_window::link_widgets() {
+    try {
         builder->get_widget(VNAME(droneNameLabel), droneNameLabel);
         builder->get_widget(VNAME(droneNameLabel), droneNameLabel);
         builder->get_widget(VNAME(currPosX), currPosX);
@@ -144,22 +129,20 @@ void debugUI::linkWidgets()
         builder->get_widget(VNAME(compressImage), compressImage);
         builder->get_widget(VNAME(expandImage), expandImage);
 
-
         landButton->signal_clicked().connect
-        (sigc::mem_fun(*this, &debugUI::on_landButton_clicked));
+        (sigc::mem_fun(*this, &debug_window::on_landButton_clicked));
         
         emergencyButton->signal_clicked().connect
-        (sigc::mem_fun(*this, &debugUI::on_emergencyButton_clicked));
+        (sigc::mem_fun(*this, &debug_window::on_emergencyButton_clicked));
         
         speedScale->signal_value_changed().connect
-        (sigc::mem_fun(*this, &debugUI::on_speedScale_value_changed));
+        (sigc::mem_fun(*this, &debug_window::on_speedScale_value_changed));
 
         expandButton->signal_clicked().connect
-        (sigc::mem_fun(*this, &debugUI::on_expandButton_clicked));
+        (sigc::mem_fun(*this, &debug_window::on_expandButton_clicked));
 
     }
-    catch(const std::exception& e)
-    {
+    catch(const std::exception& e) {
         std::cerr << e.what() << '\n';
     }   
 }

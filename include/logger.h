@@ -4,11 +4,11 @@
 
 class logger {
     public:
-    enum logType {
+    enum log_type {
         INFO, 
         DEBUG, 
         WARN, 
         ERROR
     };
-    static void postLog(logType type, std::string caller, std::string message, ros::Publisher LogPublisher);
+    static void post_log(log_type type, std::string caller, std::string message, ros::Publisher logPublisher);
 };

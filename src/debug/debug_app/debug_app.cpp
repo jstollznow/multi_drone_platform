@@ -1,7 +1,6 @@
-#include "debugApplication.h"
+#include "debug_app.h"
 
-std::array<int,2> debugApplication::getWindowPosition(int droneNum, bool expanded)
-{
+std::array<int,2> debug_app::get_window_position(int droneNum, bool expanded) {
     int startPosX = 50;
     int startPosY = 30;
     int xSplit = 0;
@@ -13,16 +12,14 @@ std::array<int,2> debugApplication::getWindowPosition(int droneNum, bool expande
     int pos_y = 0;
     int indent = 25;
 
-    if (expanded)
-    {
+    if (expanded) {
         xSplit = 900;
         ySplit = 500;
         maxWindows = 4;
         cols = 2;
         rows = cols;
     }
-    else
-    {
+    else {
         xSplit = 600;
         ySplit = 350;
         maxWindows = 9;
@@ -40,32 +37,26 @@ std::array<int,2> debugApplication::getWindowPosition(int droneNum, bool expande
     position[1] = pos_y + ySplit * (y_index);
     return position;
 }
-void debugApplication::showWindows() {
-    for(auto& it : droneDebugUIs) {
+void debug_app::show_windows() {
+    for(auto& it : droneDebugWindows) {
         it.second->show();
     }
 }
-debugApplication::debugApplication(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID):Gtk::Application(argc, argv, appID)
-{
+
+debug_app::debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID):Gtk::Application(argc, argv, appID) {
     bool expanded = EXPANDED;
-    // node stuff, create myDrones
     ros::init(argc, argv, NODE_NAME);
 
-    for (size_t i = 0; i < myDrones.size(); i++)
-    {
-        debugUI *myWindow = 0;
+    for (size_t i = 0; i < myDrones.size(); i++) {
+        debug_window *myWindow = 0;
         auto ui = Gtk::Builder::create_from_file(UI_PATH);
         ui->get_widget_derived("debugWindow", myWindow);
-        myWindow->init(myDrones[i],this->getWindowPosition((int)i, expanded), expanded);
-        droneDebugUIs.insert(std::pair<std::string, debugUI*>(myDrones[i].name, myWindow));
+        myWindow->init(myDrones[i],this->get_window_position((int)i, expanded), expanded);
+        droneDebugWindows.insert(std::pair<std::string, debug_window*>(myDrones[i].name, myWindow));
     }
-    // Glib::signal_timeout().connect(sigc::ptr_fun(&timeout_handler_1), 100);
-    // sigc::connection Glib::SignalTimeout::connect(const sigc::slot<bool>& slot,
-    //                                   unsigned int interval, int priority = Glib::PRIORITY_DEFAULT);
 
     this->signal_startup().connect([&]{
-        for(auto& it : droneDebugUIs)
-        {
+        for(auto& it : droneDebugWindows) {
             this->add_window(*(it.second));
         }
     });

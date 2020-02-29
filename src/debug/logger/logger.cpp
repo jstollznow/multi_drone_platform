@@ -1,16 +1,20 @@
 #include "logger.h"
 
-void logger::postLog(logType type, std::string caller, std::string message, ros::Publisher LogPublisher)
+void logger::post_log(log_type type, std::string caller, std::string message, ros::Publisher logPublisher)
 {
+    std::map<log_type,std::string> logLevel = {
+        {INFO, "INFO"}, {DEBUG, "DEBUG"},
+        {WARN, "WARN"}, {ERROR, "ERROR"}
+    };
+
     multi_drone_platform::log myLogPost;
-    myLogPost.type = type;
+    myLogPost.type = logLevel[type];
     myLogPost.timeStamp = ros::Time::now().toSec();
     myLogPost.logMessage = message;
 
-    LogPublisher.publish(myLogPost);
+    logPublisher.publish(myLogPost);
 
-    switch (type)
-    {
+    switch (type) {
         case INFO:
         case DEBUG:
             ROS_INFO("%s: %s", caller.c_str(), message.c_str());

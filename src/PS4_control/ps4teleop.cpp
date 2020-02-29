@@ -9,7 +9,7 @@
 #define UPDATE_RATE 10
 
 #define TAKEOFF_TIME 3.0f
-#define GOTO_HOME 4.0f
+#define GO_TO_HOME 4.0f
 
 // LIMIT LEVEL
 // 0 DEMO - SAFE
@@ -17,7 +17,7 @@
 #define LIMIT_LEVEL 1
 
 
-namespace PS4_remote
+namespace ps4_remote
 {
     struct input{
         ros::Time lastUpdate;
@@ -60,14 +60,14 @@ namespace PS4_remote
     bool lastInputHandle(float xAxes, float yAxes, float zUpTrigger, float zDownTrigger, float yawAxes);
 };
 
-void PS4_remote::resetInput()
+void ps4_remote::resetInput()
 {
     lastInput.axesInput = {0.0f, 0.0f, 0.0f};
     lastInput.lastUpdate = ros::Time::now();
     lastInput.yaw = 0.0f;
 }
 
-bool PS4_remote::emergencyHandle(int allDrones, int oneDrone)
+bool ps4_remote::emergencyHandle(int allDrones, int oneDrone)
 {
     
 
@@ -98,7 +98,7 @@ bool PS4_remote::emergencyHandle(int allDrones, int oneDrone)
     
     
 }
-bool PS4_remote::optionChangeHandle(float idChange, int coordChange)
+bool ps4_remote::optionChangeHandle(float idChange, int coordChange)
 {
     
     if ((int)idChange != 0)
@@ -143,7 +143,7 @@ bool PS4_remote::optionChangeHandle(float idChange, int coordChange)
     return false;
 }
 
-bool PS4_remote::hlCommandHandle(int takeoff, int land, int hover, int goToHome)
+bool ps4_remote::hlCommandHandle(int takeoff, int land, int hover, int goToHome)
 {
     
  
@@ -176,7 +176,7 @@ bool PS4_remote::hlCommandHandle(int takeoff, int land, int hover, int goToHome)
     {
         hlCommand = true;
         ROS_INFO("%s: GoToHome butt", drones[droneID].name.c_str());
-        mdp_api::goto_home(drones[droneID], GOTO_HOME);
+        mdp_api::go_to_home(drones[droneID],GO_TO_HOME);
         return true;
     }
 
@@ -185,7 +185,7 @@ bool PS4_remote::hlCommandHandle(int takeoff, int land, int hover, int goToHome)
     
 }
 
-bool PS4_remote::lastInputHandle(float xAxes, float yAxes, float zUpTrigger, float zDownTrigger, float yawAxes)
+bool ps4_remote::lastInputHandle(float xAxes, float yAxes, float zUpTrigger, float zDownTrigger, float yawAxes)
 {    
     // Left Joystick (Top/Bottom)
     float x = max_x*xAxes*2.0;
@@ -203,7 +203,7 @@ bool PS4_remote::lastInputHandle(float xAxes, float yAxes, float zUpTrigger, flo
     lastInput.axesInput = {x, y, z};
     lastInput.lastUpdate = ros::Time::now();
 }
-void PS4_remote::commandHandle(const sensor_msgs::Joy::ConstPtr& msg)
+void ps4_remote::commandHandle(const sensor_msgs::Joy::ConstPtr& msg)
 {
     if (sync)
     {
@@ -234,7 +234,7 @@ void PS4_remote::commandHandle(const sensor_msgs::Joy::ConstPtr& msg)
    
 }
 
-void PS4_remote::controlUpdate()
+void ps4_remote::controlUpdate()
 {
 
     if (lastInput.axesInput[0] != 0.0f || lastInput.axesInput[1] != 0.0f || lastInput.axesInput[2] != 0.0f || lastInput.yaw != 0.0f)
@@ -247,7 +247,7 @@ void PS4_remote::controlUpdate()
             lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
             mdp_api::position_msg posMsg;
             posMsg.duration =  2.0f;
-            posMsg.keep_height = true;
+            posMsg.keepHeight = true;
             posMsg.relative = true;
             posMsg.position = lastInput.axesInput;
             posMsg.yaw = lastInput.yaw;
@@ -263,11 +263,11 @@ void PS4_remote::controlUpdate()
     }
 }
 
-void PS4_remote::input_callback(const sensor_msgs::Joy::ConstPtr& msg)
+void ps4_remote::input_callback(const sensor_msgs::Joy::ConstPtr& msg)
 {
     commandHandle(msg);
 }
-void PS4_remote::defineLimits()
+void ps4_remote::defineLimits()
 {
     switch(LIMIT_LEVEL)
     {
@@ -290,7 +290,7 @@ void PS4_remote::defineLimits()
     }
     
 }
-void PS4_remote::run(int argc, char **argv)
+void ps4_remote::run(int argc, char **argv)
 {    
     ros::Rate loop_rate(UPDATE_RATE);
     ROS_INFO("Initialised PS4 Remote");
@@ -305,7 +305,7 @@ void PS4_remote::run(int argc, char **argv)
  
     defineLimits();
  
-    sub = myNode->subscribe<sensor_msgs::Joy>(INPUT_TOP, 1, &PS4_remote::input_callback);
+    sub = myNode->subscribe<sensor_msgs::Joy>(INPUT_TOP, 1, &ps4_remote::input_callback);
  
     ROS_INFO("Please sync remote by pressing the left and right triggers...");
  
@@ -323,7 +323,7 @@ void PS4_remote::run(int argc, char **argv)
     }
 
 }
-void PS4_remote::terminate()
+void ps4_remote::terminate()
 {
     delete myNode;
     delete mySpin;
@@ -333,36 +333,36 @@ void PS4_remote::terminate()
 int main(int argc, char **argv)
 {
     ros::init(argc,argv,"ps4_remote");
-    PS4_remote::mySpin = new ros::AsyncSpinner(1,&PS4_remote::myQueue);
+    ps4_remote::mySpin = new ros::AsyncSpinner(1,&ps4_remote::myQueue);
     mdp_api::initialise(SERVER_FREQ);
     bool start = true;
 
-    PS4_remote::droneID = 0;
-    PS4_remote::drones = mdp_api::get_all_rigidbodies();
+    ps4_remote::droneID = 0;
+    ps4_remote::drones = mdp_api::get_all_rigidbodies();
 
-    while (PS4_remote::drones[PS4_remote::droneID].name.find("object") != std::string::npos)
+    while (ps4_remote::drones[ps4_remote::droneID].name.find("object") != std::string::npos)
     {
-        PS4_remote::droneID++;
-        if (PS4_remote::droneID >= PS4_remote::drones.size())
+        ps4_remote::droneID++;
+        if (ps4_remote::droneID >= ps4_remote::drones.size())
         {
             ROS_ERROR("No Controllable Rigid Bodies");
             start = false;
         }
     }
-    ROS_INFO("Controlling %s", PS4_remote::drones[PS4_remote::droneID].name.c_str());
+    ROS_INFO("Controlling %s", ps4_remote::drones[ps4_remote::droneID].name.c_str());
 
-    PS4_remote::myNode = new ros::NodeHandle("PS4_remote");
+    ps4_remote::myNode = new ros::NodeHandle("PS4_remote");
 
-    PS4_remote::myNode->setCallbackQueue(&PS4_remote::myQueue);
-    PS4_remote::resetInput();
+    ps4_remote::myNode->setCallbackQueue(&ps4_remote::myQueue);
+    ps4_remote::resetInput();
 
     if (start) 
     {
-        PS4_remote::run(argc,argv);
+        ps4_remote::run(argc,argv);
     }
     
-    delete PS4_remote::myNode;
-    delete PS4_remote::mySpin;
+    delete ps4_remote::myNode;
+    delete ps4_remote::mySpin;
     
     mdp_api::terminate();
 

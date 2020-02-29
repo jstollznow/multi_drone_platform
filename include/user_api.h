@@ -11,7 +11,7 @@
 namespace mdp_api {
 
     struct id {
-        uint32_t numeric_id;
+        uint32_t numericID;
         std::string name;
     };
 
@@ -23,7 +23,7 @@ namespace mdp_api {
     struct position_msg {
         std::array<double, 3> position = {{0.0, 0.0, 0.0}};
         bool relative = false;
-        bool keep_height = false;
+        bool keepHeight = false;
         double duration = 0.0;
         double yaw = 0.0;
     };
@@ -31,17 +31,17 @@ namespace mdp_api {
     struct velocity_msg {
         std::array<double, 3> velocity = {{0.0, 0.0, 0.0}};
         bool relative = false;
-        bool keep_height = false;
+        bool keepHeight = false;
         double duration = 0.0;
-        double yaw_rate = 0.0;
+        double yawRate = 0.0;
     };
 
     struct timings {
-        float motion_capture_update_rate;
-        float desired_drone_server_update_rate;
-        float achieved_drone_server_update_rate;
-        float time_to_update_drones;
-        float wait_time_per_frame;
+        float moCapUpdateRate;
+        float desDroneServerUpdateRate;
+        float actualDroneServerUpdateRate;
+        float timeToUpdateDrones;
+        float waitTimePerFrame;
     };
 
     typedef position_data velocity_data;
@@ -64,7 +64,7 @@ namespace mdp_api {
 
     void set_home(mdp_api::id pDroneID, mdp_api::position_msg pMsg);
     position_data get_home(mdp_api::id pDroneID);
-    void goto_home(mdp_api::id pDroneID, float duration = 4.0f, float pHeight = -1.0f);
+    void go_to_home(mdp_api::id pDroneID, float duration = 4.0f, float pHeight = -1.0f);
 
     void set_drone_server_update_frequency(float pUpdateFrequency);
     timings get_operating_frequencies();

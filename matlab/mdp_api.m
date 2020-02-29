@@ -12,9 +12,9 @@ classdef mdp_api
     end
     
     methods (Access = private)
-        function msg = genAPImsg(obj, drone_id, msg_type, varargin)
+        function msg = genAPImsg(obj, drone_id, msgType, varargin)
             p = inputParser;
-            p.addParameter('posvel', [0.0, 0.0, 0.0]);
+            p.addParameter('posVel', [0.0, 0.0, 0.0]);
             p.addParameter('relative', 0.0);
             p.addParameter('yaw', 0.0);
             p.addParameter('duration', 0.0);
@@ -23,11 +23,11 @@ classdef mdp_api
             msg = rosmessage(obj.pub);
             
             msg.Header.Stamp.Sec = drone_id;
-            msg.ChildFrameId = msg_type;
+            msg.ChildFrameId = msgType;
             
-            msg.Transform.Translation.X = p.Results.posvel(1);
-            msg.Transform.Translation.Y = p.Results.posvel(2);
-            msg.Transform.Translation.Z = p.Results.posvel(3);
+            msg.Transform.Translation.X = p.Results.posVel(1);
+            msg.Transform.Translation.Y = p.Results.posVel(2);
+            msg.Transform.Translation.Z = p.Results.posVel(3);
             
             msg.Transform.Rotation.X = p.Results.relative;
             msg.Transform.Rotation.Z = p.Results.yaw;
@@ -110,7 +110,7 @@ classdef mdp_api
         function setposition(obj, drone_id, position_msg)
             EncodedRel = obj.encoderelative(position_msg.Relative, position_msg.KeepHeight);
             
-            msg = genAPImsg(obj, drone_id.NumericId, "POSITION", 'posvel', position_msg.Position, 'duration', position_msg.Duration, 'yaw', position_msg.Yaw, 'relative', EncodedRel);
+            msg = genAPImsg(obj, drone_id.NumericId, "POSITION", 'posVel', position_msg.Position, 'duration', position_msg.Duration, 'yaw', position_msg.Yaw, 'relative', EncodedRel);
             
             send(obj.pub, msg);
         end    
@@ -135,13 +135,13 @@ classdef mdp_api
         function setvelocity(obj, drone_id, velocity_msg)
             EncodedRel = obj.encoderelative(velocity_msg.Relative, velocity_msg.KeepHeight);
             
-            msg = genAPImsg(obj, drone_id.NumericId, "VELOCITY", 'posvel', velocity_msg.Velocity, 'duration', velocity_msg.Duration, 'yaw', velocity_msg.YawRate, 'relative', EncodedRel);
+            msg = genAPImsg(obj, drone_id.NumericId, "VELOCITY", 'posVel', velocity_msg.Velocity, 'duration', velocity_msg.Duration, 'yaw', velocity_msg.YawRate, 'relative', EncodedRel);
 
             send(obj.pub, msg);
         end
         
         function cmdtakeoff(obj, drone_id, height, duration)
-            msg = genAPImsg(obj, drone_id.NumericId, "TAKEOFF", 'posvel', [0.0, 0.0, height], 'duration', duration);
+            msg = genAPImsg(obj, drone_id.NumericId, "TAKEOFF", 'posVel', [0.0, 0.0, height], 'duration', duration);
             send(obj.pub, msg);
         end
         
@@ -162,7 +162,7 @@ classdef mdp_api
         
         function sethomeposition(obj, drone_id, position_msg)
             EncodedRel = obj.encoderelative(position_msg.Relative, position_msg.KeepHeight);
-            msg = genAPImsg(obj, drone_id.NumericId, "SET_HOME", 'posvel', position_msg.Position, 'yaw', position_msg.Yaw, 'relative', EncodedRel);
+            msg = genAPImsg(obj, drone_id.NumericId, "SET_HOME", 'posVel', position_msg.Position, 'yaw', position_msg.Yaw, 'relative', EncodedRel);
             send(obj.pub, msg);
         end
         
@@ -183,12 +183,12 @@ classdef mdp_api
         end
         
         function cmdgohome(obj, drone_id, height, duration)
-            msg = genAPImsg(obj, drone_id.NumericId, "GOTO_HOME", 'posvel', [0.0, 0.0, height],'duration', duration);
+            msg = genAPImsg(obj, drone_id.NumericId, "GOTO_HOME", 'posVel', [0.0, 0.0, height],'duration', duration);
             send(obj.pub, msg);
         end
         
         function setdroneserverfrequency(obj, freq)
-            msg = genAPImsg(obj, 0, "DRONE_SERVER_FREQ", 'posvel', [freq, 0.0, 0.0]);
+            msg = genAPImsg(obj, 0, "DRONE_SERVER_FREQ", 'posVel', [freq, 0.0, 0.0]);
             send(obj.pub, msg);
         end
 

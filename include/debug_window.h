@@ -7,13 +7,13 @@
 #include <std_msgs/Float32MultiArray.h>
 #include <ros/callback_queue.h>
 #include "multi_drone_platform/log.h"
-#include "gtkRef.h"
+#include "gtk_ref.h"
 #include "user_api.h"
 
 #define UPDATE_RATE 10
 #define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/src/debug/debug_window/debug.ui"
 
-class debugUI: public Gtk::Window
+class debug_window: public Gtk::Window
 {
     private:
         Glib::RefPtr<Gtk::Builder> builder;
@@ -79,9 +79,9 @@ class debugUI: public Gtk::Window
 
 
     public:
-        debugUI(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
+        debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
         void init(mdp_api::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
-        void updateStats();
+        void update_stats();
 
         // ros::CallbackQueue myQueue;
         // ros::AsyncSpinner mySpin;
@@ -98,13 +98,13 @@ class debugUI: public Gtk::Window
         bool first; 
         float firstTimeStamp;
 
-        void linkWidgets();
-        void linkWidget(std::string variableName, Gtk::Widget* widget);
+        void link_widgets();
+        void link_widget(std::string variableName, Gtk::Widget* widget);
         void on_landButton_clicked();
         void on_emergencyButton_clicked();
         void on_speedScale_value_changed();
         void on_expandButton_clicked();
         void on_debugWindow_destroy();
-        void updateCallback(const std_msgs::Float32MultiArray::ConstPtr& msg);
-        void logCallback(const multi_drone_platform::log::ConstPtr& msg);
+        void update_callback(const std_msgs::Float32MultiArray::ConstPtr& msg);
+        void log_callback(const multi_drone_platform::log::ConstPtr& msg);
 };

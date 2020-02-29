@@ -1,23 +1,20 @@
-#include "rigidBody.h"
+#include "rigidbody.h"
 
-std::string getPoseTopic(std::string& tag)
-{
+std::string get_pose_topic(std::string& tag) {
     return "/vrpn_client_node/" + tag + "/pose";
 }
 
-double lerp(double begin, double end, double t)
-{
+double lerp(double begin, double end, double t) {
     return begin + (end - begin) * t;
 }
 
-double linearLerp(double begin, double end, double maxChange)
-{
+double linear_lerp(double begin, double end, double maxChange) {
     double diff = end - begin;
     return begin + std::min(std::abs(diff), maxChange) * (std::signbit(diff)?-1.0:1.0);
 }
 
-geometry_msgs::Quaternion ToQuaternion(double yaw) // yaw (Z), pitch (Y), roll (X)
-{
+// yaw (Z), pitch (Y), roll (X)
+geometry_msgs::Quaternion to_quaternion(double yaw) {
     yaw = yaw * 0.01745; // to radians
     // Abbreviations for the various angular functions
     double cy = cos(yaw * 0.5);
@@ -32,58 +29,53 @@ geometry_msgs::Quaternion ToQuaternion(double yaw) // yaw (Z), pitch (Y), roll (
     return q;
 }
 
-class vflie : public rigidBody
-{
-private:
+class vflie : public rigidbody {
+    private:
+    ros::Publisher posePub;
+    ros::Publisher desPub;
 
-    ros::Publisher PosePub;
-    ros::Publisher DesPub;
+    std::array<double, 3> positionArray = {{0.0, 0.0, 0.0}};
+    std::array<double, 3> velocityArray = {{0.0, 0.0, 0.0}};
+    std::array<double, 3> desiredVelocityArray = {{0.0, 0.0, 0.0}};
+    std::array<double, 3> desiredPositionArray = {{0.0, 0.0, 0.0}};
 
-    std::array<double, 3> PositionArray = {{0.0, 0.0, 0.0}};
-    std::array<double, 3> VelocityArray = {{0.0, 0.0, 0.0}};
-    std::array<double, 3> DesiredVelocityArray = {{0.0, 0.0, 0.0}};
-    std::array<double, 3> DesiredPositionArray = {{0.0, 0.0, 0.0}};
-
-    enum MOVETYPE {
+    enum move_type {
         POSITION, VELOCITY
-    } MoveType = MOVETYPE::VELOCITY;
+    } moveType = move_type::VELOCITY;
     
-    double Yaw = 0.0;
-    double YawRate = 0.0;
+    double yaw = 0.0;
+    double yawRate = 0.0;
 
 
-    double EndOfCommand = 0.0;
+    double endOfCommand = 0.0;
 
-    double LastPoseUpdate = -1.0;
+    double lastPoseUpdate = -1.0;
 
-    void publishCurrentPose()
-    {
+    void publish_current_pose() {
         geometry_msgs::PoseStamped msg;
-        msg.pose.position.x = PositionArray[0];
-        msg.pose.position.y = PositionArray[1];
-        msg.pose.position.z = PositionArray[2];
-        msg.pose.orientation = ToQuaternion(this->Yaw);
+        msg.pose.position.x = positionArray[0];
+        msg.pose.position.y = positionArray[1];
+        msg.pose.position.z = positionArray[2];
+        msg.pose.orientation = to_quaternion(this->yaw);
 
         msg.header.stamp = ros::Time::now();
         msg.header.frame_id = "map";
-        this->PosePub.publish(msg);
+        this->posePub.publish(msg);
     }
 
-    void pubDes()
-    {
+    void pub_des() {
         geometry_msgs::PoseStamped msg;
-        msg.pose.position.x = this->DesiredPose.position.x;
-        msg.pose.position.y = this->DesiredPose.position.y;
-        msg.pose.position.z = this->DesiredPose.position.z;
+        msg.pose.position.x = this->desiredPose.position.x;
+        msg.pose.position.y = this->desiredPose.position.y;
+        msg.pose.position.z = this->desiredPose.position.z;
         msg.header.frame_id = "map";
-        this->DesPub.publish(msg);
+        this->desPub.publish(msg);
     }
 
 public:
-    vflie(std::string tag, uint32_t id) : rigidBody(tag, id)
-    {
-        this->PosePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (getPoseTopic(tag), 1);
-        this->DesPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> ("/despos", 1);
+    vflie(std::string tag, uint32_t id) : rigidbody(tag, id) {
+        this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(tag), 1);
+        this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> ("/despos", 1);
         // @TODO, add a unique home point system
         
         int hpx = 0;
@@ -96,133 +88,130 @@ public:
         } else if (tag == "vflie_03") {
             hpx = -0.5;
         }
-        this->HomePosition.x = -1.0;
-        this->HomePosition.y = hpx;
-        this->HomePosition.z = 0.0;
-        this->PositionArray = {-1.0, hpx, 0.0};
+        this->homePosition.x = -1.0;
+        this->homePosition.y = hpx;
+        this->homePosition.z = 0.0;
+        this->positionArray = {-1.0, hpx, 0.0};
 
-        this->publishCurrentPose();
+        this->publish_current_pose();
     };
 
-    ~vflie() 
-    {
+    ~vflie() {
 
     }
 
-    void onSetPosition(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override
-    {
-        this->MoveType = MOVETYPE::POSITION;
+    void on_set_position(geometry_msgs::Vector3 pos, 
+                        float yaw, 
+                        float duration, 
+                        bool isRelative) override {
+
+        this->moveType = move_type::POSITION;
 
         if (isRelative) {
-            pos.x = pos.x + PositionArray[0];
-            pos.y = pos.y + PositionArray[1];
-            pos.z = pos.z + PositionArray[2];
+            pos.x = pos.x + positionArray[0];
+            pos.y = pos.y + positionArray[1];
+            pos.z = pos.z + positionArray[2];
         }
 
-        this->DesiredPositionArray[0] = pos.x;
-        this->DesiredPositionArray[1] = pos.y;
-        this->DesiredPositionArray[2] = pos.z;
+        this->desiredPositionArray[0] = pos.x;
+        this->desiredPositionArray[1] = pos.y;
+        this->desiredPositionArray[2] = pos.z;
 
-        this->EndOfCommand = ros::Time::now().toSec() + duration;
+        this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
-    void onSetVelocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override
-    {
-        this->MoveType = MOVETYPE::VELOCITY;
-        this->EndOfCommand = ros::Time::now().toSec() + duration;
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override {
+        this->moveType = move_type::VELOCITY;
+        this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
-    void onMotionCapture(const geometry_msgs::PoseStamped::ConstPtr& msg)
-    {
+    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     }
     
-    void onUpdate() override
-    {
-        if (LastPoseUpdate < 0.0) {LastPoseUpdate = ros::Time::now().toSec(); return;}
-        double deltaTime = ros::Time::now().toSec() - LastPoseUpdate;
+    void on_update() override {
+        if (lastPoseUpdate < 0.0) {lastPoseUpdate = ros::Time::now().toSec(); return;}
+        double deltaTime = ros::Time::now().toSec() - lastPoseUpdate;
         double T = 2 * deltaTime;
 
-        switch (MoveType) {
-            case MOVETYPE::POSITION: {
+        switch (moveType) {
+            case move_type::POSITION: {
 
-                std::array<double, 3> DirToDesPos = {{0.0, 0.0, 0.0}};
-                DirToDesPos[0] = (this->DesiredPositionArray[0] - this->PositionArray[0]);
-                DirToDesPos[1] = (this->DesiredPositionArray[1] - this->PositionArray[1]);
-                DirToDesPos[2] = (this->DesiredPositionArray[2] - this->PositionArray[2]);
+                std::array<double, 3> dirToDesPos = {{0.0, 0.0, 0.0}};
+                dirToDesPos[0] = (this->desiredPositionArray[0] - this->positionArray[0]);
+                dirToDesPos[1] = (this->desiredPositionArray[1] - this->positionArray[1]);
+                dirToDesPos[2] = (this->desiredPositionArray[2] - this->positionArray[2]);
 
-                double Magnitude = std::abs(DirToDesPos[0]) + std::abs(DirToDesPos[1]) + std::abs(DirToDesPos[2]);
-                if (Magnitude > 0.0) {
-                    double DistanceToGoal = sqrt( (DirToDesPos[0]*DirToDesPos[0]) + (DirToDesPos[1]*DirToDesPos[1]) + (DirToDesPos[2]*DirToDesPos[2]) );
+                double magnitude = std::abs(dirToDesPos[0]) + std::abs(dirToDesPos[1]) + std::abs(dirToDesPos[2]);
+                if (magnitude > 0.0) {
+                    double distanceToGoal = sqrt( (dirToDesPos[0]*dirToDesPos[0]) + (dirToDesPos[1]*dirToDesPos[1]) + (dirToDesPos[2]*dirToDesPos[2]) );
 
-                    double TimeLeft = EndOfCommand - ros::Time::now().toSec();
-                    double DesiredVelocity = 0.0;
-                    if (TimeLeft > 0.0) {
+                    double timeLeft = endOfCommand - ros::Time::now().toSec();
+                    double desiredVelocity = 0.0;
+                    if (timeLeft > 0.0) {
                         // @FIX: this is probably good enough for now
                         // should be adjusted if we want more 'realistic' movement
-                        DesiredVelocity = 3*(DistanceToGoal / TimeLeft);
+                        desiredVelocity = 3*(distanceToGoal / timeLeft);
                     }
 
-                    this->DesiredVelocityArray[0] = (DirToDesPos[0] / Magnitude) * DesiredVelocity;
-                    this->DesiredVelocityArray[1] = (DirToDesPos[1] / Magnitude) * DesiredVelocity;
-                    this->DesiredVelocityArray[2] = (DirToDesPos[2] / Magnitude) * DesiredVelocity;
+                    this->desiredVelocityArray[0] = (dirToDesPos[0] / magnitude) * desiredVelocity;
+                    this->desiredVelocityArray[1] = (dirToDesPos[1] / magnitude) * desiredVelocity;
+                    this->desiredVelocityArray[2] = (dirToDesPos[2] / magnitude) * desiredVelocity;
                 } else {
-                    this->DesiredVelocityArray[0] = 0.0;
-                    this->DesiredVelocityArray[1] = 0.0;
-                    this->DesiredVelocityArray[2] = 0.0;
+                    this->desiredVelocityArray[0] = 0.0;
+                    this->desiredVelocityArray[1] = 0.0;
+                    this->desiredVelocityArray[2] = 0.0;
                 }
 
-                this->VelocityArray[0] = linearLerp(this->VelocityArray[0], this->DesiredVelocityArray[0], T);
-                this->VelocityArray[1] = linearLerp(this->VelocityArray[1], this->DesiredVelocityArray[1], T);
-                this->VelocityArray[2] = linearLerp(this->VelocityArray[2], this->DesiredVelocityArray[2], T);
+                this->velocityArray[0] = linear_lerp(this->velocityArray[0], this->desiredVelocityArray[0], T);
+                this->velocityArray[1] = linear_lerp(this->velocityArray[1], this->desiredVelocityArray[1], T);
+                this->velocityArray[2] = linear_lerp(this->velocityArray[2], this->desiredVelocityArray[2], T);
 
             } break;
-            case MOVETYPE::VELOCITY: {
+            case move_type::VELOCITY: {
 
-                this->VelocityArray[0] = linearLerp(this->VelocityArray[0], this->DesiredVelocity.linear.x, T);
-                this->VelocityArray[1] = linearLerp(this->VelocityArray[1], this->DesiredVelocity.linear.y, T);
-                this->VelocityArray[2] = linearLerp(this->VelocityArray[2], this->DesiredVelocity.linear.z, T);
+                this->velocityArray[0] = linear_lerp(this->velocityArray[0], this->desiredVelocity.linear.x, T);
+                this->velocityArray[1] = linear_lerp(this->velocityArray[1], this->desiredVelocity.linear.y, T);
+                this->velocityArray[2] = linear_lerp(this->velocityArray[2], this->desiredVelocity.linear.z, T);
 
             } break;
             default: break;
         }
 
-        this->PositionArray[0] = this->PositionArray[0] + (this->VelocityArray[0] * deltaTime);
-        this->PositionArray[1] = this->PositionArray[1] + (this->VelocityArray[1] * deltaTime);
-        this->PositionArray[2] = this->PositionArray[2] + (this->VelocityArray[2] * deltaTime);
+        this->positionArray[0] = this->positionArray[0] + (this->velocityArray[0] * deltaTime);
+        this->positionArray[1] = this->positionArray[1] + (this->velocityArray[1] * deltaTime);
+        this->positionArray[2] = this->positionArray[2] + (this->velocityArray[2] * deltaTime);
 
-        this->publishCurrentPose();
-        this->pubDes();
-        LastPoseUpdate = ros::Time::now().toSec();
+        this->publish_current_pose();
+        this->pub_des();
+        lastPoseUpdate = ros::Time::now().toSec();
     }
 
-    void onTakeoff(float height, float duration) override
-    {
+    void on_takeoff(float height, float duration) override {
         geometry_msgs::Vector3 pos;
-        pos.x = this->CurrentPose.position.x;
-        pos.y = this->CurrentPose.position.y;
+        pos.x = this->currentPose.position.x;
+        pos.y = this->currentPose.position.y;
         pos.z = height;
 
-        onSetPosition(pos, this->Yaw, duration, false);
+        on_set_position(pos, this->yaw, duration, false);
     }
 
-    void onLand(float duration) override
-    {
+    void on_land(float duration) override {
         geometry_msgs::Vector3 pos;
-        pos.x = this->CurrentPose.position.x;
-        pos.y = this->CurrentPose.position.y;
+        pos.x = this->currentPose.position.x;
+        pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        onSetPosition(pos, this->Yaw, duration, false);
+        on_set_position(pos, this->yaw, duration, false);
     }
 
-    void onEmergency() override
+    void on_emergency() override
     {
         geometry_msgs::Vector3 pos;
-        pos.x = this->CurrentPose.position.x;
-        pos.y = this->CurrentPose.position.y;
+        pos.x = this->currentPose.position.x;
+        pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        onSetPosition(pos, this->Yaw, 0.5, false);
+        on_set_position(pos, this->yaw, 0.5, false);
     }
 };
 

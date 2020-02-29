@@ -20,7 +20,7 @@ void do_drone_flight_test(mdp_api::id drone)
 
     mdp_api::position_msg msg;         // construct a position msg
     msg.relative = true;
-    msg.keep_height = true;
+    msg.keepHeight = true;
     msg.position = {2.0, 0.0, 0.0};
     msg.duration = 2.0;
     msg.yaw = 0.0;
@@ -40,7 +40,7 @@ void do_drone_flight_test(mdp_api::id drone)
     mdp_api::sleep_until_idle(drones[0]);
     // mdp_api::sleep_until_idle(drones[1]);
 
-    mdp_api::goto_home(drones[0]);
+    mdp_api::go_to_home(drones[0]);
     // mdp_api::goto_home(drones[1]);
 
     mdp_api::sleep_until_idle(drones[0]);
@@ -63,7 +63,7 @@ void hover_test(mdp_api::id drone)
 
     mdp_api::position_msg msg;
     msg.relative = true;
-    msg.keep_height = true;
+    msg.keepHeight = true;
     msg.position = {2.5, 0.0, 0.0};
     msg.yaw = 0.0;
     msg.duration = 3.0;
@@ -77,7 +77,7 @@ void hover_test(mdp_api::id drone)
 
     mdp_api::sleep_until_idle(drone);
 
-    mdp_api::goto_home(drone, 4.0, 0.0);
+    mdp_api::go_to_home(drone, 4.0, 0.0);
 
     mdp_api::sleep_until_idle(drone);
 }
@@ -96,7 +96,7 @@ void do_baseball_base_run(std::vector<std::array<double, 3>> positions)
 
     mdp_api::position_msg msg;
     msg.relative = false;
-    msg.keep_height = true;
+    msg.keepHeight = true;
     msg.position = positions[0];
     msg.duration = 2.0;
     msg.yaw = 0.0;
@@ -114,11 +114,11 @@ void do_baseball_base_run(std::vector<std::array<double, 3>> positions)
     }
 
     mdp_api::set_drone_position(drones[1], msg);    // send drone 1 to final position and drone 0 to home
-    mdp_api::goto_home(drones[0], 2.0, 1.0);                  // no height set so goto home position at current height
+    mdp_api::go_to_home(drones[0], 2.0, 1.0);                  // no height set so goto home position at current height
     mdp_api::sleep_until_idle(drones[0]);
     mdp_api::sleep_until_idle(drones[1]);
 
-    mdp_api::goto_home(drones[1], 2.0, 1.0);                  // send drone 1 to home
+    mdp_api::go_to_home(drones[1], 2.0, 1.0);                  // send drone 1 to home
     mdp_api::sleep_until_idle(drones[1]);
 
     mdp_api::cmd_land(drones[0]);                   // land both drones
@@ -164,7 +164,7 @@ void do_figure_eight_with_follower()
     vel_msg.relative = true;
     vel_msg.velocity = {1.0, 0.0, 0.0};
     vel_msg.duration = 0.2;
-    vel_msg.yaw_rate = 180.0;   // 360 degrees in 2 seconds
+    vel_msg.yawRate = 180.0;   // 360 degrees in 2 seconds
 
     // loop for 10 seconds
     int frames_every_two_seconds = (mdp_api::rate() * 2);
@@ -177,7 +177,7 @@ void do_figure_eight_with_follower()
         // loop for 10 seconds
         if ((i % frames_every_two_seconds) == 0) {
             // every 2 seconds reverse yawrate of drones[0], i.e. about when the drone does a full circle
-            vel_msg.yaw_rate = -vel_msg.yaw_rate;
+            vel_msg.yawRate = -vel_msg.yawRate;
         }
         mdp_api::set_drone_velocity(drones[0], vel_msg);
         mdp_api::set_drone_position(drones[1], msg);
@@ -187,14 +187,14 @@ void do_figure_eight_with_follower()
 
     // set drones[1] height to just under drones[0] (so they dont crash into each other going home
     msg.relative = true;
-    msg.keep_height = false;
+    msg.keepHeight = false;
     msg.position = {0.0, 0.0, 0.25};
     mdp_api::set_drone_position(drones[1], msg);
     mdp_api::sleep_until_idle(drones[1]);
 
     // send both drones home to land
-    mdp_api::goto_home(drones[0], 2.0, 0.0);
-    mdp_api::goto_home(drones[1], 2.0, 0.0);
+    mdp_api::go_to_home(drones[0], 2.0, 0.0);
+    mdp_api::go_to_home(drones[1], 2.0, 0.0);
 
     mdp_api::sleep_until_idle(drones[0]);
     mdp_api::sleep_until_idle(drones[1]);

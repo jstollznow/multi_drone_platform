@@ -2,7 +2,7 @@
 #include <vector>
 #include <memory>
 
-#include "rigidBody.h"
+#include "rigidbody.h"
 #include "wrappers.h"
 #include "../src/drone_server/drone_server_msg_translations.cpp"
 
@@ -24,36 +24,36 @@ struct mdp_id{
 class drone_server
 {
     private:
-        std::vector<rigidBody*> RigidBodyList;
+        std::vector<rigidbody*> rigidbodyList;
 
-        ros::NodeHandle Node;
-        ros::Subscriber InputAPISub;
-        ros::Subscriber EmergencySub;
-        ros::ServiceServer ListServer;
-        ros::ServiceServer DataServer;
+        ros::NodeHandle node;
+        ros::Subscriber inputAPISub;
+        ros::Subscriber emergencySub;
+        ros::ServiceServer listServer;
+        ros::ServiceServer dataServer;
 
-        ros::Rate LoopRate;
-        float DesiredLoopRate = LOOP_RATE_HZ;
-        float AchievedLoopRate;
-        float MotionCaptureUpdateRate;
-        float TimeToUpdateDrones;
-        float WaitTime;
+        ros::Rate loopRate;
+        float desiredLoopRate = LOOP_RATE_HZ;
+        float achievedLoopRate;
+        float motionCaptureUpdateRate;
+        float timeToUpdateDrones;
+        float waitTime;
 
-        void initialiseRigidbodiesFromVRPN();
+        void init_rigidbodies_from_VRPN();
 
-        mdp_id addNewRigidbody(std::string pTag);
-        void removeRigidbody(unsigned int pDroneID);
+        mdp_id add_new_rigidbody(std::string pTag);
+        void remove_rigidbody(unsigned int pDroneID);
 
-        bool getRigidbodyFromDroneID(uint32_t pID, rigidBody* &pReturnRigidbody);
+        bool get_rigidbody_from_drone_id(uint32_t pID, rigidbody* &pReturnRigidbody);
 
     public:
         drone_server();
         ~drone_server();
 
-        void APICallback(const geometry_msgs::TransformStamped::ConstPtr& msg);
-        void EmergencyCallback(const std_msgs::Empty::ConstPtr& msg);
-        bool APIGetDataService(nav_msgs::GetPlan::Request &Req, nav_msgs::GetPlan::Response &Res);
-        bool APIListService(tf2_msgs::FrameGraph::Request &Req, tf2_msgs::FrameGraph::Response &Res);
+        void api_callback(const geometry_msgs::TransformStamped::ConstPtr& msg);
+        void emergency_callback(const std_msgs::Empty::ConstPtr& msg);
+        bool api_get_data_service(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &res);
+        bool api_list_service(tf2_msgs::FrameGraph::Request &req, tf2_msgs::FrameGraph::Response &res);
 
         void run();
         void shutdown();
