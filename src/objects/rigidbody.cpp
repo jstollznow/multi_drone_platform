@@ -229,8 +229,7 @@ geometry_msgs::PoseStamped rigidbody::get_motion_capture() {
     return motionCapture.front();
 }
 
-void rigidbody::publish_physical_state() const
-{
+void rigidbody::publish_physical_state() const {
     currentPosePublisher.publish(motionCapture.front());
 
     geometry_msgs::TwistStamped stampedVel = {};

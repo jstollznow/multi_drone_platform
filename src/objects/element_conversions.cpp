@@ -96,8 +96,7 @@ geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point& point) {
     return v;
 }
 
-float get_yaw_from_pose(const geometry_msgs::Pose& pos)
-{
+float get_yaw_from_pose(const geometry_msgs::Pose& pos) {
     return to_euler(pos.orientation).yaw;
 }
 
