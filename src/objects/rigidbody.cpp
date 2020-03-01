@@ -37,13 +37,6 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
 
 rigidbody::~rigidbody() {
     this->log(logger::INFO, "Shutting down...");
-
-    apiPublisher.shutdown();
-    apiSubscriber.shutdown();
-    logPublisher.shutdown();
-    motionSubscriber.shutdown();
-    currentPosePublisher.shutdown();
-    currentVelocityPublisher.shutdown();
 }
 
 void rigidbody::set_state(const std::string& state) {
