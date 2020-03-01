@@ -1,4 +1,4 @@
-#include "../include/user_api.h"
+#include "user_api.h"
 #include <stdio.h>
 #include <iostream>
 
@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     auto drones = mdp_api::get_all_rigidbodies();
     printf("drones:\n", drones.size());
     for (mdp_api::id& id : drones) {
-        printf("\t%d\t:\t%s\n", id.numeric_id, id.name.c_str());
+        printf("\t%d\t:\t%s\n", id.numericID, id.name.c_str());
     }
 
     if (drones.size() > 0){

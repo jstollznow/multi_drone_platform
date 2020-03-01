@@ -1,11 +1,11 @@
 # takeoff, land, etc
-string msg_type
+string msgType
 
 # whether the position or velocity is relative
 bool relativeXY
 
 # position or velocity
-geometry_msgs/Vector3 posvel
+geometry_msgs/Vector3 posVel
 
 # how long the command is valid for
 float32 duration
