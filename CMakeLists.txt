@@ -96,7 +96,7 @@ target_link_libraries(LOGGER ${catkin_LIBRARIES})
 add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
 
 add_library(RIGIDBODY
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/objects/rigidbody.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/rigidbody.cpp
 )
 target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
 add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
