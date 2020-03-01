@@ -1,6 +1,5 @@
 #include <string>
 #include <vector>
-#include "ros/ros.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Twist.h"
@@ -96,4 +95,9 @@ geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point& point) {
     v.z = point.z;
     return v;
 }
+
+float get_yaw_from_pose(const geometry_msgs::Pose& pos) {
+    return to_euler(pos.orientation).yaw;
+}
+
 }

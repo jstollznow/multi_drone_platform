@@ -16,6 +16,7 @@ struct id {
 };
 
 struct position_data {
+    uint64_t timeStampNsec; // fun-fact: valid until July 21, 2554
     float x, y, z;
     float yaw;
 };
