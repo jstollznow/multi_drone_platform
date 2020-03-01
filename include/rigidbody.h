@@ -11,7 +11,7 @@
 #include "std_msgs/Header.h"
 #include "sensor_msgs/Imu.h"
 #include "std_msgs/Float64MultiArray.h"
-#include "logger.h"
+#include "../src/debug/logger/logger.h"
 #include "multi_drone_platform/api_update.h"
 
 #define DEFAULT_QUEUE 10
