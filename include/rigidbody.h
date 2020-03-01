@@ -32,7 +32,7 @@ class rigidbody {
     ros::Subscriber apiSubscriber;
     ros::Publisher logPublisher;
     ros::Publisher currentPosePublisher;
-    ros::Publisher desiredPosePublisher;
+    ros::Publisher currentVelocityPublisher;
     uint32_t numericID;
         
     protected:
@@ -71,9 +71,9 @@ class rigidbody {
     
     void calculate_velocity();
     double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
-    float get_yaw(geometry_msgs::Pose& pos);
     void set_state(const std::string& state);
     void log(logger::log_type msgType, std::string message);
+    void publish_physical_state() const;
         
     protected:
     void handle_command();

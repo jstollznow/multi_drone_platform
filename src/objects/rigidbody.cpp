@@ -22,8 +22,8 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     apiSubscriber = droneHandle.subscribe(apiTopic, 2, &rigidbody::api_callback, this);
     logPublisher = droneHandle.advertise<multi_drone_platform::log> (logTopic, 20);
     motionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 1,&rigidbody::add_motion_capture, this);
-    currentPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(numericID) + "/CurrentPose", 1);
-    desiredPosePublisher = droneHandle.advertise<std_msgs::Float64MultiArray> ("mdp/drone_" + std::to_string(numericID) + "/DesiredPose", 1);
+    currentPosePublisher = droneHandle.advertise<geometry_msgs::PoseStamped> ("mdp/drone_" + std::to_string(numericID) + "/pose", 1);
+    currentVelocityPublisher = droneHandle.advertise<geometry_msgs::TwistStamped> ("mdp/drone_" + std::to_string(numericID) + "/velocity", 1);
 
     this->log(logger::INFO, "Subscribing to motion topic: " + motionTopic);
     this->log(logger::INFO, "Subscrbing to API topic: " + apiTopic);
@@ -37,6 +37,13 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
 
 rigidbody::~rigidbody() {
     this->log(logger::INFO, "Shutting down...");
+
+    apiPublisher.shutdown();
+    apiSubscriber.shutdown();
+    logPublisher.shutdown();
+    motionSubscriber.shutdown();
+    currentPosePublisher.shutdown();
+    currentVelocityPublisher.shutdown();
 }
 
 void rigidbody::set_state(const std::string& state) {
@@ -51,10 +58,6 @@ bool rigidbody::get_controllable() {
 
 std::string rigidbody::get_name() {
     return this->tag;
-}
-
-float rigidbody::get_yaw(geometry_msgs::Pose& pos) {
-    return mdp_conversions::to_euler(pos.orientation).yaw;
 }
 
 geometry_msgs::Vector3 rigidbody::predict_current_position() {
@@ -79,7 +82,7 @@ double rigidbody::predict_current_yaw() {
         timeSinceMoCapUpdate = 0.0;
     }
 
-    double yaw = get_yaw(currentPose);
+    double yaw = mdp_conversions::get_yaw_from_pose(currentPose);
     yaw += (currentVelocity.angular.z * timeSinceMoCapUpdate);
 
     return yaw;
@@ -223,12 +226,24 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     // ROS_INFO("Current Position: x: %f, y: %f, z: %f",currPos.position.x, currPos.position.y, currPos.position.z);
     // @TODO: Orientation implementation
 
+    this->publish_physical_state();
+
     this->lastUpdate = ros::Time::now();
     this->on_motion_capture(msg);
 }
 
 geometry_msgs::PoseStamped rigidbody::get_motion_capture() {
     return motionCapture.front();
+}
+
+void rigidbody::publish_physical_state() const
+{
+    currentPosePublisher.publish(motionCapture.front());
+
+    geometry_msgs::TwistStamped stampedVel = {};
+    stampedVel.header.stamp = ros::Time::now();
+    stampedVel.twist = this->currentVelocity;
+    currentVelocityPublisher.publish(stampedVel);
 }
 
 void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
@@ -255,31 +270,6 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
     if (state == "IDLE") {
         handle_command();
     }
-
-    /* publish desired pose and velocity */
-    std_msgs::Float64MultiArray arr;
-    arr.layout.data_offset = 0;
-    arr.data.resize(8);
-    arr.data[0] = this->desiredPose.position.x;
-    arr.data[1] = this->desiredPose.position.y;
-    arr.data[2] = this->desiredPose.position.z;
-    arr.data[3] = get_yaw(this->desiredPose);
-    arr.data[4] = this->desiredVelocity.linear.x;
-    arr.data[5] = this->desiredVelocity.linear.y;
-    arr.data[6] = this->desiredVelocity.linear.z;
-    arr.data[7] = this->desiredVelocity.angular.y;  // @FIX, is this yawrate?
-    desiredPosePublisher.publish(arr);
-
-    /* publish current pose and velocity */
-    arr.data[0] = this->currentPose.position.x;
-    arr.data[1] = this->currentPose.position.y;
-    arr.data[2] = this->currentPose.position.z;
-    arr.data[3] = get_yaw(this->currentPose);
-    arr.data[4] = this->currentVelocity.linear.x;
-    arr.data[5] = this->currentVelocity.linear.y;
-    arr.data[6] = this->currentVelocity.linear.z;
-    arr.data[7] = this->currentVelocity.angular.y;  // @FIX, is this yawrate?
-    currentPosePublisher.publish(arr);
 
     this->on_update();
 }

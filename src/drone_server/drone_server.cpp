@@ -216,46 +216,12 @@ bool drone_server::api_get_data_service(nav_msgs::GetPlan::Request &pReq, nav_ms
     if (!get_rigidbody_from_drone_id(req.drone_id().numeric_id(), RB)) return false;
 
     switch(apiMap[req.msgType()]) {
-        case 0: {   /* VELOCITY */
-        // RB SIDE
-            // auto RetVel = RB->getCurrVel();
-            // auto RetPos = RB->getCurrPos();
-            // // can get a ros::Time back from these messages now
-            // Res.vec3().x = RetVel.velocity.x;
-            // Res.vec3().y = RetVel.velocity.y;
-            // Res.vec3().z = RetVel.velocity.z;
-            // Res.yaw_rate() = RetVel.yawRate;
-            // Res.forward_x() = cos(-RetPos.yaw);
-            // Res.forward_y() = sin(-RetPos.yaw);
-            ROS_INFO_STREAM("Server completed get data service of type: " << req.msgType());
-            return true;
-        } break;
-        case 1: {   /* POSITION */
-        // RB SIDE
-            // auto RetVel = RB->getCurrVel();
-            // auto RetPos = RB->getCurrPos();
-            // // can get a ros::Time back from these messages now
-            // Res.vec3().x = RetPos.position.x;
-            // Res.vec3().y = RetPos.position.y;
-            // Res.vec3().z = RetPos.position.z;
-            // Res.yaw_rate() = RetVel.yawRate;
-            // Res.forward_x() = cos(-RetPos.yaw);
-            // Res.forward_y() = sin(-RetPos.yaw);
-            ROS_INFO_STREAM("Server completed get data service of type: " << req.msgType());
-            return true;
-        } break;
         case 7: {   /* GET_HOME */
         // RB SIDE
             geometry_msgs::Vector3 Pos = RB->get_home_coordinates();
             res.vec3().x = Pos.x;
             res.vec3().y = Pos.y;
             res.vec3().z = Pos.z;
-            this->log(logger::DEBUG, "Server completed get data service of type: " + req.msgType());
-            return true;
-        } break;
-        case 9: {   /* ORIENTATION */
-        // RB SIDE
-
             this->log(logger::DEBUG, "Server completed get data service of type: " + req.msgType());
             return true;
         } break;

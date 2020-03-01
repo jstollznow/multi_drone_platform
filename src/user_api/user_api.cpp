@@ -5,7 +5,9 @@
 #include <unordered_map>
 
 #include "../drone_server/drone_server_msg_translations.cpp"
-#include "std_msgs/Float64MultiArray.h"
+
+#include "../objects/element_conversions.cpp"
+#include "geometry_msgs/TwistStamped.h"
 
 #define FRAME_ID "user_api"
 
@@ -13,11 +15,18 @@ namespace mdp_api {
     struct drone_data
     {
         ros::Subscriber poseSubscriber;
-        std::array<double, 8> pose;
+        ros::Subscriber twistSubscriber;
+        geometry_msgs::PoseStamped pose;
+        geometry_msgs::TwistStamped velocity;
 
-        void pose_data_callback(const std_msgs::Float64MultiArray::ConstPtr& msg)
+        void pose_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
         {
-            std::copy(msg->data.begin(), msg->data.end(), pose.begin());
+            this->pose = *msg;
+        }
+
+        void twist_callback(const geometry_msgs::TwistStamped::ConstPtr& msg)
+        {
+            this->velocity = *msg;
         }
     };
 
@@ -68,6 +77,7 @@ namespace mdp_api {
         ROS_INFO("Finished Client API Connection");
         for (auto it = NodeData.DroneData.begin(); it != NodeData.DroneData.end(); it++) {
             it->second.poseSubscriber.shutdown();
+            it->second.twistSubscriber.shutdown();
         }
         delete NodeData.LoopRate;
         delete NodeData.Node;
@@ -97,11 +107,19 @@ namespace mdp_api {
             // add drone data for each drone
             for (size_t i = 0; i < Vec.size(); i++) {
                 if (NodeData.DroneData.count(Vec[i].numericID) == 0) {
+                    /* create drone_data struct and init ros Subscribers */
                     NodeData.DroneData[Vec[i].numericID] = {};
-                    NodeData.DroneData[Vec[i].numericID].poseSubscriber = 
-                    NodeData.Node->subscribe<std_msgs::Float64MultiArray> 
-                    ("mdp/drone_" + std::to_string(Vec[i].numericID) + "/CurrentPose", 1, 
-                    &drone_data::pose_data_callback, &NodeData.DroneData[Vec[i].numericID]);
+
+                    NodeData.DroneData[Vec[i].numericID].poseSubscriber = NodeData.Node->subscribe<geometry_msgs::PoseStamped>(
+                        "mdp/drone_" + std::to_string(Vec[i].numericID) + "/pose", 
+                        1, 
+                        &drone_data::pose_callback, 
+                        &NodeData.DroneData[Vec[i].numericID]);
+                    NodeData.DroneData[Vec[i].numericID].twistSubscriber = NodeData.Node->subscribe<geometry_msgs::TwistStamped>(
+                        "mdp/drone_" + std::to_string(Vec[i].numericID) + "/velocity", 
+                        1, 
+                        &drone_data::twist_callback, 
+                        &NodeData.DroneData[Vec[i].numericID]);
                 }
             }
         } else {
@@ -156,13 +174,15 @@ namespace mdp_api {
     {
         position_data Data;
         // if the drone id does not exist, return
+        // @TODO: make this a value you can check for validity
         if (NodeData.DroneData.count(pRigidbodyID.numericID) == 0) return Data;
 
-        std::array<double, 8>* PoseData = &NodeData.DroneData[pRigidbodyID.numericID].pose;
-        Data.x =    (*PoseData)[0];
-        Data.y =    (*PoseData)[1];
-        Data.z =    (*PoseData)[2];
-        Data.yaw =  (*PoseData)[3];
+        auto Pose = &NodeData.DroneData[pRigidbodyID.numericID].pose;
+        Data.timeStampNsec =    Pose->header.stamp.toNSec();
+        Data.x =                Pose->pose.position.x;
+        Data.y =                Pose->pose.position.y;
+        Data.z =                Pose->pose.position.z;
+        Data.yaw =              mdp_conversions::get_yaw_from_pose(Pose->pose);
         return Data;
     }
 
@@ -172,11 +192,12 @@ namespace mdp_api {
         // if the drone id does not exist, return
         if (NodeData.DroneData.count(pRigidbodyID.numericID) == 0) return Data;
 
-        std::array<double, 8>* PoseData = &NodeData.DroneData[pRigidbodyID.numericID].pose;
-        Data.x =    (*PoseData)[4];
-        Data.y =    (*PoseData)[5];
-        Data.z =    (*PoseData)[6];
-        Data.yaw =  (*PoseData)[7];
+        auto Vel = &NodeData.DroneData[pRigidbodyID.numericID].velocity;
+        Data.timeStampNsec =    Vel->header.stamp.toNSec();
+        Data.x =                Vel->twist.linear.x;
+        Data.y =                Vel->twist.linear.y;
+        Data.z =                Vel->twist.linear.z;
+        Data.yaw =              Vel->twist.angular.y;
         return Data;
     }
 
@@ -319,6 +340,8 @@ namespace mdp_api {
     void spin_once()
     {
         NodeData.LoopRate->sleep();
+        if (ros::ok())
+            ros::spinOnce();
     }
 
     int rate()
@@ -329,9 +352,11 @@ namespace mdp_api {
     void sleep_until_idle(mdp_api::id pDroneID)
     {
         ROS_INFO("Sleeping until drone '%s' goes idle", pDroneID.name.c_str());
+        
+        /* wait 1 frame (so that states can update on the server side) */
+        NodeData.LoopRate->reset();
         NodeData.LoopRate->sleep();
-        // why two?
-        NodeData.LoopRate->sleep();
+
         std::string state_param = "mdp/drone_" + std::to_string(pDroneID.numericID) + "/state";
         std::string drone_state = "";
         if (!ros::param::get(state_param, drone_state)) {
