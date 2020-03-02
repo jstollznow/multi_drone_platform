@@ -36,7 +36,13 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
 }
 
 rigidbody::~rigidbody() {
-    this->log(logger::INFO, "Shutting down...");
+    this->log(logger::INFO, "Deconstructing...");
+    droneHandle.shutdown();
+}
+
+void rigidbody::shutdown() {
+    this->log(logger::INFO, "Landing drone for shut down");
+    this->go_home();
 }
 
 void rigidbody::set_state(const std::string& state) {
@@ -284,9 +290,6 @@ void rigidbody::handle_command() {
     this->log(logger::INFO, "State: " + state);
     geometry_msgs::Vector3 noMove;
     noMove.x = noMove.y = noMove.z = 0.0f;
-    multi_drone_platform::api_update landMsg;
-    landMsg.msgType = "LAND";
-    landMsg.duration = 2.0f;
 
     if (commandQueue.size() > 0) {
         multi_drone_platform::api_update msg = this->commandQueue.front();
@@ -334,13 +337,7 @@ void rigidbody::handle_command() {
                     break;
                 /* GOTO_HOME */
                 case 8:
-                    ROS_INFO("message duration on goto home %f", msg.duration);
-                    set_desired_position(homePosition, msg.yawVal,msg.duration, false, true);
-                    this->set_state("MOVING");
-                    if (msg.posVel.z <= 0.0f)
-                    {
-                        enqueue_command(landMsg);
-                    }
+                    go_home(msg.yawVal, msg.duration, msg.posVel.z);
                     break;
                 default:
                     this->log(logger::WARN, "The API command, " + msg.msgType + ", is not valid");
@@ -389,6 +386,18 @@ void rigidbody::hover(float duration) {
     // pos.y += CurrentVelocity.linear.y * 0.3;
     // pos.z += CurrentVelocity.linear.z * 0.3;
     set_desired_position(pos, 0.0f, duration, true, true);
+}
+
+void rigidbody::go_home(float yaw, float duration, float height) {
+    set_desired_position(homePosition, yaw, duration, false, true);
+    this->set_state("MOVING");
+    if (height <= 0.1f) {
+        multi_drone_platform::api_update landMsg;
+        landMsg.msgType = "LAND";
+        landMsg.duration = 2.0f;
+
+        enqueue_command(landMsg);
+    }
 }
 
 void rigidbody::reset_timeout(float timeout) {
