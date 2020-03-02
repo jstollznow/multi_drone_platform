@@ -72,15 +72,15 @@ class rigidbody {
         void calculate_velocity();
         double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
         void set_state(const std::string& state);
-        void log(logger::log_type msgType, std::string message);
         void publish_physical_state() const;
             
-        protected:
+    protected:
         void handle_command();
         void enqueue_command(multi_drone_platform::api_update command);
         void dequeue_command();
         void reset_timeout(float timeout = 1.0f);
         bool is_msg_different(multi_drone_platform::api_update msg);
+        void log(logger::log_type msgType, std::string message);
 
         // Wrapper Methods
         virtual void on_update() = 0;

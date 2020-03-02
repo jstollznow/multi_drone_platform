@@ -41,7 +41,7 @@
 class cflie : public rigidbody {
     private:
     const std::string linkUri = "radio://0/80/2M";
-    
+    std::string myUri;
 
     std::string droneAddress;
     ros::Publisher externalPosition;
@@ -54,12 +54,10 @@ class cflie : public rigidbody {
     ros::ServiceClient goToService;
     
     ros::ServiceClient updateParams;
-
     ros::Subscriber batteryCheck;
-    
     ros::ServiceClient addCrazyflieService;
 
-    bool doOnce = false;
+    bool hasInitParams = false;
 
     void go_to(geometry_msgs::Vector3 goal, float yaw, float duration, bool isRelative) {
         crazyflie_driver::GoTo goToMsg;
@@ -82,22 +80,24 @@ class cflie : public rigidbody {
 
         reset_timeout(duration);
     }
+
     void battery_log(const std_msgs::Float32::ConstPtr &msg) {
         if (msg->data <= 3.15f) {
             ROS_WARN("Battery dying soon...");
             batteryDying = true;
-        }
-        else {
+        } else {
             batteryDying = false;
         }
     }
+
     public:
     cflie(std::string tag, uint32_t id):rigidbody(tag, id) {
-        ROS_INFO("I am here, its %s", tag.c_str());
         droneAddress = (tag.substr(tag.find_first_of('_')+1, tag.length()));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
+        myUri = linkUri + "/0xE7E7E7E7" + droneAddress;
+
         crazyflie_driver::AddCrazyflie msg;
-        msg.request.uri = linkUri + "/0xE7E7E7E7" + droneAddress;
+        msg.request.uri = myUri;
         msg.request.tf_prefix = tag;
         msg.request.roll_trim = 0.0f;
         msg.request.pitch_trim = 0.0f;
@@ -114,15 +114,14 @@ class cflie : public rigidbody {
 
         if (addCrazyflieService.call(msg)) {
             ROS_INFO("%s launched on Crazyflie Server", tag.c_str());
-        }
-        else {
+        } else {
             ROS_ERROR("Could not add %s to Crazyflie Server, please check the drone tag", tag.c_str());
         }
 
         updateParams = droneHandle.serviceClient<crazyflie_driver::UpdateParams>("/" + tag + "/update_params");
-
         emergencyService = droneHandle.serviceClient<std_srvs::Empty>("/" + tag + "/emergency");        
         externalPosition = droneHandle.advertise<geometry_msgs::PointStamped>("/" + tag + "/external_position", 1);
+
         // high level commands
         takeoffService = droneHandle.serviceClient<crazyflie_driver::Takeoff>("/" + tag + "/takeoff");
         landService = droneHandle.serviceClient<crazyflie_driver::Land>("/" + tag + "/land");
@@ -130,24 +129,24 @@ class cflie : public rigidbody {
         goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to", true);
 
         // feedback
-
         batteryCheck = droneHandle.subscribe<std_msgs::Float32>("/" + tag + "/battery", 10, &cflie::battery_log, this); 
 
     };
 
     ~cflie() {
-        // use remove service, need to keep ros alive for a bit, ctrl c closes the crazyflie server before we have a chance to remove the crazyflie.
-        // will need to make a workaround which keeps the server up long enough for us to remove the crazyflie...
+        /* remove the crazyflie from the crazyserver */
+        auto RemCrazyflieService = droneHandle.serviceClient<crazyflie_driver::RemoveCrazyflie> ("/remove_crazyflie");
 
-        // auto RemCrazyflieService = droneHandle.serviceClient<crazyflie_driver::RemoveCrazyflie> ("/remove_crazyflie");
-        // crazyflie_driver::RemoveCrazyflie msg;
-        // msg.request.uri = link_uri + "/0xE7E7E7E7" + droneAddress;
-        // if (RemCrazyflieService.call(msg)) {
-        //     ROS_INFO("Removed %s from the crazyflie server", tag.c_str());
-        // } else {
-        //     ROS_INFO("Failed to remove %s from the crazyflie server", tag.c_str());
-        // }
+        crazyflie_driver::RemoveCrazyflie msg;
+        msg.request.uri = myUri;
+
+        if (RemCrazyflieService.call(msg)) {
+            this->log(logger::INFO, "Removed " + tag + " from the crazyflie server");
+        } else {
+            this->log(logger::WARN, "Failed to remove " + tag + " from the crazyflie server");
+        }
     }
+    
     void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {
         // external_pose.publish(msg);
         geometry_msgs::PointStamped pointMsg;
@@ -157,7 +156,7 @@ class cflie : public rigidbody {
     }
     
     void on_update() override {
-        if (doOnce == false) {
+        if (!hasInitParams) {
             droneHandle.setParam( "/" + tag + "/commander/enHighLevel", 1);
             droneHandle.setParam("/" + tag + "/stabilizer/estimator", 2);
             droneHandle.setParam( "/" + tag + "/stabilizer/controller", 2);
@@ -169,11 +168,9 @@ class cflie : public rigidbody {
                 "stabilizer/controller",
                 "kalman/resetEstimation"
             };
-            if (updateParams.call(paramsMsg) == true) {
-                doOnce = true;
-            }
+
+            hasInitParams = updateParams.call(paramsMsg);
         }
-        
     }
 
     void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override {
@@ -215,8 +212,7 @@ class cflie : public rigidbody {
         std_srvs::Empty msg;
         if(emergencyService.call(msg)) {
             ROS_INFO("Emergency land for %s successful", tag.c_str());
-        }
-        else {
+        } else {
             ROS_INFO("Emergency land for %s not successful", tag.c_str());
         }
     }

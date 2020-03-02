@@ -288,7 +288,7 @@ void drone_server::log(logger::log_type logType, std::string message) {
 
 
 void signal_handler(int sig) {
-    printf("\n");
+    printf("\n\n\n");
     globalShouldShutdown = true;
 }
 
