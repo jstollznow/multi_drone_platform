@@ -79,14 +79,14 @@ class debug_window: public Gtk::Window {
 
     public:
         debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
-        void init(mdp_api::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
+        void init(mdp::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
         void update_stats();
 
         // ros::CallbackQueue myQueue;
         // ros::AsyncSpinner mySpin;
 
     protected:
-        mdp_api::id myDrone;
+        mdp::id myDrone;
         std_msgs::Float32MultiArray updateMsg;
         
         ros::Subscriber logSubscriber;

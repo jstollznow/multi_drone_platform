@@ -18,5 +18,5 @@ class debug_app: public Gtk::Application {
         ros::NodeHandle debugAppNode;
         std::map<std::string, debug_window*> droneDebugWindows;
     public:
-        debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID = "debugApp");
+        debug_app(std::vector<mdp::id> myDrones, int argc, char **argv, std::string appID = "debugApp");
 };

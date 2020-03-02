@@ -53,12 +53,12 @@ int main(int argc, char *argv[]) {
     // Gtk::Application app = Gtk::Application(argc, argv);
     // mdp_api::initialise(10);
     // ros::init(argc, argv, "debugNode");
-    std::vector<mdp_api::id> myDrones;
+    std::vector<mdp::id> myDrones;
     // myDrones = mdp_api::get_all_rigidbodies();
 
     std::vector<debug_window*> myUIs;
     
-    mdp_api::id myId0;
+    mdp::id myId0;
     myId0.numericID = 0;
     for(int i = 0; i < NUM_WINDOWS; i++) {
         myId0.name = "vflie_" + std::to_string(i);

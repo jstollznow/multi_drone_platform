@@ -44,7 +44,7 @@ void debug_app::show_windows() {
     }
 }
 
-debug_app::debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID):Gtk::Application(argc, argv, appID) {
+debug_app::debug_app(std::vector<mdp::id> myDrones, int argc, char **argv, std::string appID):Gtk::Application(argc, argv, appID) {
     bool expanded = EXPANDED;
     ros::init(argc, argv, NODE_NAME);
 

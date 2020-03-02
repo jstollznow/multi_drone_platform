@@ -9,11 +9,11 @@
 
 int main(int argc, char *argv[]) {
 
-    mdp_api::initialise(10);
-    std::vector<mdp_api::id> myDrones;
+    mdp::initialise(10);
+    std::vector<mdp::id> myDrones;
 
     for (int i = 0; i < 10; i++) {
-        mdp_api::id myId;
+        mdp::id myId;
         myId.name = "vflie_" + std::to_string(i);
         myId.numericID = i;
         myDrones.push_back(myId);

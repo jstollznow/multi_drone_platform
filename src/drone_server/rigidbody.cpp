@@ -111,23 +111,23 @@ float duration, bool relativeXY, bool relativeZ) {
         std::array<double, 2> x = {{-1.60, 0.95}};
         std::array<double, 2> y = {{-1.30, 1.30}};
         std::array<double, 2> z = {{ 0.10, 1.80}};
-    } static_safeguarding;
+    } staticSafeguarding;
 
     if (relativeXY) {
         /* lowest pos value */
-        pos.x = std::max(static_safeguarding.x[0] - currentPosition.x, pos.x);
-        pos.y = std::max(static_safeguarding.y[0] - currentPosition.y, pos.y);
-        pos.z = std::max(static_safeguarding.z[0] - currentPosition.z, pos.z);
+        pos.x = std::max(staticSafeguarding.x[0] - currentPosition.x, pos.x);
+        pos.y = std::max(staticSafeguarding.y[0] - currentPosition.y, pos.y);
+        pos.z = std::max(staticSafeguarding.z[0] - currentPosition.z, pos.z);
 
         /* highest pos value */
-        pos.x = std::min(static_safeguarding.x[1] - currentPosition.x, pos.x);
-        pos.y = std::min(static_safeguarding.y[1] - currentPosition.y, pos.y);
-        pos.z = std::min(static_safeguarding.z[1] - currentPosition.z, pos.z);
+        pos.x = std::min(staticSafeguarding.x[1] - currentPosition.x, pos.x);
+        pos.y = std::min(staticSafeguarding.y[1] - currentPosition.y, pos.y);
+        pos.z = std::min(staticSafeguarding.z[1] - currentPosition.z, pos.z);
     } else {
         /* both */
-        pos.x = std::min(std::max(static_safeguarding.x[0], pos.x), static_safeguarding.x[1]);
-        pos.y = std::min(std::max(static_safeguarding.y[0], pos.y), static_safeguarding.y[1]);
-        pos.z = std::min(std::max(static_safeguarding.z[0], pos.z), static_safeguarding.z[1]);
+        pos.x = std::min(std::max(staticSafeguarding.x[0], pos.x), staticSafeguarding.x[1]);
+        pos.y = std::min(std::max(staticSafeguarding.y[0], pos.y), staticSafeguarding.y[1]);
+        pos.z = std::min(std::max(staticSafeguarding.z[0], pos.z), staticSafeguarding.z[1]);
     }
 
     geometry_msgs::Vector3 abs_pos = pos;
@@ -310,6 +310,7 @@ void rigidbody::handle_command() {
                 /* TAKEOFF */
                 case 2:
                     ROS_INFO("Height: %f", msg.posVel.z);
+                    this->log(logger::INFO, "Duration: " + std::to_string(msg.duration));
                     takeoff(msg.posVel.z, msg.duration);
                     break;
                 /* LAND */

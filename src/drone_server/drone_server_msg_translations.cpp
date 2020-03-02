@@ -3,7 +3,7 @@
 #include "nav_msgs/GetPlan.h"
 #include "tf2_msgs/FrameGraph.h"
 
-namespace mdp {
+namespace mdp_translations {
 
 class id {
     private:

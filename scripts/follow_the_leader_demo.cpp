@@ -24,7 +24,7 @@ struct input{
     float yaw;
 };
 input lastInput;
-std::vector<mdp_api::id> drones;
+std::vector<mdp::id> drones;
 int droneID;
 bool localCoord;
 bool highLevelCommand;
@@ -74,7 +74,7 @@ bool ps4_remote::emergency_handle(int allDrones, int oneDrone) {
         ROS_INFO("ALL EMERGENCY butt");
         for(size_t i = 0; i < drones.size(); i++)
         {
-            mdp_api::cmd_emergency(drones[i]);
+            mdp::cmd_emergency(drones[i]);
         }
         return true;
     }
@@ -83,7 +83,7 @@ bool ps4_remote::emergency_handle(int allDrones, int oneDrone) {
         highLevelCommand = true;
         ROS_INFO("%s: EMERGENCY butt", drones[droneID].name.c_str());
         if (drones.size() > droneID) {
-           mdp_api::cmd_emergency(drones[droneID]);
+           mdp::cmd_emergency(drones[droneID]);
         }
         return true;
     }
@@ -115,7 +115,7 @@ bool ps4_remote::high_lvl_command_handle(int takeoff, int land, int hover, int g
     if (takeoff == 1) {
         highLevelCommand = true;
         ROS_INFO("%s: Takeoff butt", drones[droneID].name.c_str());
-        mdp_api::cmd_takeoff(drones[droneID], 0.5f, TAKEOFF_TIME);
+        mdp::cmd_takeoff(drones[droneID], 0.5f, TAKEOFF_TIME);
         return true;
     }
     // circle
@@ -129,7 +129,7 @@ bool ps4_remote::high_lvl_command_handle(int takeoff, int land, int hover, int g
     else if (hover == 1) {
         highLevelCommand = true;
         ROS_INFO("%s: Hover butt", drones[droneID].name.c_str());
-        mdp_api::cmd_hover(drones[droneID]);
+        mdp::cmd_hover(drones[droneID]);
         return true;
     }
     // square
@@ -196,18 +196,18 @@ void ps4_remote::control_update() {
         if (!localCoord) {
             ROS_INFO("%s: Change position by [%.2f, %.2f, %.2f] and yaw by %f", drones[droneID].name.c_str(),
             lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
-            mdp_api::position_msg posMsg;
+            mdp::position_msg posMsg;
             posMsg.duration =  2.0f;
             posMsg.keepHeight = true;
             posMsg.relative = true;
             posMsg.position = lastInput.axesInput;
             posMsg.yaw = lastInput.yaw;
-            mdp_api::set_drone_position(drones[droneID],posMsg);
+            mdp::set_drone_position(drones[droneID],posMsg);
         }
     }
     else {
         if (!highLevelCommand) {
-            mdp_api::cmd_hover(drones[droneID]);
+            mdp::cmd_hover(drones[droneID]);
         }
     }
 }
@@ -255,13 +255,13 @@ void ps4_remote::run(int argc, char **argv) {
     ROS_INFO("Please sync remote by pressing the left and right triggers...");
  
     mySpin->start();
-    auto drones = mdp_api::get_all_rigidbodies();
-    drones = mdp_api::get_all_rigidbodies();
+    auto drones = mdp::get_all_rigidbodies();
+    drones = mdp::get_all_rigidbodies();
     ps4_remote::droneID = drones[0].numericID;
     auto followerDrone = drones[1];
-    mdp_api::cmd_takeoff(followerDrone, 1.0f, 2.0f);
-    mdp_api::sleep_until_idle(followerDrone);
-    mdp_api::cmd_hover(drones[1]);
+    mdp::cmd_takeoff(followerDrone, 1.0f, 2.0f);
+    mdp::sleep_until_idle(followerDrone);
+    mdp::cmd_hover(drones[1]);
 
     if (drones.size() >= 2) {
 
@@ -270,23 +270,23 @@ void ps4_remote::run(int argc, char **argv) {
 
             if (sync) {
                 control_update();
-                auto currentPos = mdp_api::get_position(drones[0]);
-                mdp_api::position_msg msg;
+                auto currentPos = mdp::get_position(drones[0]);
+                mdp::position_msg msg;
                 msg.position = {currentPos.x, currentPos.y, 0.0f};
                 msg.keepHeight = true;
                 msg.relative = false;
                 msg.duration = 1.0f;
                 msg.yaw = 0.0f;
-                mdp_api::set_drone_position(followerDrone, msg);
+                mdp::set_drone_position(followerDrone, msg);
                 loop_rate.sleep();
                 ++count;
             }
         }
 
-        mdp_api::go_to_home(drones[0], GO_TO_HOME);
-        mdp_api::go_to_home(drones[1], GO_TO_HOME);
-        mdp_api::sleep_until_idle(drones[0]);
-        mdp_api::sleep_until_idle(drones[1]);
+        mdp::go_to_home(drones[0], GO_TO_HOME);
+        mdp::go_to_home(drones[1], GO_TO_HOME);
+        mdp::sleep_until_idle(drones[0]);
+        mdp::sleep_until_idle(drones[1]);
     }
 
 }
@@ -300,11 +300,11 @@ int main(int argc, char **argv)
 {
     ros::init(argc,argv,"ps4_remote");
     ps4_remote::mySpin = new ros::AsyncSpinner(1,&ps4_remote::myQueue);
-    mdp_api::initialise(SERVER_FREQ);
+    mdp::initialise(SERVER_FREQ);
     bool start = true;
 
     ps4_remote::droneID = 0;
-    ps4_remote::drones = mdp_api::get_all_rigidbodies();
+    ps4_remote::drones = mdp::get_all_rigidbodies();
 
     while (ps4_remote::drones[ps4_remote::droneID].name.find("object") != std::string::npos)
     {
@@ -329,7 +329,7 @@ int main(int argc, char **argv)
     delete ps4_remote::myNode;
     delete ps4_remote::mySpin;
     
-    mdp_api::terminate();
+    mdp::terminate();
 
     return 0;
 }

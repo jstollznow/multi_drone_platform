@@ -13,7 +13,7 @@ Gtk::Window(cobject), builder(refGlade) {
     // myNode.setCallbackQueue(&myQueue);
     
 }
-void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool expanded) {
+void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, bool expanded) {
     this->expanded = false;
     if (expanded) on_expandButton_clicked();
 
