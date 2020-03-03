@@ -41,8 +41,20 @@ rigidbody::~rigidbody() {
 }
 
 void rigidbody::shutdown() {
+    /* disable incoming api updates so that go_home cannot be interrupted */
+    this->shutdownHasBeenCalled = true;
     this->log(logger::INFO, "Landing drone for shut down");
-    this->go_home();
+
+    /* create and enqueue go to home command */
+    multi_drone_platform::api_update msg;
+    msg.msgType = "GOTO_HOME";
+    msg.yawVal = 0.0;
+    msg.posVel.z = 0.0;
+    msg.duration = 4.0;
+    this->enqueue_command(msg);
+
+    /* immediately handle go home command */
+    this->handle_command();
 }
 
 void rigidbody::set_state(const std::string& state) {
@@ -98,6 +110,11 @@ double rigidbody::vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3
 
 void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw,
 float duration, bool relativeXY, bool relativeZ) {
+    if (state.compare("LANDED") == 0) {
+        this->log(logger::WARN, "Go to position called on landed drone, ignoring");
+        return;
+    }
+
     auto currentPosition = predict_current_position();
     // ROS_INFO("Current:");
     // ROS_INFO("x: %f, y: %f, z: %f", CurrentPosition.position.x, CurrentPosition.position.y, CurrentPosition.position.z);
@@ -154,16 +171,22 @@ float duration, bool relativeXY, bool relativeZ) {
     ", " + std::to_string(desiredPose.position.z) + "] Dur: " + std::to_string(duration));
 
     this->on_set_position(pos, yaw, duration, relativeXY);
+    this->set_state("MOVING");
 
     reset_timeout(duration);
 }
 
 void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
 float duration, bool relativeXY, bool relativeZ) {
+    if (state.compare("LANDED") == 0) {
+        this->log(logger::WARN, "set velocity called on landed drone, ignoring");
+        return;
+    }
     // @TODO: velocity based safeguarding
 
     // onVelocity command
     this->on_set_velocity(vel, yawRate, duration, relativeXY);
+    this->set_state("MOVING");
 
     this->reset_timeout(duration);
 }
@@ -249,52 +272,57 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
         if (state == "LANDING" || state == "LANDED") {
             set_state("LANDED");
             reset_timeout(100);
-        } 
-        else {
+        } else {
             if (state != "IDLE") {
-                /* Go to hover */
-                this->log(logger::DEBUG, "Timeout stage 1");
-                this->log(logger::WARN, "Timeout hover");
-                this->hover(TIMEOUT_HOVER);
-                this->set_state("IDLE");
-            } 
-            else {
+                if (commandQueue.size() > 0) {
+                    this->log(logger::DEBUG, "Performing next queued command");
+                    handle_command();
+                } else {
+                    /* Go to hover */
+                    this->log(logger::DEBUG, "Timeout stage 1");
+                    this->log(logger::WARN, "Timeout hover");
+                    this->hover(TIMEOUT_HOVER);
+                    this->set_state("IDLE");
+                }
+            } else {
                 /* land drone because timeout */
                 this->log(logger::DEBUG, "Timeout stage 2");
                 this->land();
             }
         }
     }
-    if (state == "IDLE") {
-        handle_command();
-    }
 
     this->on_update();
 }
 
 void rigidbody::api_callback(const multi_drone_platform::api_update& msg) {
-    if(!batteryDying) {
-        // ROS_INFO("%s recieved msg %s", tag.c_str(),msg.msg_type.c_str());
-        // std::string commandInfo = "Recieved msg " + msg.msg_type;
-        // this->postLog(0, commandInfo);  
-        this->commandQueue.clear();
-        this->commandQueue.push_back(msg);
+    if (!shutdownHasBeenCalled) {
+        /* if shutdown has been called, then disable all incoming api updates */
+        if (!batteryDying) {
+            // ROS_INFO("%s recieved msg %s", tag.c_str(),msg.msg_type.c_str());
+            // std::string commandInfo = "Recieved msg " + msg.msg_type;
+            // this->postLog(0, commandInfo);  
+            this->commandQueue.clear();
+            this->commandQueue.push_back(msg);
+            handle_command();
+        } else {
+            this->log(logger::ERROR, "Battery Timeout");
+            /* shutdown will tell the drone to go to home and land, it will
+             * also disable future api updates on this drone */
+            this->shutdown();
+        }
     }
-    else {
-        this->log(logger::ERROR, "Battery Timeout");
-    }
-    handle_command();
 }
 
 void rigidbody::handle_command() {
-    this->log(logger::INFO, "State: " + state);
     geometry_msgs::Vector3 noMove;
     noMove.x = noMove.y = noMove.z = 0.0f;
 
     if (commandQueue.size() > 0) {
+        bool isGoHomeMessage = false;
         multi_drone_platform::api_update msg = this->commandQueue.front();
         if (is_msg_different(msg)) {
-            this->log(logger::INFO, "Sending msg- " + msg.msgType);
+            this->log(logger::INFO, "=> Handling command: " + msg.msgType);
             this->lastRecievedApiUpdate = msg;
             this->timeOfLastApiUpdate = ros::Time::now();
             switch(apiMap[msg.msgType]) {
@@ -302,13 +330,11 @@ void rigidbody::handle_command() {
                 case 0:
                     ROS_INFO("V: [%.2f, %.2f, %.2f] rel_Xy: %d, rel_z: %d, dur: %.1f", msg.posVel.x, msg.posVel.y, msg.posVel.z, msg.relativeXY, msg.relativeZ, msg.duration);
                     set_desired_velocity(msg.posVel, msg.yawVal, msg.duration, msg.relativeXY, msg.relativeZ);
-                    this->set_state("MOVING");
                     break;
                 /* POSITION */
                 case 1:
                     ROS_INFO("P: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posVel.x, msg.posVel.y, msg.posVel.z, msg.relativeXY, msg.relativeZ);
                     set_desired_position(msg.posVel, msg.yawVal, msg.duration, msg.relativeXY, msg.relativeZ);
-                    this->set_state("MOVING");
                     break;
                 /* TAKEOFF */
                 case 2:
@@ -338,6 +364,7 @@ void rigidbody::handle_command() {
                 /* GOTO_HOME */
                 case 8:
                     go_home(msg.yawVal, msg.duration, msg.posVel.z);
+                    isGoHomeMessage = true;
                     break;
                 default:
                     this->log(logger::WARN, "The API command, " + msg.msgType + ", is not valid");
@@ -345,6 +372,11 @@ void rigidbody::handle_command() {
             }
         }
         dequeue_command();
+
+        if (isGoHomeMessage) {
+            /* immediately perform set position command enqueued during gohome call */
+            handle_command();
+        }
     }
 }
 
@@ -366,18 +398,33 @@ void rigidbody::emergency() {
 }
 
 void rigidbody::land(float duration) {
+    /* ignore if drone has already landed, or is already landing */
+    if (state.compare("LANDED") == 0 || state.compare("LANDING") == 0) {
+        return;
+    }
+
     this->set_state("LANDING");
     this->on_land(duration);
     reset_timeout(duration);
 }
 
 void rigidbody::takeoff(float height, float duration) {
+    if (state.compare("LANDED") != 0) {
+        this->log(logger::WARN, "takeoff called when already in flight, ignoring");
+        return;
+    }
+
     this->set_state("TAKING OFF");
     this->on_takeoff(height, duration);
     reset_timeout(duration);
 }
 
 void rigidbody::hover(float duration) {
+    if (state.compare("LANDED") == 0) {
+        this->log(logger::WARN, "hover called on landed drone, ignoring");
+        return;
+    }
+
     this->set_state("HOVER");
     // set the hover point based on current velocity
     // auto pos = this->CurrentPose.position;
@@ -389,13 +436,22 @@ void rigidbody::hover(float duration) {
 }
 
 void rigidbody::go_home(float yaw, float duration, float height) {
-    set_desired_position(homePosition, yaw, duration, false, true);
-    this->set_state("MOVING");
-    if (height <= 0.1f) {
+    /* enqueue goto command */
+    multi_drone_platform::api_update goMsg;
+    goMsg.msgType = "POSITION";
+    goMsg.duration = duration;
+    goMsg.relativeXY = false;
+    goMsg.relativeZ = true;
+    goMsg.yawVal = yaw;
+    goMsg.posVel = homePosition;
+    goMsg.posVel.z = 0.0;
+    enqueue_command(goMsg);
+
+    /* enqueue land msg if necessary */
+    if (height < 0.1f) {
         multi_drone_platform::api_update landMsg;
         landMsg.msgType = "LAND";
-        landMsg.duration = 2.0f;
-
+        landMsg.duration = 3.0f;
         enqueue_command(landMsg);
     }
 }

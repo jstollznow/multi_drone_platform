@@ -34,6 +34,7 @@ class rigidbody {
         ros::Publisher currentPosePublisher;
         ros::Publisher currentVelocityPublisher;
         uint32_t numericID;
+        bool shutdownHasBeenCalled = false;
             
     protected:
         std::vector<multi_drone_platform::api_update> commandQueue;
@@ -68,7 +69,6 @@ class rigidbody {
 
     /* FUNCTIONS */
     private:
-        
         void calculate_velocity();
         double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
         void set_state(const std::string& state);
@@ -116,8 +116,8 @@ class rigidbody {
 
         void emergency();
         void land(float duration = 5.0f);
-        void takeoff(float height = 0.25f, float duration = 2.0f);
+        void takeoff(float height = 0.25f, float duration = 3.0f);
         void hover(float duration);
-        void go_home(float yaw = 0.0f, float duration = 2.0f, float height = 0.0f);
+        void go_home(float yaw = 0.0f, float duration = 4.0f, float height = 0.0f);
 
 };

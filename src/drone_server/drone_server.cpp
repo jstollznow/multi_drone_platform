@@ -60,7 +60,7 @@ void drone_server::shutdown() {
         }
 
         if (!allLanded) {
-            sleep(1);
+            loopRate.sleep();
         }
     }
 
