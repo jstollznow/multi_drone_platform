@@ -1,7 +1,6 @@
 #include "rigidbody.h"
 #include "element_conversions.cpp"
 
-
 rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->tag = tag;
     this->numericID = id;
@@ -186,6 +185,7 @@ float duration, bool relativeXY, bool relativeZ) {
 
     // onVelocity command
     this->on_set_velocity(vel, yawRate, duration, relativeXY);
+    
     this->set_state("MOVING");
 
     this->reset_timeout(duration);

@@ -145,6 +145,9 @@ target_link_libraries(ps4teleop ${catkin_LIBRARIES} MDP_API)
 add_executable(tst_program scripts/test_program_19Oct2019.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} MDP_API) 
 
+add_executable(velControl scripts/testVelControl.cpp)
+target_link_libraries(velControl ${catkin_LIBRARIES} MDP_API) 
+
 add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
 

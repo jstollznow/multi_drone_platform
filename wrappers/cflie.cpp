@@ -77,8 +77,6 @@ class cflie : public rigidbody {
         long long start = std::chrono::time_point_cast<std::chrono::milliseconds> (startPoint).time_since_epoch().count();
         long long end = std::chrono::time_point_cast<std::chrono::milliseconds> (std::chrono::high_resolution_clock::now()).time_since_epoch().count();
         ROS_WARN("GOTO TOOK %lld ms", end - start);
-
-        reset_timeout(duration);
     }
 
     void battery_log(const std_msgs::Float32::ConstPtr &msg) {
@@ -135,19 +133,19 @@ class cflie : public rigidbody {
 
     ~cflie() {
         /* remove the crazyflie from the crazyserver */
-        auto RemCrazyflieService = droneHandle.serviceClient<crazyflie_driver::RemoveCrazyflie> ("/remove_crazyflie");
+        auto removeService = droneHandle.serviceClient<crazyflie_driver::RemoveCrazyflie> ("/remove_crazyflie");
 
         crazyflie_driver::RemoveCrazyflie msg;
         msg.request.uri = myUri;
 
-        if (RemCrazyflieService.call(msg)) {
+        if (removeService.call(msg)) {
             this->log(logger::INFO, "Removed " + tag + " from the crazyflie server");
         } else {
             this->log(logger::WARN, "Failed to remove " + tag + " from the crazyflie server");
         }
     }
     
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) override {
         // external_pose.publish(msg);
         geometry_msgs::PointStamped pointMsg;
         pointMsg.header = msg->header;

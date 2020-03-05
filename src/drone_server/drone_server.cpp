@@ -28,8 +28,8 @@ drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
     //     ROS_INFO("Adding %s", droneName2.c_str());
     //     addNewRigidbody(droneName2);
     // }
-    add_new_rigidbody("vflie_00");
-    add_new_rigidbody("vflie_01");
+    add_new_rigidbody("cflie_00");
+    // add_new_rigidbody("vflie_01");
 }
 
 drone_server::~drone_server() {
