@@ -94,13 +94,13 @@ done
     <property name="title" translatable="yes">Drone Commander</property>
     <property name="icon">commanderLogo.png</property>
     <child>
-      <object class="GtkBox" id="mainGrid">
+      <object class="GtkBox" id="mainBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">4</property>
         <child>
-          <object class="GtkBox" id="allCommandsGrid">
+          <object class="GtkBox" id="topHalfBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="valign">start</property>
@@ -108,7 +108,7 @@ done
             <property name="vexpand">False</property>
             <property name="spacing">4</property>
             <child>
-              <object class="GtkBox" id="dronesGrid">
+              <object class="GtkBox" id="droneSearchBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">center</property>
@@ -144,7 +144,7 @@ done
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSearchEntry" id="searchentry1">
+                  <object class="GtkSearchEntry" id="droneSearchEntry">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="text" translatable="yes">cflie_01</property>
@@ -159,7 +159,7 @@ done
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkScrolledWindow" id="scrolledwindow1">
+                  <object class="GtkScrolledWindow" id="allDronesScroll">
                     <property name="width_request">170</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -168,7 +168,7 @@ done
                     <property name="hscrollbar_policy">never</property>
                     <property name="shadow_type">in</property>
                     <child>
-                      <object class="GtkViewport" id="viewport1">
+                      <object class="GtkViewport" id="dronesView">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <child>
@@ -690,7 +690,7 @@ done
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="programsGrid">
+              <object class="GtkBox" id="commandsBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="hexpand">True</property>
@@ -698,7 +698,7 @@ done
                 <property name="orientation">vertical</property>
                 <property name="spacing">4</property>
                 <child>
-                  <object class="GtkBox" id="runProgramGrid">
+                  <object class="GtkBox" id="runProgramBox">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="margin_right">4</property>
@@ -706,7 +706,7 @@ done
                     <property name="vexpand">False</property>
                     <property name="spacing">4</property>
                     <child>
-                      <object class="GtkComboBoxText" id="comboboxtext1">
+                      <object class="GtkComboBoxText" id="scriptComboBox">
                         <property name="width_request">440</property>
                         <property name="height_request">40</property>
                         <property name="visible">True</property>
@@ -754,12 +754,12 @@ done
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox" id="droneCommandsGrid">
+                  <object class="GtkBox" id="droneCommandsBox">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="spacing">4</property>
                     <child>
-                      <object class="GtkFrame" id="frame1">
+                      <object class="GtkFrame" id="singleDroneFrame">
                         <property name="width_request">440</property>
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -772,7 +772,7 @@ done
                         <property name="label_xalign">0.05000000074505806</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkBox" id="singleDroneGrid">
+                          <object class="GtkBox" id="singleDroneBox">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">center</property>
@@ -783,7 +783,7 @@ done
                             <property name="orientation">vertical</property>
                             <property name="spacing">4</property>
                             <child>
-                              <object class="GtkLabel" id="label21">
+                              <object class="GtkLabel" id="stateLabel">
                                 <property name="width_request">120</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
@@ -808,12 +808,12 @@ done
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkGrid" id="grid1">
+                              <object class="GtkGrid" id="posVelGrid">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="row_spacing">10</property>
                                 <child>
-                                  <object class="GtkLabel" id="stateLabel1">
+                                  <object class="GtkLabel" id="velLabel">
                                     <property name="width_request">80</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
@@ -832,7 +832,7 @@ done
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkGrid" id="currPosGrid">
+                                  <object class="GtkGrid" id="velGrid">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="hexpand">True</property>
@@ -861,7 +861,7 @@ done
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="currPosX">
+                                      <object class="GtkLabel" id="currVelX">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="hexpand">True</property>
@@ -877,7 +877,7 @@ done
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="currPosY">
+                                      <object class="GtkLabel" id="currVelY">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="hexpand">True</property>
@@ -893,7 +893,7 @@ done
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="currPosZ">
+                                      <object class="GtkLabel" id="currVelZ">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="hexpand">True</property>
@@ -920,7 +920,7 @@ done
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="currYaw">
+                                      <object class="GtkLabel" id="currYawRate">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="hexpand">True</property>
@@ -1056,7 +1056,7 @@ done
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkLabel" id="currLabel">
+                                  <object class="GtkLabel" id="posLabel">
                                     <property name="width_request">80</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
@@ -1074,7 +1074,7 @@ done
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkGrid" id="currPosGrid1">
+                                  <object class="GtkGrid" id="posGrid">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="hexpand">True</property>
@@ -1103,7 +1103,7 @@ done
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="currPosX1">
+                                      <object class="GtkLabel" id="currPosX">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="hexpand">True</property>
@@ -1119,7 +1119,7 @@ done
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="currPosY1">
+                                      <object class="GtkLabel" id="currPosY">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="hexpand">True</property>
@@ -1135,7 +1135,7 @@ done
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="currPosZ1">
+                                      <object class="GtkLabel" id="currPosZ">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="hexpand">True</property>
@@ -1162,7 +1162,7 @@ done
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="currYaw1">
+                                      <object class="GtkLabel" id="currYaw">
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="hexpand">True</property>
@@ -1202,7 +1202,7 @@ done
                                 <property name="row_homogeneous">True</property>
                                 <property name="column_homogeneous">True</property>
                                 <child>
-                                  <object class="GtkButton" id="button1">
+                                  <object class="GtkButton" id="emergencyButton">
                                     <property name="label" translatable="yes">Emergency</property>
                                     <property name="height_request">45</property>
                                     <property name="visible">True</property>
@@ -1218,7 +1218,7 @@ done
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="button3">
+                                  <object class="GtkButton" id="goToHomeButton">
                                     <property name="label" translatable="yes">Go To Home</property>
                                     <property name="height_request">45</property>
                                     <property name="visible">True</property>
@@ -1234,7 +1234,7 @@ done
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="button4">
+                                  <object class="GtkButton" id="monitorButton">
                                     <property name="label" translatable="yes">Launch Monitor</property>
                                     <property name="height_request">45</property>
                                     <property name="visible">True</property>
@@ -1250,7 +1250,7 @@ done
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="button2">
+                                  <object class="GtkButton" id="landButton">
                                     <property name="label" translatable="yes">Land</property>
                                     <property name="height_request">45</property>
                                     <property name="visible">True</property>
@@ -1275,7 +1275,7 @@ done
                           </object>
                         </child>
                         <child type="label">
-                          <object class="GtkLabel" id="label7">
+                          <object class="GtkLabel" id="singleDroneLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="label" translatable="yes">cflie_01</property>
@@ -1289,7 +1289,7 @@ done
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkFrame" id="frame2">
+                      <object class="GtkFrame" id="allDronesFrame">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">center</property>
@@ -1300,7 +1300,7 @@ done
                         <property name="label_xalign">0.5</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkBox" id="box1">
+                          <object class="GtkBox" id="allDronesButtBox">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">4</property>
@@ -1311,7 +1311,7 @@ done
                             <property name="spacing">10</property>
                             <property name="homogeneous">True</property>
                             <child>
-                              <object class="GtkButton" id="button7">
+                              <object class="GtkButton" id="allGoToHomeButton">
                                 <property name="label" translatable="yes">Go To Home</property>
                                 <property name="width_request">180</property>
                                 <property name="height_request">40</property>
@@ -1328,7 +1328,7 @@ done
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="button8">
+                              <object class="GtkButton" id="allLaunchMonitorsButton">
                                 <property name="label" translatable="yes">Launch Monitors</property>
                                 <property name="width_request">180</property>
                                 <property name="height_request">40</property>
@@ -1345,7 +1345,7 @@ done
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="button6">
+                              <object class="GtkButton" id="allLandButton">
                                 <property name="label" translatable="yes">Land</property>
                                 <property name="width_request">180</property>
                                 <property name="height_request">45</property>
@@ -1363,7 +1363,7 @@ done
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton" id="button5">
+                              <object class="GtkButton" id="allEmergencyButton">
                                 <property name="label" translatable="yes">Emergency</property>
                                 <property name="width_request">180</property>
                                 <property name="height_request">45</property>
@@ -1382,7 +1382,7 @@ done
                           </object>
                         </child>
                         <child type="label">
-                          <object class="GtkLabel" id="label8">
+                          <object class="GtkLabel" id="allDronesLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">4</property>
