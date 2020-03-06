@@ -1314,7 +1314,7 @@ View</property>
                   <object class="GtkLabel" id="queueLabel3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Status</property>
+                    <property name="label" translatable="yes">Link</property>
                     <property name="justify">center</property>
                     <property name="width_chars">14</property>
                     <attributes>
@@ -1332,7 +1332,7 @@ View</property>
                   <object class="GtkLabel" id="pktLossLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">90.5%</property>
+                    <property name="label" translatable="yes">GOOD</property>
                     <attributes>
                       <attribute name="font-desc" value="&lt;Enter Value&gt; 12"/>
                     </attributes>
