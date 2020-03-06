@@ -1314,7 +1314,7 @@ View</property>
                   <object class="GtkLabel" id="queueLabel3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Pkt Loss</property>
+                    <property name="label" translatable="yes">Status</property>
                     <property name="justify">center</property>
                     <property name="width_chars">14</property>
                     <attributes>
@@ -1416,6 +1416,7 @@ View</property>
                         <property name="lower_stepper_sensitivity">on</property>
                         <property name="upper_stepper_sensitivity">on</property>
                         <property name="restrict_to_fill_level">False</property>
+                        <property name="round_digits">0</property>
                         <property name="draw_value">False</property>
                         <property name="value_pos">left</property>
                         <signal name="value-changed" handler="on_speedScale_value_changed" swapped="no"/>
