@@ -2,15 +2,28 @@
 
 #define VNAME(x) #x
 
+struct importError : public std::exception {
+    const char* what() const throw() {
+        return "There was an import error, please check the xml file";
+    }
+};
+
 debug_window::debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade): 
-Gtk::Window(cobject), builder(refGlade) {
-    link_widgets();
+Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue) {
+    try {
+        link_widgets();
+    }
+    catch(importError &e) {
+        std::cout<<e.what()<<std::endl;
+    }
     first = true;
     firstTimeStamp = 0.0f;
-    std::string logTopic = myDrone.name + "/log";
-    // logSubscriber = myNode.subscribe<multi_drone_platform::droneLog>(logTopic, 10,&debugUI::logCallback, this);
-
-    // myNode.setCallbackQueue(&myQueue);
+    windowNode = ros::NodeHandle();
+    // std::string logTopic = myDrone.name + "/log";
+    std::string logTopic = "mdp_drone_server/log";
+    windowNode.setCallbackQueue(&windowQueue);
+    
+    logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 1, &debug_window::log_callback, this);
     
 }
 void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool expanded) {
@@ -27,11 +40,20 @@ void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation,
     speedScale->set_round_digits(0);
     speedScale->set_value(5);
     speedMultiplierLabel->set_text("5");
+
+    Glib::signal_timeout().connect( sigc::mem_fun(*this, &debug_window::ros_spin), 100 );
     this->show();
 }
 
 void debug_window::update_stats() {
     
+}
+
+bool debug_window::ros_spin() {
+    windowQueue.callOne();
+    Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
+    scrollAdjust->set_value(scrollAdjust->get_upper());
+    return true;
 }
 
 void debug_window::on_landButton_clicked() {
@@ -58,7 +80,6 @@ void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) 
     std::string newLogLine = streamObj.str() + ": " + msg->type + " " + msg->logMessage + "\n";
 
     logTextBuffer->insert(logTextBuffer->end(), newLogLine);
-
 }
 
 void debug_window::on_speedScale_value_changed() {
@@ -77,9 +98,15 @@ void debug_window::on_expandButton_clicked() {
     expanded = !expanded;
 }
 
+void debug_window::on_logTextBuffer_changed() {
+    // Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
+    // scrollAdjust->set_value(scrollAdjust->get_upper());
+}
+
 void debug_window::on_debugWindow_destroy() {
     std::cout<<"TCHUSSSS"<<std::endl;
 }
+
 
 void debug_window::link_widgets() {
     try {
@@ -108,7 +135,7 @@ void debug_window::link_widgets() {
         builder->get_widget(VNAME(speedMultiplierLabel), speedMultiplierLabel);
         builder->get_widget(VNAME(pktLossLabel), pktLossLabel);
         builder->get_widget(VNAME(logTextView), logTextView);
-        // builder->get_widget(VNAME(logTextBuffer), logTextBuffer);
+        logTextBuffer = logTextView->get_buffer();
         builder->get_widget(VNAME(landButton), landButton);
         builder->get_widget(VNAME(emergencyButton), emergencyButton);
         builder->get_widget(VNAME(speedScale), speedScale);
@@ -141,8 +168,11 @@ void debug_window::link_widgets() {
         expandButton->signal_clicked().connect
         (sigc::mem_fun(*this, &debug_window::on_expandButton_clicked));
 
+        logTextBuffer->signal_changed().connect
+        (sigc::mem_fun(*this, &debug_window::on_logTextBuffer_changed));
+
     }
     catch(const std::exception& e) {
-        std::cerr << e.what() << '\n';
+        throw importError();
     }   
 }

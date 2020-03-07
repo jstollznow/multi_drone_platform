@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <exception>
 #include <ros/ros.h>
 #include <geometry_msgs/Vector3.h>
 #include <std_msgs/Float32MultiArray.h>
@@ -16,6 +17,7 @@
 class debug_window: public Gtk::Window {
     private:
         Glib::RefPtr<Gtk::Builder> builder;
+
         Gtk::Label* droneNameLabel;
 
         // for status updates
@@ -46,7 +48,8 @@ class debug_window: public Gtk::Window {
         Gtk::Label* speedMultiplierLabel;
         Gtk::Label* pktLossLabel;
         Gtk::TextView* logTextView;
-        Gtk::TextBuffer* logTextBuffer;
+        Glib::RefPtr<Gtk::TextBuffer> logTextBuffer;
+
                 
         // for user interaction
         Gtk::Button* landButton;
@@ -81,27 +84,25 @@ class debug_window: public Gtk::Window {
         debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
         void init(mdp_api::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
         void update_stats();
-
-        // ros::CallbackQueue myQueue;
-        // ros::AsyncSpinner mySpin;
+        ros::AsyncSpinner windowSpinner;        
+        ros::CallbackQueue windowQueue;
 
     protected:
         mdp_api::id myDrone;
         std_msgs::Float32MultiArray updateMsg;
-        
         ros::Subscriber logSubscriber;
-        ros::NodeHandle myNode;
-        
+        ros::NodeHandle windowNode;
         
         bool expanded;
         bool first; 
         float firstTimeStamp;
-
+        bool ros_spin();
         void link_widgets();
         void link_widget(std::string variableName, Gtk::Widget* widget);
         void on_landButton_clicked();
         void on_emergencyButton_clicked();
         void on_speedScale_value_changed();
+        void on_logTextBuffer_changed();
         void on_expandButton_clicked();
         void on_debugWindow_destroy();
         void update_callback(const std_msgs::Float32MultiArray::ConstPtr& msg);

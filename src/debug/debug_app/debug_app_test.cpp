@@ -20,5 +20,5 @@ int main(int argc, char *argv[]) {
     }
     
     // name must have '.' in it, else will throw runtime error
-    auto app = debug_app(myDrones, argc, argv, "debug.app");
+    auto app = debug_app(mdp_api::get_all_rigidbodies(), argc, argv);
 }

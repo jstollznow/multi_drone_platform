@@ -1,6 +1,6 @@
 #include "logger.h"
 
-void logger::post_log(log_type type, std::string caller, std::string message, ros::Publisher logPublisher)
+void logger::post_log(log_type type, std::string caller, std::string message, ros::Publisher& logPublisher)
 {
     std::map<log_type,std::string> logLevel = {
         {INFO, "INFO"}, {DEBUG, "DEBUG"},
@@ -11,7 +11,6 @@ void logger::post_log(log_type type, std::string caller, std::string message, ro
     myLogPost.type = logLevel[type];
     myLogPost.timeStamp = ros::Time::now().toSec();
     myLogPost.logMessage = message;
-
     logPublisher.publish(myLogPost);
 
     switch (type) {

@@ -8,14 +8,13 @@
 
 #define NODE_NAME "debugApplication"
 #define NUM_WINDOWS 20
-#define EXPANDED false
+#define EXPANDED true
 
 class debug_app: public Gtk::Application {
     private:
         std::array<int, 2> get_window_position(int droneNum, bool expanded);
     protected:
-        ros::NodeHandle debugAppNode;
         std::map<std::string, debug_window*> droneDebugWindows;
     public:
-        debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID = "debugApp");
+        debug_app(std::vector<mdp_api::id> myDrones, int argc = NULL, char **argv = NULL);
 };

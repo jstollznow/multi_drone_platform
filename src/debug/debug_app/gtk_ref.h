@@ -19,3 +19,5 @@
 #include <gtkmm/scrolledwindow.h>
 #include <gtkmm/image.h>
 #include <gtkmm/entry.h>
+#include <glibmm/main.h>
+#include <gtkmm/adjustment.h>

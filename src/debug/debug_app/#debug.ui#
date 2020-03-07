@@ -74,7 +74,7 @@ shutting down processing monitor...
 ... shutting down processing monitor complete
 done
 </property>
-    <signal name="insert-text" handler="on_logTextBuffer_insert_text" swapped="no"/>
+    <signal name="changed" handler="on_logTextBuffer_changed" swapped="no"/>
   </object>
   <object class="GtkAdjustment" id="speedAdjustment">
     <property name="lower">1</property>
