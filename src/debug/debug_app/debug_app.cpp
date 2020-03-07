@@ -38,12 +38,6 @@ std::array<int,2> debug_app::get_window_position(int droneNum, bool expanded) {
     return position;
 }
 
-void debug_app::show_windows() {
-    for(auto& it : droneDebugWindows) {
-        it.second->show();
-    }
-}
-
 debug_app::debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID):Gtk::Application(argc, argv, appID) {
     bool expanded = EXPANDED;
     ros::init(argc, argv, NODE_NAME);
