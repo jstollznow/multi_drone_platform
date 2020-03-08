@@ -313,7 +313,7 @@ void rigidbody::handle_command() {
                     takeoff(msg.posVel.z, msg.duration);
                     break;
                 /* LAND */
-                case 3: 
+                case 3:
                     if (msg.duration != 0.0f){ land(msg.duration); }
                     else { land(); }
                     break;
