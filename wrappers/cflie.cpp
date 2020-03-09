@@ -80,7 +80,6 @@ class cflie : public rigidbody {
         long long end = std::chrono::time_point_cast<std::chrono::milliseconds> (std::chrono::high_resolution_clock::now()).time_since_epoch().count();
         ROS_WARN("GOTO TOOK %lld ms", end - start);
 
-        reset_timeout(duration);
     }
     void battery_log(const std_msgs::Float32::ConstPtr &msg) {
         if (msg->data <= 3.15f) {
@@ -180,7 +179,7 @@ class cflie : public rigidbody {
         go_to(pos, yaw, duration, isRelative);
     }
 
-    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override {
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) override {
         geometry_msgs::Vector3 positionGoal;
         positionGoal.x = (vel.x * duration);
         positionGoal.y = (vel.y * duration);

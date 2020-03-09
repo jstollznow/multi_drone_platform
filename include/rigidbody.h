@@ -26,7 +26,11 @@ static std::map<std::string, int> apiMap = {
     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
 };
 
+/**
+ * The base class for all drone wrappers
+ */
 class rigidbody {
+    friend class drone_server;
 /* DATA */
     private:
     ros::Subscriber apiSubscriber;
@@ -34,13 +38,16 @@ class rigidbody {
     ros::Publisher currentPosePublisher;
     ros::Publisher currentVelocityPublisher;
     uint32_t numericID;
+    ros::AsyncSpinner mySpin;
+    ros::CallbackQueue myQueue;
+    ros::Publisher apiPublisher;
         
     protected:
     std::vector<multi_drone_platform::api_update> commandQueue;
     std::string tag;
-    bool controllable;
+    bool controllable = false;
 
-    bool batteryDying;
+    bool batteryDying = false;
 
     double nextTimeoutGen;
     multi_drone_platform::api_update lastRecievedApiUpdate;
@@ -60,52 +67,25 @@ class rigidbody {
     ros::Subscriber motionSubscriber;
     ros::NodeHandle droneHandle;
 
-    public:
-    std::string state = "LANDED";
-    ros::AsyncSpinner mySpin;
-    ros::CallbackQueue myQueue;
-    ros::Publisher apiPublisher;
+    std::string state = "LANDED"; /** The current state of the rigidbody */
+
 
 /* FUNCTIONS */
-    private:
-    
+private:
     void calculate_velocity();
     double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
     void set_state(const std::string& state);
     void log(logger::log_type msgType, std::string message);
     void publish_physical_state() const;
-        
-    protected:
+
     void handle_command();
     void enqueue_command(multi_drone_platform::api_update command);
     void dequeue_command();
     void reset_timeout(float timeout = 1.0f);
     bool is_msg_different(multi_drone_platform::api_update msg);
 
-    // Wrapper Methods
-    virtual void on_update() = 0;
-    virtual void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};
-    virtual void on_takeoff(float height, float duration) = 0;
-    virtual void on_land(float duration) = 0;
-    virtual void on_emergency() = 0;
-    virtual void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) = 0;
-    virtual void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) = 0;
-
-    public:
-    rigidbody(std::string tag, uint32_t id);
-    virtual ~rigidbody();
-
-    bool get_controllable();
-    std::string get_name();
-
-    geometry_msgs::Vector3 predict_current_position();
-    double predict_current_yaw();
-
     void set_desired_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool relativeXY, bool relativeZ);
-    void set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeZ);
-
-    geometry_msgs::Vector3 get_home_coordinates();
-    void set_home_coordiates(geometry_msgs::Vector3 pos, bool relative);
+    void set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeHeight);
 
     void add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg);
     geometry_msgs::PoseStamped get_motion_capture();
@@ -117,5 +97,97 @@ class rigidbody {
     void land(float duration = 5.0f);
     void takeoff(float height = 0.25f, float duration = 2.0f);
     void hover(float duration);
+
+    geometry_msgs::Vector3 get_home_coordinates();
+    void set_home_coordiates(geometry_msgs::Vector3 pos, bool relative);
+
+protected:
+    // Wrapper Methods
+    /**
+     * The on_update function is called at the update rate defined in the drone-server, by default this is 100Hz
+     * but is modifiable by a user application
+     */
+    virtual void on_update() = 0;
+
+    /**
+     * on_motion_capture is called whenever the drone receives a new motion capture frame.
+     * @param msg the motion capture frame presented as a ros PoseStamped. header contains time stamp information, pose
+     * contains position data (cartesian from origin) and orientation data (as quaternion).
+     */
+    virtual void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};
+
+    /**
+     * on_takeoff is called whenever a takeoff command is to be sent to the drone.
+     * @param height height contains the desired height after takeoff (meters)
+     * @param duration contains how long the takeoff sequence should take (seconds)
+     */
+    virtual void on_takeoff(float height, float duration) = 0;
+
+    /**
+     * on_takeoff is called whenever a land command is to be sent to the drone. The landing zone is directly below the
+     * drones current position, retrievable through a call to predict_current_position().
+     * @param duration contains how long the land sequence should take (seconds)
+     * @see predict_current_position
+     */
+    virtual void on_land(float duration) = 0;
+
+    /**
+     * on_emergency is called whenever an emergency call is sent to the drone. At this point the drone should stop
+     * all operation in hopes of preventing damage. It is not expected that the drone continues flight after this call.
+     */
+    virtual void on_emergency() = 0;
+
+    /**
+     * on_set_position is called whenever the drone should move to a new location. this corresponds to a call to
+     * set_drone_position in user_api.h.
+     * @param pos the desired position for the drone to move to (modified by value of isRelative).
+     * @param yaw the desired yaw of the drone upon reaching the desired position (degrees).
+     * @param duration the time it should take for the drone to reach this position (seconds).
+     * @param isRelative If true, pos refers to a position relative to the drones current position. If false, pos
+     * refers to an absolute position.
+     * @see set_drone_position
+     */
+    virtual void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) = 0;
+
+    /**
+     * on_set_velocity is called whenever the drone should move with a desired velocity. This corresponds to a call to
+     * set_drone_velocity in user_api.h
+     * @param vel the desired velocity for the drone (xyz meters per second)
+     * @param yawrate the desired yawrate for the drone (degrees per second)
+     * @param duration TODO: what is duration in this case?
+     * @param relativeHeight TODO: how does the relative height thing even work, its a velocity not an abs height in meters
+     */
+    virtual void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) = 0;
+
+public:
+    /**
+     * The base constructor for a rigidbody
+     * @param tag the string name of the drone (same as class name)
+     * @param id the numeric id of the drone
+     */
+    rigidbody(std::string tag, uint32_t id);
+
+    /**
+     * The base destructor for the rigidbody. Note: ROS is active when this is called
+     */
+    virtual ~rigidbody();
+
+    /**
+     * returns the name of the rigidbody
+     * @return string name
+     */
+    std::string get_name();
+
+    /**
+     * predicts the current position of the rigidbody based upon its last known location and its velocity
+     * @return a geometry_msgs::Vector3 depicting the rigidbody's predicted location
+     */
+    geometry_msgs::Vector3 predict_current_position();
+
+    /**
+     * perdicts the current yaw of the rigidbody based upon its last known yaw and yawrate
+     * @return the predicted yaw
+     */
+    double predict_current_yaw();
 
 };

@@ -16,7 +16,7 @@ class object : public rigidbody {
 
     }
 
-    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override {
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) override {
 
     }
 

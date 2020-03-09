@@ -45,10 +45,6 @@ void rigidbody::set_state(const std::string& state) {
     droneHandle.setParam("mdp/drone_" + std::to_string(this->numericID) + "/state", state);
 }
 
-bool rigidbody::get_controllable() {
-    return this->controllable;
-}
-
 std::string rigidbody::get_name() {
     return this->tag;
 }
@@ -153,11 +149,11 @@ float duration, bool relativeXY, bool relativeZ) {
 }
 
 void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
-float duration, bool relativeXY, bool relativeZ) {
+float duration, bool relativeXY, bool relativeHeight) {
     // @TODO: velocity based safeguarding
 
     // onVelocity command
-    this->on_set_velocity(vel, yawRate, duration, relativeXY);
+    this->on_set_velocity(vel, yawRate, duration, relativeHeight);
 
     this->reset_timeout(duration);
 }
@@ -288,7 +284,7 @@ void rigidbody::handle_command() {
     landMsg.msgType = "LAND";
     landMsg.duration = 2.0f;
 
-    if (commandQueue.size() > 0) {
+    if (!commandQueue.empty()) {
         multi_drone_platform::api_update msg = this->commandQueue.front();
         if (is_msg_different(msg)) {
             this->log(logger::INFO, "Sending msg- " + msg.msgType);
