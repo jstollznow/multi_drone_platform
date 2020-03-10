@@ -1457,6 +1457,7 @@ View</property>
             </child>
             <child>
               <object class="GtkScrolledWindow" id="logScroll">
+                <property name="height_request">140</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>

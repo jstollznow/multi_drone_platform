@@ -50,7 +50,7 @@ void debug_window::update_stats() {
 }
 
 bool debug_window::ros_spin() {
-    windowQueue.callOne();
+    windowQueue.callAvailable();
     Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
     scrollAdjust->set_value(scrollAdjust->get_upper());
     return true;

@@ -14,7 +14,7 @@ std::array<int,2> debug_app::get_window_position(int droneNum, bool expanded) {
 
     if (expanded) {
         xSplit = 900;
-        ySplit = 500;
+        ySplit = 550;
         maxWindows = 4;
         cols = 2;
         rows = cols;
