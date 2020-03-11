@@ -20,15 +20,6 @@ Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatch
     windowNode = ros::NodeHandle();
     
     toAddToLog = "";
-
-    std::string logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
-    std::string velTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/velocity";
-    std::string posTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/pose";
-    windowNode.setCallbackQueue(&windowQueue);
-    
-    logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 10, &debug_window::log_callback, this);
-    velSubscriber = windowNode.subscribe<geometry_msgs::TwistStamped>(velTopic, 1, &debug_window::velocity_callback, this);
-    posSubscriber = windowNode.subscribe<geometry_msgs::PoseStamped>(posTopic, 1, &debug_window::position_callback, this);
     
 
 }
@@ -41,6 +32,16 @@ void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation,
     }
 
     myDrone = droneName;
+
+    std::string logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
+    std::string velTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/velocity";
+    std::string posTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/pose";
+    windowNode.setCallbackQueue(&windowQueue);
+    
+    logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 10, &debug_window::log_callback, this);
+    velSubscriber = windowNode.subscribe<geometry_msgs::TwistStamped>(velTopic, 1, &debug_window::velocity_callback, this);
+    posSubscriber = windowNode.subscribe<geometry_msgs::PoseStamped>(posTopic, 1, &debug_window::position_callback, this);
+
     this->set_title(myDrone.name);
     droneNameLabel->set_label(myDrone.name);
     speedScale->set_round_digits(0);

@@ -24,6 +24,8 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     currentPosePublisher = droneHandle.advertise<geometry_msgs::PoseStamped> ("mdp/drone_" + std::to_string(numericID) + "/pose", 1);
     currentVelocityPublisher = droneHandle.advertise<geometry_msgs::TwistStamped> ("mdp/drone_" + std::to_string(numericID) + "/velocity", 1);
 
+
+    this->log(logger::INFO, "My id is: " + std::to_string(id));
     this->log(logger::INFO, "Subscribing to motion topic: " + motionTopic);
     this->log(logger::INFO, "Subscrbing to API topic: " + apiTopic);
     this->log(logger::INFO, "Publishing log data to: " + logTopic);
