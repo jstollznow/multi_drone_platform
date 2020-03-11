@@ -3,8 +3,12 @@
 #include <sstream>
 #include <iomanip>
 #include <exception>
+#include <thread>
+#include <mutex>
 #include <ros/ros.h>
 #include <geometry_msgs/Vector3.h>
+#include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <ros/callback_queue.h>
 #include "multi_drone_platform/log.h"
@@ -12,6 +16,7 @@
 #include "user_api.h"
 
 #define UPDATE_RATE 10
+#define LOG_POST_RATE 500
 #define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/src/debug/debug_app/debug.ui"
 
 class debug_window: public Gtk::Window {
@@ -88,23 +93,34 @@ class debug_window: public Gtk::Window {
         ros::CallbackQueue windowQueue;
 
     protected:
+        multi_drone_platform::log mostRecentLog;
         mdp_api::id myDrone;
-        std_msgs::Float32MultiArray updateMsg;
-        ros::Subscriber logSubscriber;
+
+        Glib::Dispatcher dispatcher;
+
         ros::NodeHandle windowNode;
+        ros::Subscriber logSubscriber;
+        ros::Subscriber velSubscriber;
+        ros::Subscriber posSubscriber;
+
+        geometry_msgs::TwistStamped lastVelocityMsg;
+        geometry_msgs::PoseStamped lastPositionMsg;
+        std::string toAddToLog;
         
         bool expanded;
         bool first; 
         float firstTimeStamp;
         bool ros_spin();
+        void update_ros_widgets();
         void link_widgets();
         void link_widget(std::string variableName, Gtk::Widget* widget);
         void on_landButton_clicked();
         void on_emergencyButton_clicked();
         void on_speedScale_value_changed();
-        void on_logTextBuffer_changed();
         void on_expandButton_clicked();
         void on_debugWindow_destroy();
-        void update_callback(const std_msgs::Float32MultiArray::ConstPtr& msg);
+        
         void log_callback(const multi_drone_platform::log::ConstPtr& msg);
+        void velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg);
+        void position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
 };

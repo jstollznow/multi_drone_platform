@@ -22,7 +22,7 @@ drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
     //     ROS_INFO("Adding %s", droneName2.c_str());
     //     addNewRigidbody(droneName2);
     // }
-    int n = 4;
+    int n = 2;
     for (int i = 0; i < n; i++) {
         std::string droneStr = "vflie_";
         if (i < 10) {

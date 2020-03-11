@@ -11,14 +11,13 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
   
     // look for drone under tag namespace then vrpn output
     std::string motionTopic = "/vrpn_client_node/" + tag + "/pose";
-    std::string logTopic = tag + "/log";
-    std::string updateTopic = tag + "/update";
-    std::string apiTopic = tag + "/apiUpdate";
+    std::string logTopic = "mdp/drone_" + std::to_string(numericID) + "/log";
+    std::string apiTopic = "mdp/drone_" + std::to_string(numericID) + "/apiUpdate";
 
     droneHandle = ros::NodeHandle();
-    apiPublisher = droneHandle.advertise<multi_drone_platform::api_update> (apiTopic, 2);
     droneHandle.setCallbackQueue(&myQueue);
 
+    apiPublisher = droneHandle.advertise<multi_drone_platform::api_update> (apiTopic, 2);
     apiSubscriber = droneHandle.subscribe(apiTopic, 2, &rigidbody::api_callback, this);
     logPublisher = droneHandle.advertise<multi_drone_platform::log> (logTopic, 20);
     motionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 1,&rigidbody::add_motion_capture, this);
@@ -28,7 +27,6 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->log(logger::INFO, "Subscribing to motion topic: " + motionTopic);
     this->log(logger::INFO, "Subscrbing to API topic: " + apiTopic);
     this->log(logger::INFO, "Publishing log data to: " + logTopic);
-    this->log(logger::INFO, "Publishing updates to: " + updateTopic);
 
     // 1000 seconds on ground before timeout engaged 
     set_state("LANDED");

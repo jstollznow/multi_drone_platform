@@ -9,7 +9,7 @@ struct importError : public std::exception {
 };
 
 debug_window::debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade): 
-Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue) {
+Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatcher() {
     try {
         link_widgets();
     }
@@ -19,12 +19,21 @@ Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue) {
     first = true;
     firstTimeStamp = 0.0f;
     windowNode = ros::NodeHandle();
-    // std::string logTopic = myDrone.name + "/log";
-    std::string logTopic = "mdp_drone_server/log";
+    
+    toAddToLog = "";
+    // lastPositionMsg = nullptr;
+    // lastVelocityMsg = nullptr;
+
+    std::string logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
+    std::string velTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/velocity";
+    std::string posTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/pose";
     windowNode.setCallbackQueue(&windowQueue);
     
-    logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 1, &debug_window::log_callback, this);
+    logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 10, &debug_window::log_callback, this);
+    velSubscriber = windowNode.subscribe<geometry_msgs::TwistStamped>(velTopic, 1, &debug_window::velocity_callback, this);
+    posSubscriber = windowNode.subscribe<geometry_msgs::PoseStamped>(posTopic, 1, &debug_window::position_callback, this);
     
+
 }
 void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool expanded) {
     this->expanded = false;
@@ -40,19 +49,23 @@ void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation,
     speedScale->set_round_digits(0);
     speedScale->set_value(5);
     speedMultiplierLabel->set_text("5");
-
-    Glib::signal_timeout().connect( sigc::mem_fun(*this, &debug_window::ros_spin), 100 );
+    logTextBuffer->set_text("");
+    
     this->show();
 }
 
 void debug_window::update_stats() {
     
 }
-
-bool debug_window::ros_spin() {
-    windowQueue.callAvailable();
+void debug_window::update_ros_widgets() {
+    logTextBuffer->insert(logTextBuffer->end(), toAddToLog);
+    toAddToLog = "";
     Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
     scrollAdjust->set_value(scrollAdjust->get_upper());
+}
+bool debug_window::ros_spin() {
+    windowQueue.callAvailable();
+    dispatcher.emit();
     return true;
 }
 
@@ -67,8 +80,9 @@ void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) 
     if (first) {
         first = false;
         firstTimeStamp = msg->timeStamp;
-        logTextBuffer->set_text("");
     }
+
+    // fix time stamp
     float time = msg->timeStamp - firstTimeStamp;
 
     std::ostringstream streamObj;
@@ -79,7 +93,18 @@ void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) 
     
     std::string newLogLine = streamObj.str() + ": " + msg->type + " " + msg->logMessage + "\n";
 
-    logTextBuffer->insert(logTextBuffer->end(), newLogLine);
+    toAddToLog += newLogLine;
+}
+
+void debug_window::velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
+    // lastVelocityMsg = msg->get();
+    dispatcher.emit();
+    // queue update
+}
+void debug_window::position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    // lastPositionMsg = msg.get();
+    dispatcher.emit();
+    // queue update
 }
 
 void debug_window::on_speedScale_value_changed() {
@@ -98,10 +123,6 @@ void debug_window::on_expandButton_clicked() {
     expanded = !expanded;
 }
 
-void debug_window::on_logTextBuffer_changed() {
-    // Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
-    // scrollAdjust->set_value(scrollAdjust->get_upper());
-}
 
 void debug_window::on_debugWindow_destroy() {
     std::cout<<"TCHUSSSS"<<std::endl;
@@ -167,9 +188,13 @@ void debug_window::link_widgets() {
 
         expandButton->signal_clicked().connect
         (sigc::mem_fun(*this, &debug_window::on_expandButton_clicked));
+        
 
-        logTextBuffer->signal_changed().connect
-        (sigc::mem_fun(*this, &debug_window::on_logTextBuffer_changed));
+        Glib::signal_timeout().connect( sigc::mem_fun(*this, &debug_window::ros_spin), LOG_POST_RATE);
+
+        // Glib::signal_idle().connect(sigc::mem_fun(*this, &debug_window::ros_spin) );
+
+        dispatcher.connect(sigc::mem_fun(*this, &debug_window::update_ros_widgets));
 
     }
     catch(const std::exception& e) {

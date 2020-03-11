@@ -21,3 +21,4 @@
 #include <gtkmm/entry.h>
 #include <glibmm/main.h>
 #include <gtkmm/adjustment.h>
+#include <glibmm/dispatcher.h>
