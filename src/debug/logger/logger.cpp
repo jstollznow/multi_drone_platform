@@ -9,7 +9,7 @@ void logger::post_log(log_type type, std::string caller, std::string message, ro
 
     multi_drone_platform::log myLogPost;
     myLogPost.type = logLevel[type];
-    myLogPost.timeStamp = ros::Time::now().toSec();
+    myLogPost.timeStamp = ros::Time::now();
     myLogPost.logMessage = message;
     logPublisher.publish(myLogPost);
 

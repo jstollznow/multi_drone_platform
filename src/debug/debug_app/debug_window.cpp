@@ -17,12 +17,9 @@ Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatch
         std::cout<<e.what()<<std::endl;
     }
     first = true;
-    firstTimeStamp = 0.0f;
     windowNode = ros::NodeHandle();
     
     toAddToLog = "";
-    // lastPositionMsg = nullptr;
-    // lastVelocityMsg = nullptr;
 
     std::string logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
     std::string velTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/velocity";
@@ -54,14 +51,29 @@ void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation,
     this->show();
 }
 
+std::string debug_window::round_to_string(double val, int n) {
+    std::ostringstream streamObj;
+    streamObj << std::fixed << std::setprecision(n) << val;
+    return streamObj.str();
+}
+
 void debug_window::update_stats() {
-    
+    currVelX->set_text(round_to_string(lastVelocityMsg.twist.linear.x, 3));
+    currVelY->set_text(round_to_string(lastVelocityMsg.twist.linear.y, 3));
+    currVelZ->set_text(round_to_string(lastVelocityMsg.twist.linear.z, 3));
+    currYawRate->set_text(round_to_string(lastVelocityMsg.twist.angular.z, 3));
+
+    currPosX->set_text(round_to_string(lastPositionMsg.pose.position.x, 3));
+    currPosY->set_text(round_to_string(lastPositionMsg.pose.position.y, 3));
+    currPosZ->set_text(round_to_string(lastPositionMsg.pose.position.z, 3));
+    // currYaw->set_text(round_to_string(lastPositionMsg.orient.angular.z, 5));
 }
 void debug_window::update_ros_widgets() {
     logTextBuffer->insert(logTextBuffer->end(), toAddToLog);
     toAddToLog = "";
     Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
     scrollAdjust->set_value(scrollAdjust->get_upper());
+    update_stats();
 }
 bool debug_window::ros_spin() {
     windowQueue.callAvailable();
@@ -83,27 +95,20 @@ void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) 
     }
 
     // fix time stamp
-    float time = msg->timeStamp - firstTimeStamp;
+    double time = ros::Duration(msg->timeStamp - firstTimeStamp).toSec();
 
-    std::ostringstream streamObj;
-	streamObj << std::fixed;
-	streamObj << std::setprecision(4);
-	streamObj << time;
-
-    
-    std::string newLogLine = streamObj.str() + ": " + msg->type + " " + msg->logMessage + "\n";
+    std::string newLogLine = round_to_string(time, 4) + ": " + msg->type + " " + msg->logMessage + "\n";
 
     toAddToLog += newLogLine;
 }
 
 void debug_window::velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
-    // lastVelocityMsg = msg->get();
+    lastVelocityMsg = *(msg.get());
     dispatcher.emit();
     // queue update
 }
 void debug_window::position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
-    // lastPositionMsg = msg.get();
-    dispatcher.emit();
+    lastPositionMsg = *(msg.get());
     // queue update
 }
 

@@ -83,7 +83,7 @@ class debug_window: public Gtk::Window {
         Gtk::Image* compressImage;
         Gtk::Image* expandImage;   
 
-
+        std::string round_to_string(double val, int n);
 
     public:
         debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
@@ -109,7 +109,7 @@ class debug_window: public Gtk::Window {
         
         bool expanded;
         bool first; 
-        float firstTimeStamp;
+        ros::Time firstTimeStamp;
         bool ros_spin();
         void update_ros_widgets();
         void link_widgets();
