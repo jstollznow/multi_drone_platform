@@ -1,8 +1,10 @@
 
 /**
+ * @defgroup public_api Public Api
  * @file user_api.h
  * @brief This is the header containing all user api functions used to create user programs capable of interacting
  * with the multi-drone platform
+ * @ingroup public_api
  */
 
 #pragma once
@@ -12,6 +14,10 @@
 #include <vector>
 #include <array>
 
+/**
+ * @brief The public facing namespace containing all user api functions used to create user programs capable of interacting
+ * with the multi-drone platform
+ */
 namespace mdp_api {
 
 /**
@@ -238,4 +244,3 @@ void sleep_until_idle(const mdp_api::id& id);
 std::string get_state(const mdp_api::id& id);
 
 }
-

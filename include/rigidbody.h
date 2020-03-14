@@ -27,7 +27,15 @@ static std::map<std::string, int> apiMap = {
 };
 
 /**
- * The base class for all drone wrappers
+ * @brief The base class for all drone wrappers.
+ * the rigidbody class should be inherited
+ * from when creating drone wrappers, these wrappers are then placed inside the /wrappers/ folder. All files within
+ * the /wrappers/ folder will be automatically included in future compiles of the multi-drone platform drone_server.
+ * When creating a new drone wrapper, ensure the class name is the same as the file name, this name will be the recognisable tag for
+ * the new drone. i.r. for crazyflies, the wrapper file is cflie.cpp and the class definition is class cflie : public rigidbody {...}.
+ *
+ * object.cpp is a template file for drone wrappers and exists within the /wrappers/ folder
+ * @ingroup public_api
  */
 class rigidbody {
     friend class drone_server;
