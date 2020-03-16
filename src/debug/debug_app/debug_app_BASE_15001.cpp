@@ -14,7 +14,7 @@ std::array<int,2> debug_app::get_window_position(int droneNum, bool expanded) {
 
     if (expanded) {
         xSplit = 900;
-        ySplit = 550;
+        ySplit = 500;
         maxWindows = 4;
         cols = 2;
         rows = cols;
@@ -37,8 +37,14 @@ std::array<int,2> debug_app::get_window_position(int droneNum, bool expanded) {
     position[1] = pos_y + ySplit * (y_index);
     return position;
 }
-debug_app::debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv)
-:Gtk::Application(argc, argv, "debug_window.app") {
+
+void debug_app::show_windows() {
+    for(auto& it : droneDebugWindows) {
+        it.second->show();
+    }
+}
+
+debug_app::debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv, std::string appID):Gtk::Application(argc, argv, appID) {
     bool expanded = EXPANDED;
     ros::init(argc, argv, NODE_NAME);
 
@@ -47,7 +53,6 @@ debug_app::debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv)
         auto ui = Gtk::Builder::create_from_file(UI_PATH);
         ui->get_widget_derived("debugWindow", myWindow);
         myWindow->init(myDrones[i],this->get_window_position((int)i, expanded), expanded);
-        myWindow->windowSpinner.start();
         droneDebugWindows.insert(std::pair<std::string, debug_window*>(myDrones[i].name, myWindow));
     }
 
@@ -56,6 +61,5 @@ debug_app::debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv)
             this->add_window(*(it.second));
         }
     });
-
     this->run();
 }

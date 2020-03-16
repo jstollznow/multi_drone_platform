@@ -84,12 +84,4 @@ int main(int argc, char *argv[]) {
 
         });
     app->run();
-    
-    // ros::Rate loop_rate(UPDATE_RATE);
-    // while (ros::ok())
-    // {
-    //     ros::spinOnce();
-        
-    //     loop_rate.sleep();
-    // }
 }

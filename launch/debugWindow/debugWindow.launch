@@ -13,13 +13,12 @@
     <include 
         file="$(find multi_drone_platform)/launch/rigidBodies/vrpn.launch">
     </include>
-    <param name="cflie_test" value="$(arg cflie_test)"/>
-    <param name="cflie_test1" value="$(arg cflie_test1)"/>
+
     <include 
         file="$(find multi_drone_platform)/launch/drone_server/drone_server.launch">
     </include>
 
-    <node name="debug" pkg="multi_drone_platform" type="debug" output="screen">
+    <node name="debugAppTest" pkg="multi_drone_platform" type="debugAppTest" output="screen">
      </node>
 
 
