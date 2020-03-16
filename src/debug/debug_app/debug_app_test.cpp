@@ -10,6 +10,8 @@
 int main(int argc, char *argv[]) {
 
     mdp_api::initialise(10);
+
+    // for potential testing
     std::vector<mdp_api::id> myDrones;
 
     for (int i = 0; i < 10; i++) {

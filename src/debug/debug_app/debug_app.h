@@ -6,7 +6,7 @@
 #include "user_api.h"
 #include "debug_window.h"
 
-#define NODE_NAME "debugApplication"
+#define NODE_NAME "debug_application"
 #define NUM_WINDOWS 20
 #define EXPANDED true
 
