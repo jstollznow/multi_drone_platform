@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
     ROS_INFO("Calling emergency on drone server");
 
     ros::Duration D(1.0);
-    ros::Publisher Pub = Node.advertise<std_msgs::Empty> ("mdp_api_emergency", 10);
+    ros::Publisher Pub = Node.advertise<std_msgs::Empty> ("mdp_emergency", 10);
     std_msgs::Empty msg;
     D.sleep();
     Pub.publish(msg);

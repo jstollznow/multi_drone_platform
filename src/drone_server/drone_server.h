@@ -10,10 +10,10 @@
 #define TIMING_UPDATE 5
 
 #define NODE_NAME "mdp_drone_server"
-#define SRV_TOPIC "mdp_api_data_srv"
-#define LIST_SRV_TOPIC "mdp_api_list_srv"
-#define SUB_TOPIC "mdp_api"
-#define EMERGENCY_TOPIC "mdp_api_emergency"
+#define SRV_TOPIC "mdp_data_srv"
+#define LIST_SRV_TOPIC "mdp_list_srv"
+#define SUB_TOPIC "mdp"
+#define EMERGENCY_TOPIC "mdp_emergency"
 
 
 struct mdp_id {

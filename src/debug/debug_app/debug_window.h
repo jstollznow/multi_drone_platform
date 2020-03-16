@@ -22,7 +22,7 @@ class debug_window: public Gtk::Window {
         ros::AsyncSpinner windowSpinner;
 
         debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
-        void init(mdp_api::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
+        void init(mdp::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
         void update_ui_labels();
 
     private:
@@ -50,7 +50,7 @@ class debug_window: public Gtk::Window {
         // ROS related
         ros::CallbackQueue windowQueue;
 
-        mdp_api::id myDrone;
+        mdp::id myDrone;
 
         ros::NodeHandle windowNode;
         ros::Subscriber logSubscriber;

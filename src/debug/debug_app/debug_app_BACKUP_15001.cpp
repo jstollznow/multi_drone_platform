@@ -47,7 +47,7 @@ void debug_app::show_windows() {
 
 debug_app::debug_app(std::vector<mdp::id> myDrones, int argc, char **argv, std::string appID):Gtk::Application(argc, argv, appID) {
 =======
-debug_app::debug_app(std::vector<mdp_api::id> myDrones, int argc, char **argv)
+debug_app::debug_app(std::vector<mdp::id> myDrones, int argc, char **argv)
 :Gtk::Application(argc, argv, "debug_window.app") {
 >>>>>>> origin/master
     bool expanded = EXPANDED;

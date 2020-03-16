@@ -50,9 +50,9 @@ void initialise(unsigned int pUpdateRate) {
     nodeData->loopRate = new ros::Rate(pUpdateRate);
     nodeData->loopRateValue = pUpdateRate;
 
-    nodeData->publisher = nodeData->node->advertise<geometry_msgs::TransformStamped> ("mdp_api", 2);
-    nodeData->dataClient = nodeData->node->serviceClient<nav_msgs::GetPlan> ("mdp_api_data_srv");
-    nodeData->listClient = nodeData->node->serviceClient<tf2_msgs::FrameGraph> ("mdp_api_list_srv");
+    nodeData->publisher = nodeData->node->advertise<geometry_msgs::TransformStamped> ("mdp", 2);
+    nodeData->dataClient = nodeData->node->serviceClient<nav_msgs::GetPlan> ("mdp_data_srv");
+    nodeData->listClient = nodeData->node->serviceClient<tf2_msgs::FrameGraph> ("mdp_list_srv");
 
     sleep(1);
 
