@@ -74,6 +74,7 @@ shutting down processing monitor...
 ... shutting down processing monitor complete
 done
 </property>
+    <signal name="changed" handler="on_logTextBuffer_changed" swapped="no"/>
   </object>
   <object class="GtkAdjustment" id="speedAdjustment">
     <property name="lower">1</property>
@@ -88,7 +89,7 @@ done
     <property name="vexpand">True</property>
     <property name="title" translatable="yes">MDP</property>
     <property name="window_position">center</property>
-    <property name="icon">mdpLogo.png</property>
+    <property name="icon">debugLogo.png</property>
     <property name="has_resize_grip">True</property>
     <signal name="destroy" handler="on_debugWindow_destroy" swapped="no"/>
     <child>
@@ -378,6 +379,7 @@ View</property>
                 <property name="row_homogeneous">True</property>
                 <child>
                   <object class="GtkLabel" id="currVelLabel">
+                    <property name="width_request">80</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Vel.</property>
@@ -626,6 +628,7 @@ View</property>
                 </child>
                 <child>
                   <object class="GtkLabel" id="currPosLabel">
+                    <property name="width_request">80</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Pos.</property>
@@ -667,6 +670,7 @@ View</property>
                 <property name="row_homogeneous">True</property>
                 <child>
                   <object class="GtkLabel" id="desVelLabel">
+                    <property name="width_request">80</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">False</property>
@@ -684,6 +688,7 @@ View</property>
                 </child>
                 <child>
                   <object class="GtkLabel" id="desPosLabel">
+                    <property name="width_request">80</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Pos.</property>
@@ -1070,7 +1075,7 @@ View</property>
                 </child>
                 <child>
                   <object class="GtkFixed" id="fixedSpace1">
-                    <property name="width_request">64</property>
+                    <property name="width_request">80</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                   </object>
@@ -1178,7 +1183,7 @@ View</property>
                   <packing>
                     <property name="left_attach">0</property>
                     <property name="top_attach">1</property>
-                    <property name="width">7</property>
+                    <property name="width">5</property>
                   </packing>
                 </child>
                 <child>
@@ -1189,109 +1194,7 @@ View</property>
                   <packing>
                     <property name="left_attach">0</property>
                     <property name="top_attach">3</property>
-                    <property name="width">7</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkSeparator" id="separator5">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="orientation">vertical</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">5</property>
-                    <property name="top_attach">0</property>
-                    <property name="height">4</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="queueLabel">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Queue</property>
-                    <property name="justify">center</property>
-                    <property name="width_chars">14</property>
-                    <attributes>
-                      <attribute name="font-desc" value="&lt;Enter Value&gt; 16"/>
-                      <attribute name="weight" value="bold"/>
-                      <attribute name="variant" value="normal"/>
-                    </attributes>
-                  </object>
-                  <packing>
-                    <property name="left_attach">4</property>
-                    <property name="top_attach">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="queueInput">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="hexpand">True</property>
-                    <property name="label" translatable="yes">Land Command</property>
-                    <attributes>
-                      <attribute name="font-desc" value="&lt;Enter Value&gt; 12"/>
-                    </attributes>
-                  </object>
-                  <packing>
-                    <property name="left_attach">6</property>
-                    <property name="top_attach">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="batteryLabel">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Battery</property>
-                    <property name="width_chars">14</property>
-                    <attributes>
-                      <attribute name="font-desc" value="&lt;Enter Value&gt; 16"/>
-                      <attribute name="weight" value="bold"/>
-                      <attribute name="variant" value="normal"/>
-                    </attributes>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">4</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkGrid" id="batteryGrid">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="valign">center</property>
-                    <property name="hexpand">True</property>
-                    <property name="column_spacing">5</property>
-                    <child>
-                      <object class="GtkLabel" id="batteryInput">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="hexpand">False</property>
-                        <property name="label" translatable="yes">90.5%</property>
-                        <attributes>
-                          <attribute name="font-desc" value="&lt;Enter Value&gt; 12"/>
-                        </attributes>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLevelBar" id="batteryLevelBar">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="hexpand">True</property>
-                        <property name="value">0.5</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="left_attach">2</property>
-                    <property name="top_attach">4</property>
+                    <property name="width">5</property>
                   </packing>
                 </child>
                 <child>
@@ -1311,38 +1214,6 @@ View</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="queueLabel3">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Pkt Loss</property>
-                    <property name="justify">center</property>
-                    <property name="width_chars">14</property>
-                    <attributes>
-                      <attribute name="font-desc" value="&lt;Enter Value&gt; 16"/>
-                      <attribute name="weight" value="bold"/>
-                      <attribute name="variant" value="normal"/>
-                    </attributes>
-                  </object>
-                  <packing>
-                    <property name="left_attach">4</property>
-                    <property name="top_attach">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="pktLossLabel">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">90.5%</property>
-                    <attributes>
-                      <attribute name="font-desc" value="&lt;Enter Value&gt; 12"/>
-                    </attributes>
-                  </object>
-                  <packing>
-                    <property name="left_attach">6</property>
-                    <property name="top_attach">2</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkLabel" id="queueLabel2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
@@ -1358,46 +1229,6 @@ View</property>
                   <packing>
                     <property name="left_attach">0</property>
                     <property name="top_attach">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkGrid" id="commandGrid">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="valign">end</property>
-                    <property name="column_spacing">5</property>
-                    <property name="column_homogeneous">True</property>
-                    <child>
-                      <object class="GtkButton" id="landButton">
-                        <property name="label" translatable="yes">Land</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <signal name="clicked" handler="on_landButton_clicked" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkButton" id="emergencyButton">
-                        <property name="label" translatable="yes">Emergency</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <signal name="clicked" handler="on_emergencyButton_clicked" swapped="no"/>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="left_attach">4</property>
-                    <property name="top_attach">4</property>
-                    <property name="width">3</property>
                   </packing>
                 </child>
                 <child>
@@ -1447,6 +1278,79 @@ View</property>
                     <property name="top_attach">2</property>
                   </packing>
                 </child>
+                <child>
+                  <object class="GtkButton" id="emergencyButton">
+                    <property name="label" translatable="yes">Emergency</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="on_emergencyButton_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="left_attach">4</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="landButton">
+                    <property name="label" translatable="yes">Land</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <signal name="clicked" handler="on_landButton_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="left_attach">4</property>
+                    <property name="top_attach">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="queueLabel3">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Link</property>
+                    <property name="justify">center</property>
+                    <property name="width_chars">14</property>
+                    <attributes>
+                      <attribute name="font-desc" value="&lt;Enter Value&gt; 16"/>
+                      <attribute name="weight" value="bold"/>
+                      <attribute name="variant" value="normal"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLevelBar" id="batteryLevelBar">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="margin_top">4</property>
+                    <property name="margin_bottom">4</property>
+                    <property name="hexpand">True</property>
+                    <property name="vexpand">False</property>
+                    <property name="value">0.69999999999999996</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">4</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="pktLossLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">GOOD</property>
+                    <attributes>
+                      <attribute name="font-desc" value="&lt;Enter Value&gt; 12"/>
+                    </attributes>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">4</property>
+                  </packing>
+                </child>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -1456,6 +1360,7 @@ View</property>
             </child>
             <child>
               <object class="GtkScrolledWindow" id="logScroll">
+                <property name="height_request">140</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
