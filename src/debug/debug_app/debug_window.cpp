@@ -28,7 +28,6 @@ void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation,
     myDrone = droneName;
 
     logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
-//    logTopic = "mdp_drone_server/log";
 
     std::string currPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/curr_pose";
     std::string desPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/des_pose";
@@ -91,7 +90,7 @@ std::string debug_window::round_to_string(double val, int n) {
     return streamObj.str();
 }
 
-void debug_window::update_stats() {
+void debug_window::update_ui_labels() {
     int decimals = 3;
 
     currVelX->set_text(round_to_string(currVelocityMsg.twist.linear.x, decimals));
@@ -102,6 +101,7 @@ void debug_window::update_stats() {
     currPosX->set_text(round_to_string(currPositionMsg.pose.position.x, decimals));
     currPosY->set_text(round_to_string(currPositionMsg.pose.position.y, decimals));
     currPosZ->set_text(round_to_string(currPositionMsg.pose.position.z, decimals));
+    // @TODO: fix yaw system wide
     // currYaw->set_text(round_to_string(currPositionMsg.orient.angular.z, 5));
 
 
@@ -117,33 +117,35 @@ void debug_window::update_stats() {
 
     stateInput->set_text(currState);
 }
-void debug_window::update_ros_widgets() {
+void debug_window::update_ui_on_resume() {
     logTextBuffer->insert(logTextBuffer->end(), toAddToLog);
 
     toAddToLog = "";
-    update_stats();
+    update_ui_labels();
 
     Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
     scrollAdjust->set_value(scrollAdjust->get_upper());
 
 }
-bool debug_window::ros_spin() {
-    windowQueue.callAvailable();
-
+void debug_window::fetch_state_param() {
     if (windowNode.hasParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state"))
     {
         windowNode.getParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state", currState);
     }
+}
+bool debug_window::ros_spin() {
+    windowQueue.callAvailable();
+    fetch_state_param();
 
     dispatcher.emit();
     return true;
 }
 
 void debug_window::on_landButton_clicked() {
-    
+    mdp_api::cmd_land(myDrone);
 }
 void debug_window::on_emergencyButton_clicked() {
-
+    mdp_api::cmd_emergency(myDrone);
 }
 
 void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) {
@@ -202,6 +204,10 @@ void debug_window::on_debugWindow_destroy() {
     std::cout<<"TCHUSSSS"<<std::endl;
 }
 
+void debug_window::on_logTextBuffer_changed() {
+
+}
+
 
 void debug_window::link_widgets() {
     try {
@@ -234,7 +240,6 @@ void debug_window::link_widgets() {
         builder->get_widget(VNAME(speedScale), speedScale);
         builder->get_widget(VNAME(expandButton), expandButton);
         builder->get_widget(VNAME(sidePanelGrid), sidePanelGrid);
-        builder->get_widget(VNAME(droneStatTable), droneStatTable);
         builder->get_widget(VNAME(topViewBottom), topViewBottom);
         builder->get_widget(VNAME(topViewTop), topViewTop);
         builder->get_widget(VNAME(topViewLeft), topViewLeft);
@@ -243,8 +248,6 @@ void debug_window::link_widgets() {
         builder->get_widget(VNAME(topViewTopRight), topViewTopRight);
         builder->get_widget(VNAME(topViewBotRight), topViewBotRight);
         builder->get_widget(VNAME(topViewBotLeft), topViewBotLeft);
-        builder->get_widget(VNAME(sideViewTop), sideViewTop);
-        builder->get_widget(VNAME(sideViewBottom), sideViewBottom);
         builder->get_widget(VNAME(logScroll),logScroll);
         builder->get_widget(VNAME(compressImage), compressImage);
         builder->get_widget(VNAME(expandImage), expandImage);
@@ -261,12 +264,13 @@ void debug_window::link_widgets() {
         expandButton->signal_clicked().connect
         (sigc::mem_fun(*this, &debug_window::on_expandButton_clicked));
         
+        logTextBuffer->signal_changed().connect(
+                sigc::mem_fun(*this, &debug_window::on_logTextBuffer_changed)
+                );
 
         Glib::signal_timeout().connect( sigc::mem_fun(*this, &debug_window::ros_spin), LOG_POST_RATE);
 
-        // Glib::signal_idle().connect(sigc::mem_fun(*this, &debug_window::ros_spin) );
-
-        dispatcher.connect(sigc::mem_fun(*this, &debug_window::update_ros_widgets));
+        dispatcher.connect(sigc::mem_fun(*this, &debug_window::update_ui_on_resume));
 
     }
     catch(const std::exception& e) {
