@@ -1,0 +1,8 @@
+prefix=/home/jacob/catkin_ws/src/multi_drone_platform/cmake-build-debug/devel
+
+Name: multi_drone_platform
+Description: Description of multi_drone_platform
+Version: 0.0.1
+Cflags: -I/home/jacob/catkin_ws/src/multi_drone_platform/cmake-build-debug/devel/include -I/home/jacob/catkin_ws/src/multi_drone_platform/include
+Libs: -L${prefix}/lib -lmulti_drone_platform
+Requires: geometry_msgs message_generation sensor_msgs roscpp rospy rviz std_msgs crazyflie_ros

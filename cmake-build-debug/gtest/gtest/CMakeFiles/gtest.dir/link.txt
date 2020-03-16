@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC -g  -shared -Wl,-soname,libgtest.so -o libgtest.so CMakeFiles/gtest.dir/src/gtest-all.cc.o  -L/home/jacob/catkin_ws/src/multi_drone_platform/cmake-build-debug/gtest/gtest/src -Wl,-rpath,/home/jacob/catkin_ws/src/multi_drone_platform/cmake-build-debug/gtest/gtest/src -lpthread 
