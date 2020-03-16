@@ -128,8 +128,7 @@ void debug_window::update_ui_on_resume() {
 
 }
 void debug_window::fetch_state_param() {
-    if (windowNode.hasParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state"))
-    {
+    if (windowNode.hasParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state")) {
         windowNode.getParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state", currState);
     }
 }
@@ -154,7 +153,6 @@ void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) 
         firstTimeStamp = msg->timeStamp;
     }
 
-    // fix time stamp
     double time = ros::Duration(msg->timeStamp - firstTimeStamp).toSec();
 
     std::string newLogLine = round_to_string(time, 4) + ": " + msg->type + " " + msg->logMessage + "\n";
@@ -164,13 +162,10 @@ void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) 
 
 void debug_window::curr_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
     currVelocityMsg = *(msg.get());
-    // queue update
 }
 void debug_window::curr_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     currPositionMsg = *(msg.get());
-    // queue update
 }
-
 void debug_window::des_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     desPositionMsg = *(msg.get());
 }
