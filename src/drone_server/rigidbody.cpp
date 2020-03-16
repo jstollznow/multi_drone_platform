@@ -10,10 +10,16 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->lastRecievedApiUpdate.msgType = "";
   
     // look for drone under tag namespace then vrpn output
-    std::string motionTopic = "/vrpn_client_node/" + tag + "/pose";
-    std::string logTopic = "mdp/drone_" + std::to_string(numericID) + "/log";
-    std::string apiTopic = "mdp/drone_" + std::to_string(numericID) + "/apiUpdate";
+    std::string idStr = std::to_string(numericID);
 
+    std::string motionTopic = "/vrpn_client_node/" + tag + "/pose";
+    std::string logTopic = "mdp/drone_" + idStr + "/log";
+    std::string apiTopic = "mdp/drone_" + idStr + "/apiUpdate";
+    std::string batteryTopic = "mdp/drone_" + idStr + "/battery";
+    std::string currPoseTopic = "mdp/drone_" + idStr + "/curr_pose";
+    std::string desPoseTopic = "mdp/drone_" + idStr + "/des_pose";
+    std::string currTwistTopic = "mdp/drone_" + idStr + "/curr_twist";
+    std::string desTwistTopic = "mdp/drone_" + idStr + "/des_twist";
     droneHandle = ros::NodeHandle();
     droneHandle.setCallbackQueue(&myQueue);
 
@@ -21,14 +27,22 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     apiSubscriber = droneHandle.subscribe(apiTopic, 2, &rigidbody::api_callback, this);
     logPublisher = droneHandle.advertise<multi_drone_platform::log> (logTopic, 20);
     motionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 1,&rigidbody::add_motion_capture, this);
-    currentPosePublisher = droneHandle.advertise<geometry_msgs::PoseStamped> ("mdp/drone_" + std::to_string(numericID) + "/pose", 1);
-    currentVelocityPublisher = droneHandle.advertise<geometry_msgs::TwistStamped> ("mdp/drone_" + std::to_string(numericID) + "/velocity", 1);
+    batteryPublisher = droneHandle.advertise<std_msgs::String>(batteryTopic, 1);
 
+    currentPosePublisher = droneHandle.advertise<geometry_msgs::PoseStamped> (currPoseTopic, 1);
+    desiredPosePublisher = droneHandle.advertise<geometry_msgs::PoseStamped>(desPoseTopic, 1);
+
+    currentTwistPublisher = droneHandle.advertise<geometry_msgs::TwistStamped> (currTwistTopic, 1);
+    desiredTwistPublisher = droneHandle.advertise<geometry_msgs::TwistStamped>(desTwistTopic, 1);
 
     this->log(logger::INFO, "My id is: " + std::to_string(id));
     this->log(logger::INFO, "Subscribing to motion topic: " + motionTopic);
     this->log(logger::INFO, "Subscrbing to API topic: " + apiTopic);
     this->log(logger::INFO, "Publishing log data to: " + logTopic);
+    this->log(logger::INFO, "Publishing curr position to: " + currPoseTopic);
+    this->log(logger::INFO, "Publishing des position to: " + desPoseTopic);
+    this->log(logger::INFO, "Publishing current velocity to: " + currTwistTopic);
+    this->log(logger::INFO, "Publishing desired velocity to: " + desTwistTopic);
 
     // 1000 seconds on ground before timeout engaged 
     set_state("LANDED");
@@ -146,6 +160,10 @@ float duration, bool relativeXY, bool relativeZ) {
 
     this->log(logger::DEBUG, "DesPos: [" + std::to_string(desiredPose.position.x) + ", " + std::to_string(desiredPose.position.y) +
     ", " + std::to_string(desiredPose.position.z) + "] Dur: " + std::to_string(duration));
+    geometry_msgs::PoseStamped desPoseMsg;
+    desPoseMsg.pose = desiredPose;
+    desPoseMsg.header.stamp = timeOfLastApiUpdate;
+    desiredPosePublisher.publish(desPoseMsg);
 
     this->on_set_position(pos, yaw, duration, relativeXY);
 
@@ -157,6 +175,16 @@ float duration, bool relativeXY, bool relativeZ) {
     // @TODO: velocity based safeguarding
 
     // onVelocity command
+
+    this->desiredVelocity.linear = vel;
+    this->desiredVelocity.angular.z = yawRate;
+
+    geometry_msgs::TwistStamped desTwistMsg;
+    desTwistMsg.twist = desiredVelocity;
+    desTwistMsg.header.stamp = timeOfLastApiUpdate;
+
+    desiredTwistPublisher.publish(desTwistMsg);
+
     this->on_set_velocity(vel, yawRate, duration, relativeXY);
 
     this->reset_timeout(duration);
@@ -235,7 +263,7 @@ void rigidbody::publish_physical_state() const {
     geometry_msgs::TwistStamped stampedVel = {};
     stampedVel.header.stamp = ros::Time::now();
     stampedVel.twist = this->currentVelocity;
-    currentVelocityPublisher.publish(stampedVel);
+    currentTwistPublisher.publish(stampedVel);
 }
 
 void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {

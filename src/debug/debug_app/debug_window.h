@@ -7,8 +7,8 @@
 #include <mutex>
 #include <ros/ros.h>
 #include <geometry_msgs/Vector3.h>
-#include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <ros/callback_queue.h>
 #include "multi_drone_platform/log.h"
@@ -16,14 +16,14 @@
 #include "user_api.h"
 
 #define UPDATE_RATE 10
-#define LOG_POST_RATE 500
+#define LOG_POST_RATE 3000
 #define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/src/debug/debug_app/debug.ui"
 
 class debug_window: public Gtk::Window {
     private:
         Glib::RefPtr<Gtk::Builder> builder;
-
         Gtk::Label* droneNameLabel;
+        std::string logTopic;
 
         // for status updates
         Gtk::Label* currPosX;
@@ -47,8 +47,6 @@ class debug_window: public Gtk::Window {
         Gtk::Label* desYawRate;
 
         Gtk::Label* stateInput;
-        Gtk::Label* queueInput;
-        Gtk::Label* batteryInput;
         Gtk::LevelBar* batteryLevelBar;
         Gtk::Label* speedMultiplierLabel;
         Gtk::Label* pktLossLabel;
@@ -100,13 +98,23 @@ class debug_window: public Gtk::Window {
 
         ros::NodeHandle windowNode;
         ros::Subscriber logSubscriber;
-        ros::Subscriber velSubscriber;
-        ros::Subscriber posSubscriber;
+        ros::Subscriber currTwistSubscriber;
+        ros::Subscriber currPoseSubscriber;
+        ros::Subscriber desPoseSubscriber;
+        ros::Subscriber desTwistSubscriber;
 
-        geometry_msgs::TwistStamped lastVelocityMsg;
-        geometry_msgs::PoseStamped lastPositionMsg;
+        std::string currState;
+
+        geometry_msgs::PoseStamped currPositionMsg;
+        geometry_msgs::PoseStamped desPositionMsg;
+
+        geometry_msgs::TwistStamped currVelocityMsg;
+        geometry_msgs::TwistStamped desVelocityMsg;
+
+
+
         std::string toAddToLog;
-        
+
         bool expanded;
         bool first; 
         ros::Time firstTimeStamp;
@@ -121,6 +129,8 @@ class debug_window: public Gtk::Window {
         void on_debugWindow_destroy();
         
         void log_callback(const multi_drone_platform::log::ConstPtr& msg);
-        void velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg);
-        void position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
+        void curr_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
+        void des_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
+        void curr_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg);
+        void des_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg);
 };

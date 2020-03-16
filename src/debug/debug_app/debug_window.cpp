@@ -24,31 +24,64 @@ Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatch
 
 }
 void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool expanded) {
+
+    myDrone = droneName;
+
+    logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
+//    logTopic = "mdp_drone_server/log";
+
+    std::string currPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/curr_pose";
+    std::string desPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/des_pose";
+
+    std::string currTwistTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/curr_twist";
+    std::string desTwistTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/des_twist";
+
+    windowNode.setCallbackQueue(&windowQueue);
+    
+    logSubscriber = windowNode.subscribe<multi_drone_platform::log>(
+            logTopic,
+            10,
+            &debug_window::log_callback,
+            this);
+
+    currPoseSubscriber = windowNode.subscribe<geometry_msgs::PoseStamped>(
+            currPoseTopic,
+            1,
+            &debug_window::curr_position_callback,
+            this);
+    desPoseSubscriber = windowNode.subscribe<geometry_msgs::PoseStamped>(
+            currPoseTopic,
+            1,
+            &debug_window::des_position_callback,
+            this);
+
+    currTwistSubscriber = windowNode.subscribe<geometry_msgs::TwistStamped>(
+            currTwistTopic,
+            1,
+            &debug_window::curr_velocity_callback,
+            this);
+    desTwistSubscriber = windowNode.subscribe<geometry_msgs::TwistStamped>(
+            desTwistTopic,
+            1,
+            &debug_window::des_velocity_callback,
+            this);
+
     this->expanded = false;
+    this->set_title(myDrone.name);
+
+    droneNameLabel->set_label(myDrone.name);
+    speedScale->set_round_digits(0);
+    speedScale->set_value(5);
+    speedMultiplierLabel->set_text("5");
+    logTextBuffer->set_text("");
+
     if (expanded) on_expandButton_clicked();
 
     if (startLocation != std::array<int,2>({0, 0})) {
         this->move(startLocation[0], startLocation[1]);
     }
 
-    myDrone = droneName;
 
-    std::string logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
-    std::string velTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/velocity";
-    std::string posTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/pose";
-    windowNode.setCallbackQueue(&windowQueue);
-    
-    logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 10, &debug_window::log_callback, this);
-    velSubscriber = windowNode.subscribe<geometry_msgs::TwistStamped>(velTopic, 1, &debug_window::velocity_callback, this);
-    posSubscriber = windowNode.subscribe<geometry_msgs::PoseStamped>(posTopic, 1, &debug_window::position_callback, this);
-
-    this->set_title(myDrone.name);
-    droneNameLabel->set_label(myDrone.name);
-    speedScale->set_round_digits(0);
-    speedScale->set_value(5);
-    speedMultiplierLabel->set_text("5");
-    logTextBuffer->set_text("");
-    
     this->show();
 }
 
@@ -59,25 +92,49 @@ std::string debug_window::round_to_string(double val, int n) {
 }
 
 void debug_window::update_stats() {
-    currVelX->set_text(round_to_string(lastVelocityMsg.twist.linear.x, 3));
-    currVelY->set_text(round_to_string(lastVelocityMsg.twist.linear.y, 3));
-    currVelZ->set_text(round_to_string(lastVelocityMsg.twist.linear.z, 3));
-    currYawRate->set_text(round_to_string(lastVelocityMsg.twist.angular.z, 3));
+    int decimals = 3;
 
-    currPosX->set_text(round_to_string(lastPositionMsg.pose.position.x, 3));
-    currPosY->set_text(round_to_string(lastPositionMsg.pose.position.y, 3));
-    currPosZ->set_text(round_to_string(lastPositionMsg.pose.position.z, 3));
-    // currYaw->set_text(round_to_string(lastPositionMsg.orient.angular.z, 5));
+    currVelX->set_text(round_to_string(currVelocityMsg.twist.linear.x, decimals));
+    currVelY->set_text(round_to_string(currVelocityMsg.twist.linear.y, decimals));
+    currVelZ->set_text(round_to_string(currVelocityMsg.twist.linear.z, decimals));
+    currYawRate->set_text(round_to_string(currVelocityMsg.twist.angular.z, decimals));
+
+    currPosX->set_text(round_to_string(currPositionMsg.pose.position.x, decimals));
+    currPosY->set_text(round_to_string(currPositionMsg.pose.position.y, decimals));
+    currPosZ->set_text(round_to_string(currPositionMsg.pose.position.z, decimals));
+    // currYaw->set_text(round_to_string(currPositionMsg.orient.angular.z, 5));
+
+
+    desVelX->set_text(round_to_string(desVelocityMsg.twist.linear.x, decimals));
+    desVelY->set_text(round_to_string(desVelocityMsg.twist.linear.y, decimals));
+    desVelZ->set_text(round_to_string(desVelocityMsg.twist.linear.z, decimals));
+    desYawRate->set_text(round_to_string(desVelocityMsg.twist.angular.z, decimals));
+
+    desPosX->set_text(round_to_string(desPositionMsg.pose.position.x, decimals));
+    desPosY->set_text(round_to_string(desPositionMsg.pose.position.y, decimals));
+    desPosZ->set_text(round_to_string(desPositionMsg.pose.position.z, decimals));
+    // currYaw->set_text(round_to_string(currPositionMsg.orient.angular.z, 5));
+
+    stateInput->set_text(currState);
 }
 void debug_window::update_ros_widgets() {
     logTextBuffer->insert(logTextBuffer->end(), toAddToLog);
+
     toAddToLog = "";
+    update_stats();
+
     Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
     scrollAdjust->set_value(scrollAdjust->get_upper());
-    update_stats();
+
 }
 bool debug_window::ros_spin() {
     windowQueue.callAvailable();
+
+    if (windowNode.hasParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state"))
+    {
+        windowNode.getParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state", currState);
+    }
+
     dispatcher.emit();
     return true;
 }
@@ -103,16 +160,21 @@ void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) 
     toAddToLog += newLogLine;
 }
 
-void debug_window::velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
-    lastVelocityMsg = *(msg.get());
-    dispatcher.emit();
+void debug_window::curr_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
+    currVelocityMsg = *(msg.get());
     // queue update
 }
-void debug_window::position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
-    lastPositionMsg = *(msg.get());
+void debug_window::curr_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    currPositionMsg = *(msg.get());
     // queue update
 }
 
+void debug_window::des_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    desPositionMsg = *(msg.get());
+}
+void debug_window::des_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
+    desVelocityMsg = *(msg.get());
+}
 void debug_window::on_speedScale_value_changed() {
     std::ostringstream streamObj;
 	streamObj << std::fixed;
@@ -122,6 +184,12 @@ void debug_window::on_speedScale_value_changed() {
     speedMultiplierLabel->set_label(streamObj.str());
 }
 void debug_window::on_expandButton_clicked() {
+    if (!expanded) {
+        logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 10, &debug_window::log_callback, this);
+    }
+    else {
+        logSubscriber.shutdown();
+    }
     sidePanelGrid->set_visible(!expanded);
     logScroll->set_visible(!expanded);
     expandButton->set_image(expanded ? *expandImage : *compressImage);
@@ -156,8 +224,6 @@ void debug_window::link_widgets() {
         builder->get_widget(VNAME(desVelZ), desVelZ);
         builder->get_widget(VNAME(desYawRate), desYawRate);
         builder->get_widget(VNAME(stateInput), stateInput);
-        builder->get_widget(VNAME(queueInput), queueInput);
-        builder->get_widget(VNAME(batteryInput), batteryInput);
         builder->get_widget(VNAME(batteryLevelBar), batteryLevelBar);
         builder->get_widget(VNAME(speedMultiplierLabel), speedMultiplierLabel);
         builder->get_widget(VNAME(pktLossLabel), pktLossLabel);
