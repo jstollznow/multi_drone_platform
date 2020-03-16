@@ -39,8 +39,8 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->log(logger::INFO, "Subscribing to motion topic: " + motionTopic);
     this->log(logger::INFO, "Subscrbing to API topic: " + apiTopic);
     this->log(logger::INFO, "Publishing log data to: " + logTopic);
-    this->log(logger::INFO, "Publishing curr position to: " + currPoseTopic);
-    this->log(logger::INFO, "Publishing des position to: " + desPoseTopic);
+    this->log(logger::INFO, "Publishing current position to: " + currPoseTopic);
+    this->log(logger::INFO, "Publishing desired position to: " + desPoseTopic);
     this->log(logger::INFO, "Publishing current velocity to: " + currTwistTopic);
     this->log(logger::INFO, "Publishing desired velocity to: " + desTwistTopic);
 

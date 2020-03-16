@@ -2,9 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <exception>
-#include <thread>
-#include <mutex>
+
 #include <ros/ros.h>
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/PoseStamped.h>
