@@ -5,7 +5,8 @@
     <node 
     name="drone_server" 
     pkg="multi_drone_platform" 
-    type="drone_server" 
+    type="drone_server"
+    required="true"
     output="screen">
     </node>
 

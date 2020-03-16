@@ -4,11 +4,15 @@
 
 #include "multi_drone_platform/api_update.h"
 
+#define SHUTDOWN_PARAM "shouldShutDown"
+
 drone_server* globalDroneServer = nullptr;
 bool globalShouldShutdown = false;
+bool globalGoodShutDown = true;
 
 
 drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
+    node.setParam(SHUTDOWN_PARAM, false);
     inputAPISub = node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 2, &drone_server::api_callback, this);
     emergencySub = node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::emergency_callback, this);
     std::string logTopic = NODE_NAME;
@@ -131,6 +135,7 @@ bool drone_server::get_rigidbody_from_drone_id(uint32_t pID, rigidbody*& pReturn
 void drone_server::run() {
     ros::Time frameStart, frameEnd, rigidbodyStart, rigidbodyEnd, waitTimeStart, waitTimeEnd;
     int timingPrint = 0;
+    node.getParam(SHUTDOWN_PARAM, globalShouldShutdown);
     while (!globalShouldShutdown) {
         frameStart = ros::Time::now();
         /* do all the ros callback event stuff */
@@ -181,6 +186,11 @@ void drone_server::run() {
             timeToUpdateDrones = 0.0f;
         }
         timingPrint++;
+        if (!globalShouldShutdown) {
+            if (!node.getParam(SHUTDOWN_PARAM, globalShouldShutdown)) {
+                globalShouldShutdown = true;
+            }
+        }
     }
 }
 
@@ -286,9 +296,12 @@ void drone_server::log(logger::log_type logType, std::string message) {
 }
 
 
+#define RESET   "\033[0m"
+#define BOLDRED     "\033[1m\033[31m"      /* Bold Red */
+#define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
 
 void signal_handler(int sig) {
-    printf("\n\n\n");
+    globalGoodShutDown = false;
     globalShouldShutdown = true;
 }
 
@@ -304,5 +317,18 @@ int main(int argc, char **argv) {
 
     printf("Shutting down ROS\n");
     ros::shutdown();
+    if (globalGoodShutDown) {
+        printf(
+                BOLDGREEN
+                "Drone server shut down correctly, closing additional ros nodes.\n"
+                "Ignore the following boxed red text:\n"
+                RESET);
+    } else {
+        printf("\n\n\n"
+               BOLDRED
+               "WARNING: CTRL-C CALLED BY USER, DRONE SERVER MAY NOT SHUTDOWN CORRECTLY.\n"
+               "TO PROPERLY SHUTDOWN SET THE ROS PARAM '/%s' TO true INSTEAD"
+               RESET "\n\n\n", SHUTDOWN_PARAM);
+    }
     return 0;
 }
