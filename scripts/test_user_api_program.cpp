@@ -30,16 +30,16 @@ int main(int argc, char** argv)
 
         printf("Next Waypoint\n");
     
-        // mdp_api::cmd_land(drones[0]);
-        // mdp_api::set_drone_position(drones[0], myData.x + 0.5, myData.y - 0.5, myData.z - 0.7, 5.0f);
-        //mdp_api::set_drone_position(drones[0], 0.0f, 0.0f, 1.45f, 5.0f);
+        // mdp::cmd_land(drones[0]);
+        // mdp::set_drone_position(drones[0], myData.x + 0.5, myData.y - 0.5, myData.z - 0.7, 5.0f);
+        //mdp::set_drone_position(drones[0], 0.0f, 0.0f, 1.45f, 5.0f);
         scanf("%d", &a);
         while(a!=0)
         {
             scanf("%d", &a);
         }
         mdp::position_data myData = mdp::get_body_position(drones[0]);
-        //mdp_api::set_drone_position(drones[0], myData.x + 2, myData.y, 1.45f, 5.0f);
+        //mdp::set_drone_position(drones[0], myData.x + 2, myData.y, 1.45f, 5.0f);
         scanf("%d", &a);
         while(a!=9)
         {

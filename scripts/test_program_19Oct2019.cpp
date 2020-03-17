@@ -12,11 +12,11 @@ void do_drone_flight_test(mdp::id drone)
     auto drones = mdp::get_all_rigidbodies();
     if (drones.size() < 1) return;
     mdp::cmd_takeoff(drones[0], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
-    // mdp_api::cmd_takeoff(drones[1], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
+    // mdp::cmd_takeoff(drones[1], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
 
     mdp::sleep_until_idle(drones[0]);
-    // mdp_api::sleep_until_idle(drones[1]);
-    // mdp_api::sleep_until_idle(drone);        // sleep api program until drone is idle (takeoff command has finished)
+    // mdp::sleep_until_idle(drones[1]);
+    // mdp::sleep_until_idle(drone);        // sleep api program until drone is idle (takeoff command has finished)
 
     mdp::position_msg msg;         // construct a position msg
     msg.relative = true;
@@ -29,28 +29,28 @@ void do_drone_flight_test(mdp::id drone)
         mdp::set_drone_position(drones[0], msg);    // tell drone to go to position outlined in msg
         mdp::spin_once();
     }
-    // mdp_api::set_drone_position(drones[1], msg);
+    // mdp::set_drone_position(drones[1], msg);
 
-    // //mdp_api::sleep_until_idle(drone);    // sleep api program until drone is idle
+    // //mdp::sleep_until_idle(drone);    // sleep api program until drone is idle
 
-    // //mdp_api::goto_home(drone);     // tell drone to go home and land (as height is set to 0.0)
+    // //mdp::goto_home(drone);     // tell drone to go home and land (as height is set to 0.0)
 
-    // //mdp_api::sleep_until_idle(drone);
+    // //mdp::sleep_until_idle(drone);
 
     mdp::sleep_until_idle(drones[0]);
-    // mdp_api::sleep_until_idle(drones[1]);
+    // mdp::sleep_until_idle(drones[1]);
 
     mdp::go_to_home(drones[0]);
-    // mdp_api::goto_home(drones[1]);
+    // mdp::goto_home(drones[1]);
 
     mdp::sleep_until_idle(drones[0]);
-    // mdp_api::sleep_until_idle(drones[1]);
+    // mdp::sleep_until_idle(drones[1]);
 
     mdp::cmd_land(drones[0]);
-    // mdp_api::cmd_land(drones[1]);
+    // mdp::cmd_land(drones[1]);
 
     mdp::sleep_until_idle(drones[0]);
-    // mdp_api::sleep_until_idle(drones[1]);
+    // mdp::sleep_until_idle(drones[1]);
 }
 
 void hover_test(mdp::id drone)
@@ -73,7 +73,7 @@ void hover_test(mdp::id drone)
     //msg.position = {0.0, 0.5, 0.0};
     //d.sleep();
 
-    //mdp_api::set_drone_position(drone, msg);
+    //mdp::set_drone_position(drone, msg);
 
     mdp::sleep_until_idle(drone);
 

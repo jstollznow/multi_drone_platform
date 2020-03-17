@@ -122,7 +122,7 @@ bool ps4_remote::high_lvl_command_handle(int takeoff, int land, int hover, int g
     else if (land == 1) {
         // hlCommand = true;
         // ROS_INFO("%s: Land butt", drones[droneID].name.c_str());
-        // mdp_api::cmd_land(drones[droneID]);
+        // mdp::cmd_land(drones[droneID]);
         // return true;
     }
     // triangle
@@ -164,7 +164,7 @@ bool ps4_remote::last_input_handle(float xAxes, float yAxes, float zUpTrigger, f
 }
 void ps4_remote::command_handle(const sensor_msgs::Joy::ConstPtr& msg) {
     if (sync) {
-        // drones = mdp_api::get_all_rigidbodies();
+        // drones = mdp::get_all_rigidbodies();
         
         if (!emergency_handle(msg->buttons[10], msg->buttons[8])) {
             if (!option_change_handle(msg->axes[7], msg->buttons[9])) {
