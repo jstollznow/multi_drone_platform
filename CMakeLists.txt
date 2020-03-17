@@ -133,6 +133,9 @@ add_executable(drone_server src/drone_server/drone_server.cpp)
 target_link_libraries(drone_server ${catkin_LIBRARIES} RIGIDBODY LOGGER) 
 add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
+add_executable(shutdown_drone_server src/drone_server/shutdown_drone_server.cpp)
+target_link_libraries(shutdown_drone_server ${catkin_LIBRARIES})
+
 add_executable(script scripts/demoWk10.cpp)
 target_link_libraries(script ${catkin_LIBRARIES} MDP_API)
 
