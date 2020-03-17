@@ -175,7 +175,7 @@ class cflie : public rigidbody {
         go_to(pos, yaw, duration, isRelative);
     }
 
-    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool isRelative) override {
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) override {
         geometry_msgs::Vector3 positionGoal;
         positionGoal.x = (vel.x * duration);
         positionGoal.y = (vel.y * duration);

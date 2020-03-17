@@ -76,10 +76,6 @@ void rigidbody::set_state(const std::string& state) {
     droneHandle.setParam("mdp/drone_" + std::to_string(this->numericID) + "/state", state);
 }
 
-bool rigidbody::get_controllable() {
-    return this->controllable;
-}
-
 std::string rigidbody::get_name() {
     return this->tag;
 }
@@ -193,8 +189,7 @@ float duration, bool relativeXY, bool relativeZ) {
     reset_timeout(duration);
 }
 
-void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
-float duration, bool relativeXY, bool relativeZ) {
+void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeZ) {
     if (state.compare("LANDED") == 0) {
         this->log(logger::WARN, "set velocity called on landed drone, ignoring");
         return;
@@ -371,7 +366,7 @@ void rigidbody::handle_command() {
                     takeoff(msg.posVel.z, msg.duration);
                     break;
                 /* LAND */
-                case 3: 
+                case 3:
                     if (msg.duration != 0.0f){ land(msg.duration); }
                     else { land(); }
                     break;
