@@ -9,18 +9,18 @@
 
 int main(int argc, char *argv[]) {
 
-    mdp_api::initialise(10);
+    mdp::initialise(10);
 
     // for potential testing
-    std::vector<mdp_api::id> myDrones;
+    std::vector<mdp::id> myDrones;
 
     for (int i = 0; i < 10; i++) {
-        mdp_api::id myId;
+        mdp::id myId;
         myId.name = "vflie_" + std::to_string(i);
         myId.numericID = i;
         myDrones.push_back(myId);
     }
     
     // name must have '.' in it, else will throw runtime error
-    auto app = debug_app(mdp_api::get_all_rigidbodies(), argc, argv);
+    auto app = debug_app(mdp::get_all_rigidbodies(), argc, argv);
 }

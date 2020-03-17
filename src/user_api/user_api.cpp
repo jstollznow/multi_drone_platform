@@ -12,7 +12,7 @@
 #define FRAME_ID "user_api"
 
 
-namespace mdp_api {
+namespace mdp {
 
 struct drone_data {
     ros::Subscriber poseSubscriber;
@@ -50,9 +50,9 @@ void initialise(unsigned int pUpdateRate) {
     nodeData->loopRate = new ros::Rate(pUpdateRate);
     nodeData->loopRateValue = pUpdateRate;
 
-    nodeData->publisher = nodeData->node->advertise<geometry_msgs::TransformStamped> ("mdp_api", 2);
-    nodeData->dataClient = nodeData->node->serviceClient<nav_msgs::GetPlan> ("mdp_api_data_srv");
-    nodeData->listClient = nodeData->node->serviceClient<tf2_msgs::FrameGraph> ("mdp_api_list_srv");
+    nodeData->publisher = nodeData->node->advertise<geometry_msgs::TransformStamped> ("mdp", 2);
+    nodeData->dataClient = nodeData->node->serviceClient<nav_msgs::GetPlan> ("mdp_data_srv");
+    nodeData->listClient = nodeData->node->serviceClient<tf2_msgs::FrameGraph> ("mdp_list_srv");
 
     sleep(1);
 
@@ -78,10 +78,10 @@ void terminate() {
     ros::shutdown();
 }
 
-std::vector<mdp_api::id> get_all_rigidbodies() {
+std::vector<mdp::id> get_all_rigidbodies() {
     tf2_msgs::FrameGraph srvData;
 
-    std::vector<mdp_api::id> vec;
+    std::vector<mdp::id> vec;
     if (nodeData->listClient.call(srvData)) {
         std::vector<std::string> results;
         boost::split(results, srvData.response.frame_yaml, [](char c){return c == ' ';});
@@ -90,7 +90,7 @@ std::vector<mdp_api::id> get_all_rigidbodies() {
             if (str.length() > 0) {
                 std::vector<std::string> idStr;
                 boost::split(idStr, str, [](char c){return c == ':';});
-                mdp_api::id newId;
+                mdp::id newId;
                 newId.numericID = atoi(idStr[0].c_str());
                 newId.name = idStr[1];
                 vec.push_back(newId);
@@ -126,9 +126,9 @@ double encode_relative_array_to_double(bool relative, bool keepHeight) {
     return ((1.0 * relative) + (2.0 * keepHeight));
 }
 
-void set_drone_velocity(mdp_api::id pDroneID, mdp_api::velocity_msg pMsg) {
+void set_drone_velocity(mdp::id pDroneID, mdp::velocity_msg pMsg) {
     geometry_msgs::TransformStamped msgData;
-    mdp::input_msg inputMsg(&msgData);
+    mdp_translations::input_msg inputMsg(&msgData);
 
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "VELOCITY";
@@ -143,9 +143,9 @@ void set_drone_velocity(mdp_api::id pDroneID, mdp_api::velocity_msg pMsg) {
     nodeData->publisher.publish(msgData);
 }
 
-void set_drone_position(mdp_api::id pDroneID, mdp_api::position_msg pMsg) {
+void set_drone_position(mdp::id pDroneID, mdp::position_msg pMsg) {
     geometry_msgs::TransformStamped msgData;
-    mdp::input_msg inputMsg(&msgData);
+    mdp_translations::input_msg inputMsg(&msgData);
 
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "POSITION";
@@ -160,7 +160,7 @@ void set_drone_position(mdp_api::id pDroneID, mdp_api::position_msg pMsg) {
     nodeData->publisher.publish(msgData);
 }
 
-position_data get_position(mdp_api::id pRigidbodyID) {
+position_data get_position(mdp::id pRigidbodyID) {
     position_data data;
     // if the drone id does not exist, return
     // @TODO: make this a value you can check for validity
@@ -175,7 +175,7 @@ position_data get_position(mdp_api::id pRigidbodyID) {
     return data;
 }
 
-velocity_data get_velocity(mdp_api::id pRigidbodyID) {
+velocity_data get_velocity(mdp::id pRigidbodyID) {
     velocity_data data;
     // if the drone id does not exist, return
     if (nodeData->droneData.count(pRigidbodyID.numericID) == 0) return data;
@@ -189,9 +189,9 @@ velocity_data get_velocity(mdp_api::id pRigidbodyID) {
     return data;
 }
 
-void cmd_takeoff(mdp_api::id pDroneID, float pHeight, float pDuration) {
+void cmd_takeoff(mdp::id pDroneID, float pHeight, float pDuration) {
     geometry_msgs::TransformStamped msgData;
-    mdp::input_msg inputMsg(&msgData);
+    mdp_translations::input_msg inputMsg(&msgData);
 
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "TAKEOFF";
@@ -201,9 +201,9 @@ void cmd_takeoff(mdp_api::id pDroneID, float pHeight, float pDuration) {
     nodeData->publisher.publish(msgData);
 }
 
-void cmd_land(mdp_api::id pDroneID) {
+void cmd_land(mdp::id pDroneID) {
     geometry_msgs::TransformStamped msgData;
-    mdp::input_msg inputMsg(&msgData);
+    mdp_translations::input_msg inputMsg(&msgData);
 
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "LAND";
@@ -211,9 +211,9 @@ void cmd_land(mdp_api::id pDroneID) {
     nodeData->publisher.publish(msgData);
 }
 
-void cmd_emergency(mdp_api::id pDroneID) {
+void cmd_emergency(mdp::id pDroneID) {
     geometry_msgs::TransformStamped msgData;
-    mdp::input_msg inputMsg(&msgData);
+    mdp_translations::input_msg inputMsg(&msgData);
 
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "EMERGENCY";
@@ -221,9 +221,9 @@ void cmd_emergency(mdp_api::id pDroneID) {
     nodeData->publisher.publish(msgData);
 }
 
-void cmd_hover(mdp_api::id pDroneID) {
+void cmd_hover(mdp::id pDroneID) {
     geometry_msgs::TransformStamped msgData;
-    mdp::input_msg inputMsg(&msgData);
+    mdp_translations::input_msg inputMsg(&msgData);
 
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "HOVER";
@@ -233,9 +233,9 @@ void cmd_hover(mdp_api::id pDroneID) {
 }
 
 
-void set_home(mdp_api::id pDroneID, mdp_api::position_msg pMsg) {
+void set_home(mdp::id pDroneID, mdp::position_msg pMsg) {
     geometry_msgs::TransformStamped msgData;
-    mdp::input_msg inputMsg(&msgData);
+    mdp_translations::input_msg inputMsg(&msgData);
 
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "SET_HOME";
@@ -250,11 +250,11 @@ void set_home(mdp_api::id pDroneID, mdp_api::position_msg pMsg) {
     nodeData->publisher.publish(msgData);
 }
 
-position_data get_home(mdp_api::id pDroneID) {
+position_data get_home(mdp::id pDroneID) {
     nav_msgs::GetPlan srvData;
-    mdp::drone_feedback_srv feedbackSrv(&srvData);
+    mdp_translations::drone_feedback_srv feedbackSrv(&srvData);
 
-    mdp::id newId;
+    mdp_translations::id newId;
     newId.numeric_id() = pDroneID.numericID;
 
     feedbackSrv.drone_id().numeric_id() = pDroneID.numericID;
@@ -272,9 +272,9 @@ position_data get_home(mdp_api::id pDroneID) {
     return posData;
 }
 
-void go_to_home(mdp_api::id pDroneID, float duration, float pHeight) {
+void go_to_home(mdp::id pDroneID, float duration, float pHeight) {
     geometry_msgs::TransformStamped msgData;
-    mdp::input_msg inputMsg(&msgData);
+    mdp_translations::input_msg inputMsg(&msgData);
 
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "GOTO_HOME";
@@ -288,7 +288,7 @@ void go_to_home(mdp_api::id pDroneID, float duration, float pHeight) {
 
 void set_drone_server_update_frequency(float pUpdateFrequency) {
     geometry_msgs::TransformStamped msgData;
-    mdp::input_msg inputMsg(&msgData);
+    mdp_translations::input_msg inputMsg(&msgData);
 
     inputMsg.msg_type() = "DRONE_SERVER_FREQ";
     inputMsg.pos_vel().x = pUpdateFrequency;
@@ -298,7 +298,7 @@ void set_drone_server_update_frequency(float pUpdateFrequency) {
 
 timings get_operating_frequencies() {
     nav_msgs::GetPlan srvData;
-    mdp::drone_feedback_srv feedbackSrv(&srvData);
+    mdp_translations::drone_feedback_srv feedbackSrv(&srvData);
 
     feedbackSrv.msg_type() = "TIME";
 
@@ -326,7 +326,7 @@ int rate() {
     return nodeData->loopRateValue;
 }
 
-void sleep_until_idle(mdp_api::id pDroneID) {
+void sleep_until_idle(mdp::id pDroneID) {
     ROS_INFO("Sleeping until drone '%s' goes idle", pDroneID.name.c_str());
     
     /* wait 1 frame (so that states can update on the server side) */
@@ -351,7 +351,7 @@ void sleep_until_idle(mdp_api::id pDroneID) {
     }
 }
 
-std::string get_state(mdp_api::id pDroneID) {
+std::string get_state(mdp::id pDroneID) {
     std::string stateParam = "mdp/drone_" + std::to_string(pDroneID.numericID) + "/state";
     std::string droneState;
     if (ros::param::get(stateParam, droneState)) {

@@ -226,7 +226,7 @@ std::array<bool, 2> dencoded_relative(double pEncoded) {
 }
 
 void drone_server::api_callback(const geometry_msgs::TransformStamped::ConstPtr& input) {
-    mdp::input_msg inputMsg((geometry_msgs::TransformStamped*)input.get());
+    mdp_translations::input_msg inputMsg((geometry_msgs::TransformStamped*)input.get());
     multi_drone_platform::api_update msg;
 
 
@@ -253,8 +253,8 @@ void drone_server::api_callback(const geometry_msgs::TransformStamped::ConstPtr&
 }
 
 bool drone_server::api_get_data_service(nav_msgs::GetPlan::Request &pReq, nav_msgs::GetPlan::Response &pRes) {
-    mdp::drone_feedback_srv_req req(&pReq);
-    mdp::drone_feedback_srv_res res(&pRes);
+    mdp_translations::drone_feedback_srv_req req(&pReq);
+    mdp_translations::drone_feedback_srv_res res(&pRes);
     this->log(logger::INFO, "Server recieved get data service of type: " + req.msgType());
     
     rigidbody* RB;

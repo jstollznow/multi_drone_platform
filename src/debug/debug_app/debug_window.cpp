@@ -23,7 +23,7 @@ Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatch
     
 
 }
-void debug_window::init(mdp_api::id droneName, std::array<int, 2> startLocation, bool expanded) {
+void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, bool expanded) {
 
     myDrone = droneName;
 
@@ -141,10 +141,10 @@ bool debug_window::ros_spin() {
 }
 
 void debug_window::on_landButton_clicked() {
-    mdp_api::cmd_land(myDrone);
+    mdp::cmd_land(myDrone);
 }
 void debug_window::on_emergencyButton_clicked() {
-    mdp_api::cmd_emergency(myDrone);
+    mdp::cmd_emergency(myDrone);
 }
 
 void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) {
