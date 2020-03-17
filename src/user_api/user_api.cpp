@@ -104,12 +104,12 @@ std::vector<mdp_api::id> get_all_rigidbodies() {
                 nodeData->droneData[vec[i].numericID] = {};
 
                 nodeData->droneData[vec[i].numericID].poseSubscriber = nodeData->node->subscribe<geometry_msgs::PoseStamped>(
-                    "mdp/drone_" + std::to_string(vec[i].numericID) + "/pose", 
+                    "mdp/drone_" + std::to_string(vec[i].numericID) + "/curr_pose",
                     1, 
                     &drone_data::pose_callback, 
                     &nodeData->droneData[vec[i].numericID]);
                 nodeData->droneData[vec[i].numericID].twistSubscriber = nodeData->node->subscribe<geometry_msgs::TwistStamped>(
-                    "mdp/drone_" + std::to_string(vec[i].numericID) + "/velocity", 
+                    "mdp/drone_" + std::to_string(vec[i].numericID) + "/curr_twist",
                     1, 
                     &drone_data::twist_callback, 
                     &nodeData->droneData[vec[i].numericID]);

@@ -7,6 +7,7 @@
 #include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
 #include "std_msgs/Float32MultiArray.h"
+#include "std_msgs/String.h"
 #include "geometry_msgs/Vector3.h"
 #include "std_msgs/Header.h"
 #include "sensor_msgs/Imu.h"
@@ -31,11 +32,14 @@ class rigidbody {
     private:
         ros::Subscriber apiSubscriber;
         ros::Publisher logPublisher;
+        ros::Publisher batteryPublisher;
         ros::Publisher currentPosePublisher;
-        ros::Publisher currentVelocityPublisher;
+        ros::Publisher currentTwistPublisher;
+        ros::Publisher desiredPosePublisher;
+        ros::Publisher desiredTwistPublisher;
         uint32_t numericID;
         bool shutdownHasBeenCalled = false;
-            
+  
     protected:
         std::vector<multi_drone_platform::api_update> commandQueue;
         std::string tag;
