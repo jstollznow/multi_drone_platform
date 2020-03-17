@@ -1,10 +1,9 @@
 #include "drone_server.h"
 
-#include <signal.h>
+#include <csignal>
+#include <utility>
 
 #include "multi_drone_platform/api_update.h"
-
-#define SHUTDOWN_PARAM "shouldShutDown"
 
 drone_server* globalDroneServer = nullptr;
 bool globalShouldShutdown = false;
@@ -51,13 +50,13 @@ void drone_server::shutdown() {
     /* sleep until drones have all landed */
     this->log(logger::INFO, "Waiting for drones to land...");
     bool allLanded = false;
-    while (allLanded == false) {
+    while (!allLanded) {
         allLanded = true;
 
         for (size_t i = 0; i < rigidbodyList.size(); i++) {
             if (rigidbodyList[i] != nullptr) {
                 rigidbodyList[i]->update(rigidbodyList);
-                if (rigidbodyList[i]->state.compare(std::string("LANDED")) != 0) {
+                if (rigidbodyList[i]->state != std::string("LANDED")) {
                     allLanded = false;
                 }
             }
@@ -81,7 +80,7 @@ void drone_server::init_rigidbodies_from_VRPN() {
 }
 
 
-mdp_id drone_server::add_new_rigidbody(std::string pTag) {
+mdp_id drone_server::add_new_rigidbody(const std::string& pTag) {
     mdp_id ID;
     ID.name = "";
     ID.numeric_id = rigidbodyList.size();
@@ -90,7 +89,7 @@ mdp_id drone_server::add_new_rigidbody(std::string pTag) {
         /* update drone state on param server */
 
         rigidbodyList.push_back(RB);
-        ID.name = pTag.c_str();
+        ID.name = pTag;
         
         RB->mySpin.start();
 
@@ -143,11 +142,10 @@ void drone_server::run() {
 
         /* call update on every valid rigidbody */
         rigidbodyStart = ros::Time::now();
-        for (size_t i = 0; i < rigidbodyList.size(); i++) {
-            if (rigidbodyList[i] == nullptr) continue;
+        for (auto & rigidbody : rigidbodyList) {
+            if (rigidbody == nullptr) continue;
 
-            rigidbodyList[i]->update(rigidbodyList);
-
+            rigidbody->update(rigidbodyList);
         }
         rigidbodyEnd = ros::Time::now();
         
@@ -292,7 +290,7 @@ bool drone_server::api_list_service(tf2_msgs::FrameGraph::Request &req, tf2_msgs
 }
 
 void drone_server::log(logger::log_type logType, std::string message) {
-    logger::post_log(logType, "Drone Server", message, logPublisher);
+    logger::post_log(logType, "Drone Server", std::move(message), logPublisher);
 }
 
 

@@ -14,6 +14,7 @@
 #define LIST_SRV_TOPIC "mdp_api_list_srv"
 #define SUB_TOPIC "mdp_api"
 #define EMERGENCY_TOPIC "mdp_api_emergency"
+#define SHUTDOWN_PARAM "mdp/should_shut_down"
 
 
 struct mdp_id {
@@ -41,7 +42,7 @@ class drone_server {
 
         void init_rigidbodies_from_VRPN();
 
-        mdp_id add_new_rigidbody(std::string pTag);
+        mdp_id add_new_rigidbody(const std::string& pTag);
         void remove_rigidbody(unsigned int pDroneID);
 
         void log(logger::log_type logType, std::string message);
