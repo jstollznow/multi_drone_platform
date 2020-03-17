@@ -6,7 +6,7 @@
 
 #define INPUT_TOP "/ps4"
 #define SERVER_FREQ 10
-#define UPDATE_RATE 10
+#define UPDATE_RATE 2
 
 #define TAKEOFF_TIME 3.0f
 #define GO_TO_HOME 4.0f
@@ -14,7 +14,7 @@
 // LIMIT LEVEL
 // 0 DEMO - SAFE
 // 1 MORE CONTROL
-#define LIMIT_LEVEL 1
+#define LIMIT_LEVEL 0
 
 
 namespace ps4_remote
@@ -210,26 +210,29 @@ void ps4_remote::command_handle(const sensor_msgs::Joy::ConstPtr& msg) {
 
 void ps4_remote::control_update() {
 
-    if (lastInput.axesInput[0] != 0.0f || lastInput.axesInput[1] != 0.0f || lastInput.axesInput[2] != 0.0f || lastInput.yaw != 0.0f) {
         ROS_INFO("Control update: %d", lastInput.lastUpdate.nsec);
-        highLevelCommand = false;
-        if (!localCoord) {
-            ROS_INFO("%s: Change position by [%.2f, %.2f, %.2f] and yaw by %f", drones[droneID].name.c_str(),
-            lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
-            mdp::position_msg posMsg;
-            posMsg.duration =  2.0f;
-            posMsg.keepHeight = true;
-            posMsg.relative = true;
-            posMsg.position = lastInput.axesInput;
-            posMsg.yaw = lastInput.yaw;
-            mdp::set_drone_position(drones[droneID],posMsg);
+        if (lastInput.axesInput[0] != 0.0f || lastInput.axesInput[1] != 0.0f || lastInput.axesInput[2] != 0.0f || lastInput.yaw != 0.0f) {
+            highLevelCommand = false;
         }
-    }
-    else {
         if (!highLevelCommand) {
-            mdp::cmd_hover(drones[droneID]);
+            if (!localCoord) {
+                ROS_INFO("%s: Change position by [%.2f, %.2f, %.2f] and yaw by %f", drones[droneID].name.c_str(),
+                         lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
+                mdp::position_msg posMsg;
+                posMsg.duration = 2.0f;
+                posMsg.keepHeight = true;
+                posMsg.relative = true;
+                posMsg.position = lastInput.axesInput;
+                posMsg.yaw = lastInput.yaw;
+                mdp::set_drone_position(drones[droneID], posMsg);
+            }
         }
-    }
+//    }
+//    else {
+//        if (!highLevelCommand) {
+//            //mdp::cmd_hover(drones[droneID]);
+//        }
+//    }
 }
 
 void ps4_remote::input_callback(const sensor_msgs::Joy::ConstPtr& msg) {
@@ -295,7 +298,7 @@ void ps4_remote::terminate() {
 int main(int argc, char **argv) {
     ros::init(argc,argv,"ps4_remote");
     ps4_remote::mySpin = new ros::AsyncSpinner(1,&ps4_remote::myQueue);
-    mdp::initialise(SERVER_FREQ);
+    mdp::initialise(SERVER_FREQ, "ps4teleop");
     bool start = true;
 
     ps4_remote::droneID = 0;

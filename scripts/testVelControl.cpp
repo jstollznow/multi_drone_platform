@@ -3,7 +3,7 @@
 
 
 int main() {
-    mdp::initialise(10);
+    mdp::initialise(10, "vel");
     auto drones = mdp::get_all_rigidbodies();
 
     if (drones.size() > 0) {

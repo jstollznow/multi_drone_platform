@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc,argv,"ps4_remote");
     ps4_remote::mySpin = new ros::AsyncSpinner(1,&ps4_remote::myQueue);
-    mdp::initialise(SERVER_FREQ);
+    mdp::initialise(SERVER_FREQ, "follow");
     bool start = true;
 
     ps4_remote::droneID = 0;

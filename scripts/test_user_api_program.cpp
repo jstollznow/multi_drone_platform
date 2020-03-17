@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv)
 {
-    mdp::initialise(100);
+    mdp::initialise(100,  "t2");
 
     int a;
     scanf("Enter a number to continue: %d", &a);

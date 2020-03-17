@@ -202,7 +202,7 @@ void do_figure_eight_with_follower()
 
 int main(int argc, char** argv)
 {
-    mdp::initialise(10); // update rate of 10Hz
+    mdp::initialise(10, "test_program"); // update rate of 10Hz
     auto drones = mdp::get_all_rigidbodies();
 
     #if (DO_FLIGHT_TEST)

@@ -9,7 +9,7 @@
 
 int main(int argc, char *argv[]) {
 
-    mdp::initialise(10);
+    mdp::initialise(10, "debug_app_test");
 
     // for potential testing
     std::vector<mdp::id> myDrones;

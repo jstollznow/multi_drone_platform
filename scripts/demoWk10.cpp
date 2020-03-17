@@ -4,7 +4,7 @@
 int main(int argc, char **argv)
 {
     // stage 1
-    mdp::initialise(100);
+    mdp::initialise(100, "d10");
 
 
     auto myDrones = mdp::get_all_rigidbodies();

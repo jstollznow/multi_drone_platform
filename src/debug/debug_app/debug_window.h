@@ -15,7 +15,7 @@
 
 #define UPDATE_RATE 10
 #define LOG_POST_RATE 500
-#define UI_PATH "/home/jacob/catkin_ws/src/multi_drone_platform/src/debug/debug_app/debug.ui"
+#define UI_PATH "/home/awmint/catkin_ws/src/multi_drone_platform/src/debug/debug_app/debug.ui"
 
 class debug_window: public Gtk::Window {
     public:
