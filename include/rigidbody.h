@@ -88,7 +88,6 @@ class rigidbody {
         void calculate_velocity();
         double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
         void set_state(const std::string& state);
-        void log(logger::log_type msgType, std::string message);
         void publish_physical_state() const;
 
         void handle_command();
@@ -111,11 +110,22 @@ class rigidbody {
         void takeoff(float height = 0.25f, float duration = 3.0f);
         void hover(float duration);
         void go_home(float yaw = 0.0f, float duration = 4.0f, float height = 0.0f);
+        void shutdown();
 
         geometry_msgs::Vector3 get_home_coordinates();
         void set_home_coordiates(geometry_msgs::Vector3 pos, bool relative);
 
     protected:
+        /**
+         * The log function is called to output any text for debugging or user feedback purposes depending
+         * the logger level. It posts to both the relevant ROS output stream (INFO, WARN, ERROR) and also to
+         * a log topic for use in the debugging windows.
+         * @param msgType msgType contains the level of the log. This can be one of four levels including
+         * INFO, DEBUG, WARN, ERROR.
+         * @param message message contains the text message
+         */
+        void log(logger::log_type msgType, std::string message);
+        
         // Wrapper Methods
         /**
          * The on_update function is called at the update rate defined in the drone-server, by default this is 100Hz

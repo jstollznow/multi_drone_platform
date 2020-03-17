@@ -53,10 +53,10 @@ struct node_data {
     std::unordered_map<uint32_t, drone_data> droneData;
 }* nodeData;
 
-void initialise(double pUpdateRate) {
+void initialise(double pUpdateRate, std::string nodeName) {
     nodeData = new node_data;
     int intVal = 0;
-    ros::init(intVal, (char**)nullptr, FRAME_ID);
+    ros::init(intVal, (char**)nullptr, nodeName);
 
     ROS_INFO("Initialising Client API Connection");
 
@@ -200,7 +200,7 @@ velocity_data get_velocity(const mdp::id& pRigidbodyID) {
     data.x =                Vel->twist.linear.x;
     data.y =                Vel->twist.linear.y;
     data.z =                Vel->twist.linear.z;
-    data.yaw =              Vel->twist.angular.y;
+    data.yawRate =          Vel->twist.angular.y;
     return data;
 }
 

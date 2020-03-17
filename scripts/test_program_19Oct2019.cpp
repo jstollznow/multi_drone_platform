@@ -167,9 +167,9 @@ void do_figure_eight_with_follower()
     vel_msg.yawRate = 180.0;   // 360 degrees in 2 seconds
 
     // loop for 10 seconds
-    int frames_every_two_seconds = (mdp::rate() * 2);
+    int frames_every_two_seconds = (10 * 2);
     float seconds_to_run_for = 10.0f;
-    int frames = seconds_to_run_for * mdp::rate();
+    int frames = seconds_to_run_for * 10;
 
     mdp::spin_once();   // reset loop rate before beginning loop dependant code
 

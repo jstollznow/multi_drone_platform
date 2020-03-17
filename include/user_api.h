@@ -53,7 +53,7 @@ struct velocity_data {
     id respectiveID{};
     uint64_t timeStampNsec = 0; // fun-fact: valid until July 21, 2554
     float x = 0.0f, y = 0.0f, z = 0.0f;
-    float yawrate = 0.0f;
+    float yawRate = 0.0f;
     /**
      * checks whether the current structure data is valid. This will return false if the respective mdp::id does not
      * exist on the drone-server or if otherwise the containing data is invalid.
@@ -108,8 +108,9 @@ struct timings {
 /**
  * initialises the required data structures and connections to communicate with the multi-drone platform.
  * @param updateRate the desired update rate for this user application.
+ * @param nodeName the name of the node.
  */
-void initialise(double updateRate);
+void initialise(double updateRate, std::string nodeName);
 
 /**
  * terminates the multi-drone platform application, de-allocating data structures created through initialise()
