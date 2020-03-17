@@ -1,8 +1,17 @@
 #include "drone_server.h"
+
+#include <csignal>
+#include <utility>
+
 #include "multi_drone_platform/api_update.h"
+
+drone_server* globalDroneServer = nullptr;
+bool globalShouldShutdown = false;
+bool globalGoodShutDown = true;
 
 
 drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
+    node.setParam(SHUTDOWN_PARAM, false);
     inputAPISub = node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 2, &drone_server::api_callback, this);
     emergencySub = node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::emergency_callback, this);
     std::string logTopic = NODE_NAME;
@@ -37,18 +46,41 @@ drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
 }
 
 drone_server::~drone_server() {
+    this->log(logger::INFO, "Shutting down drone server");
     this->shutdown();
 }
 
 void drone_server::shutdown() {
     for (size_t i = 0; i < rigidbodyList.size(); i++) {
+        if (rigidbodyList[i] != nullptr) {
+            rigidbodyList[i]->shutdown();
+        }
+    }
+    
+    /* sleep until drones have all landed */
+    this->log(logger::INFO, "Waiting for drones to land...");
+    bool allLanded = false;
+    while (!allLanded) {
+        allLanded = true;
+
+        for (size_t i = 0; i < rigidbodyList.size(); i++) {
+            if (rigidbodyList[i] != nullptr) {
+                rigidbodyList[i]->update(rigidbodyList);
+                if (rigidbodyList[i]->state != std::string("LANDED")) {
+                    allLanded = false;
+                }
+            }
+        }
+
+        if (!allLanded) {
+            loopRate.sleep();
+        }
+    }
+
+    for (size_t i = 0; i < rigidbodyList.size(); i++) {
         remove_rigidbody(i);
     }
     rigidbodyList.clear();
-    // is shutdown called before or after ROS is killed?
-    // if after uncomment following line and comment printf
-    // this->log(logger::INFO, "Shutting down");
-    printf("Shutting down drone server\n");
 }
 
 // @TODO: implementation task on Trello
@@ -58,7 +90,7 @@ void drone_server::init_rigidbodies_from_VRPN() {
 }
 
 
-mdp_id drone_server::add_new_rigidbody(std::string pTag) {
+mdp_id drone_server::add_new_rigidbody(const std::string& pTag) {
     mdp_id ID;
     ID.name = "";
     ID.numeric_id = rigidbodyList.size();
@@ -67,7 +99,7 @@ mdp_id drone_server::add_new_rigidbody(std::string pTag) {
         /* update drone state on param server */
 
         rigidbodyList.push_back(RB);
-        ID.name = pTag.c_str();
+        ID.name = pTag;
         
         RB->mySpin.start();
 
@@ -83,8 +115,9 @@ void drone_server::remove_rigidbody(unsigned int pDroneID) {
     if (pDroneID < rigidbodyList.size()) {
         if (rigidbodyList[pDroneID] != nullptr) {
             
-            this->log(logger::WARN, "Removing '" + rigidbodyList[pDroneID]->get_name() + "'");
+            this->log(logger::INFO, "Removing '" + rigidbodyList[pDroneID]->get_name() + "'");
 
+            rigidbodyList[pDroneID]->mySpin.stop();
             delete rigidbodyList[pDroneID];
             /* and set to null */
             rigidbodyList[pDroneID] = nullptr;
@@ -111,18 +144,18 @@ bool drone_server::get_rigidbody_from_drone_id(uint32_t pID, rigidbody*& pReturn
 void drone_server::run() {
     ros::Time frameStart, frameEnd, rigidbodyStart, rigidbodyEnd, waitTimeStart, waitTimeEnd;
     int timingPrint = 0;
-    while (ros::ok()) {
+    node.getParam(SHUTDOWN_PARAM, globalShouldShutdown);
+    while (!globalShouldShutdown) {
         frameStart = ros::Time::now();
         /* do all the ros callback event stuff */
         ros::spinOnce();
 
         /* call update on every valid rigidbody */
         rigidbodyStart = ros::Time::now();
-        for (size_t i = 0; i < rigidbodyList.size(); i++) {
-            if (rigidbodyList[i] == nullptr) continue;
+        for (auto & rigidbody : rigidbodyList) {
+            if (rigidbody == nullptr) continue;
 
-            rigidbodyList[i]->update(rigidbodyList);
-
+            rigidbody->update(rigidbodyList);
         }
         rigidbodyEnd = ros::Time::now();
         
@@ -161,10 +194,12 @@ void drone_server::run() {
             timeToUpdateDrones = 0.0f;
         }
         timingPrint++;
+        if (!globalShouldShutdown) {
+            if (!node.getParam(SHUTDOWN_PARAM, globalShouldShutdown)) {
+                globalShouldShutdown = true;
+            }
+        }
     }
-    ros::Duration d(2.0);
-    d.sleep();
-    std::cout<<std::endl;
 }
 
 void drone_server::emergency_callback(const std_msgs::Empty::ConstPtr& msg) {
@@ -265,15 +300,43 @@ bool drone_server::api_list_service(tf2_msgs::FrameGraph::Request &req, tf2_msgs
 }
 
 void drone_server::log(logger::log_type logType, std::string message) {
-    logger::post_log(logType, "Drone Server", message, logPublisher);
+    logger::post_log(logType, "Drone Server", std::move(message), logPublisher);
 }
 
 
+#define RESET   "\033[0m"
+#define BOLDRED     "\033[1m\033[31m"      /* Bold Red */
+#define BOLDGREEN   "\033[1m\033[32m"      /* Bold Green */
+
+void signal_handler(int sig) {
+    globalGoodShutDown = false;
+    globalShouldShutdown = true;
+}
+
 int main(int argc, char **argv) {
-    ros::init(argc, argv, NODE_NAME);
+    ros::init(argc, argv, NODE_NAME, ros::init_options::NoSigintHandler);
 
-    drone_server server;
-    server.run();
+    signal(SIGINT, signal_handler);
 
+    globalDroneServer = new drone_server;
+    globalDroneServer->run();
+
+    delete globalDroneServer;
+
+    printf("Shutting down ROS\n");
+    ros::shutdown();
+    if (globalGoodShutDown) {
+        printf(
+                BOLDGREEN
+                "Drone server shut down correctly, closing additional ros nodes.\n"
+                "Ignore the following boxed red text:\n"
+                RESET);
+    } else {
+        printf("\n\n\n"
+               BOLDRED
+               "WARNING: CTRL-C CALLED BY USER, DRONE SERVER MAY NOT SHUTDOWN CORRECTLY.\n"
+               "TO PROPERLY SHUTDOWN SET THE ROS PARAM '/%s' TO true INSTEAD"
+               RESET "\n\n\n", SHUTDOWN_PARAM);
+    }
     return 0;
 }

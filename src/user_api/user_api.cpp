@@ -64,7 +64,7 @@ void terminate() {
     // land all active drones
     auto drones = get_all_rigidbodies();
     for (size_t i = 0; i < drones.size(); i++) {
-        if (get_state({i, ""}) != "LANDED")
+        if (get_state({(uint32_t)i, ""}) != "LANDED")
             cmd_land(drones[i]);
     }
     for (size_t i = 0; i < drones.size(); i++) {
@@ -345,7 +345,9 @@ void sleep_until_idle(mdp_api::id pDroneID) {
         if (droneState == "IDLE") break;
 
         spin_once();
-        ros::param::get(stateParam, droneState);
+        if (!ros::param::get(stateParam, droneState)) {
+            return;
+        }
     }
 }
 

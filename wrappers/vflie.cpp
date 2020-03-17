@@ -78,7 +78,7 @@ public:
         this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> ("/despos", 1);
         // @TODO, add a unique home point system
         
-        int hpx = 0;
+        double hpx = 0.0;
         if (tag == "vflie_00") {
             hpx = -1.0;
         } else if (tag == "vflie_01") {
