@@ -11,7 +11,7 @@ void do_drone_flight_test(mdp::id drone)
 {
     auto drones = mdp::get_all_rigidbodies();
     if (drones.size() < 1) return;
-    mdp::cmd_takeoff(drones[0], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
+    mdp::cmd_takeoff(drones[0], 1.0, 5.0); // takeoff to a height of 0.5 over 2.0 seconds
     // mdp::cmd_takeoff(drones[1], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
 
     mdp::sleep_until_idle(drones[0]);

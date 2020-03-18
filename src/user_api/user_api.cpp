@@ -357,7 +357,7 @@ void sleep_until_idle(const mdp::id& pDroneID) {
     while (true) {
         if (droneState == "DELETED") break;
         if (droneState == "LANDED") break;
-        if (droneState == "IDLE") break;
+        if (droneState == "HOVERING") break;
 
         spin_once();
         if (!ros::param::get(stateParam, droneState)) {

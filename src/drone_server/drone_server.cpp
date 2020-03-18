@@ -25,25 +25,25 @@ drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
     
     // std::string droneName1;
     // std::string droneName2;
-    add_new_rigidbody("cflie_E7");
+    //add_new_rigidbody("cflie_E7");
     // if (Node.hasParam("cflie_test1"))
     // {
     //     Node.getParam("cflie_test1", droneName2);
     //     ROS_INFO("Adding %s", droneName2.c_str());
     //     addNewRigidbody(droneName2);
     // }
-//    int n = 6;
-//
-//    add_new_rigidbody("vflie_00");
-//
-//    for (int i = 1; i < n; i++) {
-//        std::string droneStr = "vflie_";
-//        if (i < 10) {
-//            droneStr += "0";
-//        }
-//        droneStr += std::to_string(i);
-//        add_new_rigidbody(droneStr);
-//    }
+    int n = 6;
+
+    add_new_rigidbody("vflie_00");
+
+    for (int i = 1; i < n; i++) {
+        std::string droneStr = "vflie_";
+        if (i < 10) {
+            droneStr += "0";
+        }
+        droneStr += std::to_string(i);
+        add_new_rigidbody(droneStr);
+    }
 }
 
 drone_server::~drone_server() {
@@ -67,7 +67,7 @@ void drone_server::shutdown() {
         for (size_t i = 0; i < rigidbodyList.size(); i++) {
             if (rigidbodyList[i] != nullptr) {
                 rigidbodyList[i]->update(rigidbodyList);
-                if (rigidbodyList[i]->state != std::string("LANDED")) {
+                if (rigidbodyList[i]->get_state() != rigidbody::flight_state::LANDED) {
                     allLanded = false;
                 }
             }
@@ -78,6 +78,7 @@ void drone_server::shutdown() {
         }
     }
 
+    this->log(logger::INFO, "Removing drones...");
     for (size_t i = 0; i < rigidbodyList.size(); i++) {
         remove_rigidbody(i);
     }

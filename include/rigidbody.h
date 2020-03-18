@@ -28,12 +28,19 @@ static std::map<std::string, int> apiMap = {
     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
 };
 
-class hover_timer {
+class mdp_timer {
+private:
+    bool isStage1Timeout = false;
     bool timerIsActive = false;
-    double timeoutTime;
+    double timeoutTime{};
 
-    void reset_timer(double duration);
+public:
+    bool is_active() const;
+    void close_timer();
+    void reset_timer(double duration, bool Stage1Timeout = false);
     bool has_timed_out();
+    bool is_stage_timeout() const;
+
 };
 
 /**
@@ -72,21 +79,19 @@ class rigidbody {
         ros::AsyncSpinner mySpin;
         ros::CallbackQueue myQueue;
         ros::Publisher apiPublisher;
-        flight_state state = flight_state::LANDED; /** The current state of the rigidbody */
-        ros::Time declaredStateTime;
+        flight_state state = flight_state::UNKNOWN; /** The current state of the rigidbody */
+        mdp_timer hoverTimer;
+        double declaredStateEndTime = 0.0;
         
     protected:
         std::vector<multi_drone_platform::api_update> commandQueue;
         std::string tag;
-        bool controllable = false;
 
         bool batteryDying = false;
 
-        double nextTimeoutGen;
         multi_drone_platform::api_update lastRecievedApiUpdate;
         ros::Time timeOfLastApiUpdate;
         ros::Time lastUpdate;
-        ros::Time lastCommandSet;
         std::queue<geometry_msgs::PoseStamped> motionCapture;
 
         // velocity handles
@@ -119,7 +124,7 @@ class rigidbody {
         void handle_command();
         void enqueue_command(multi_drone_platform::api_update command);
         void dequeue_command();
-        void reset_timeout(float timeout = 1.0f);
+        void do_stage_1_timeout();
         bool is_msg_different(multi_drone_platform::api_update msg);
 
         void set_desired_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool relativeXY, bool relativeZ);
