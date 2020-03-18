@@ -417,7 +417,7 @@ void rigidbody::dequeue_command() {
 }
 
 void rigidbody::emergency() {
-    this->set_state("EMERGENCY");
+    this->set_state("DELETED");
     this->on_emergency();
 }
 
@@ -452,7 +452,7 @@ void rigidbody::hover(float duration) {
     this->set_state("HOVER");
     // set the hover point based on current velocity
     // auto pos = this->CurrentPose.position;
-    geometry_msgs::Vector3 pos;
+    geometry_msgs::Vector3 pos{};
     // pos.x += CurrentVelocity.linear.x * 0.3;
     // pos.y += CurrentVelocity.linear.y * 0.3;
     // pos.z += CurrentVelocity.linear.z * 0.3;
