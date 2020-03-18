@@ -35,7 +35,6 @@ private:
     double timeoutTime{};
 
 public:
-    bool is_active() const;
     void close_timer();
     void reset_timer(double duration, bool Stage1Timeout = false);
     bool has_timed_out();
@@ -60,7 +59,6 @@ class rigidbody {
         LANDED,
         HOVERING,
         MOVING,
-        SHUTTING_DOWN,
         DELETED
     };
 

@@ -68,6 +68,7 @@ void initialise(double pUpdateRate, std::string nodeName) {
     nodeData->listClient = nodeData->node->serviceClient<tf2_msgs::FrameGraph> ("mdp_list_srv");
 
     sleep(1);
+    get_all_rigidbodies();
 
     ROS_INFO("Initialised Client API Connection");
 }
@@ -77,7 +78,7 @@ void terminate() {
     // land all active drones
     auto drones = get_all_rigidbodies();
     for (size_t i = 0; i < drones.size(); i++) {
-        if (get_state({static_cast<uint32_t>(i), ""}) != "LANDED")
+        if (get_state({static_cast<uint32_t>(i), ""}) != drone_state::LANDED)
             cmd_land(drones[i]);
     }
     for (const auto & drone : drones) {
@@ -366,14 +367,22 @@ void sleep_until_idle(const mdp::id& pDroneID) {
     }
 }
 
-std::string get_state(const mdp::id& pDroneID) {
+const std::unordered_map<std::string, mdp::drone_state> stateMap = {
+        {"UNKNOWN", mdp::drone_state::UNKNOWN},
+        {"LANDED", mdp::drone_state::LANDED},
+        {"HOVERING", mdp::drone_state::HOVERING},
+        {"MOVING", mdp::drone_state::MOVING},
+        {"DELETED", mdp::drone_state::DELETED}
+};
+
+drone_state get_state(const mdp::id& pDroneID) {
     std::string stateParam = "mdp/drone_" + std::to_string(pDroneID.numericID) + "/state";
     std::string droneState;
     if (ros::param::get(stateParam, droneState)) {
-        return droneState;
+        return stateMap.at(droneState);
     } else {
         ROS_WARN("Failed to get current state of drone id: %d", pDroneID.numericID);
-        return "DELETED";
+        return drone_state::DELETED;
     }
 }
 

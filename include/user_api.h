@@ -106,6 +106,18 @@ struct timings {
 };
 
 /**
+ * A possible state the drone can be in. This enum is returned by mdp::get_state(...)
+ * @see get_state
+ */
+enum drone_state {
+    UNKNOWN,
+    LANDED,
+    HOVERING,
+    MOVING,
+    DELETED
+};
+
+/**
  * initialises the required data structures and connections to communicate with the multi-drone platform.
  * @param updateRate the desired update rate for this user application.
  * @param nodeName the name of the node.
@@ -242,6 +254,6 @@ void sleep_until_idle(const mdp::id& id);
  * @param id the id of the subject drone
  * @return a string representing the drones current state
  */
-std::string get_state(const mdp::id& id);
+drone_state get_state(const mdp::id& id);
 
 }

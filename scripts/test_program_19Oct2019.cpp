@@ -1,10 +1,11 @@
 #include "user_api.h"
 #include "ros/ros.h"
 
-#define DO_FLIGHT_TEST      1
+#define DO_FLIGHT_TEST      0
 #define DO_HOVER_TEST       0
 #define DO_BASEBALL_RUN     0
 #define DO_FIGURE_EIGHT     0   // velocity control, may be a bit risky
+#define DO_DONUTS           1
 
 
 void do_drone_flight_test(mdp::id drone)
@@ -200,6 +201,69 @@ void do_figure_eight_with_follower()
     mdp::sleep_until_idle(drones[1]);
 }
 
+void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
+    mdp::cmd_takeoff(baseDrone);
+    mdp::cmd_takeoff(donutDrone, 1.0);
+
+    mdp::sleep_until_idle(baseDrone);
+    mdp::sleep_until_idle(donutDrone);
+
+    std::array<std::array<double, 3>, 5> positions = {
+            {{-0.5, 0, 0.0},
+            {0.0, -0.5, 0.0},
+            {1.0, 0.0, 0.0},
+            {0.0, 0.5, 0.0},
+            {-0.5, 0.0, 0.0}}
+    };
+
+    mdp::position_msg baseMsg;
+    baseMsg.relative = false;
+    baseMsg.keepHeight = true;
+    baseMsg.position = positions[0];
+    baseMsg.duration = 6.0;
+    baseMsg.yaw = 0.0;
+
+    mdp::spin_once();
+    auto baseDronePos = mdp::get_position(baseDrone);
+
+    mdp::position_msg donutMsg;
+    donutMsg.relative = false;
+    donutMsg.keepHeight = true;
+    donutMsg.position = {baseDronePos.x, baseDronePos.y, 0.0};
+    donutMsg.duration = 3.0;
+    donutMsg.yaw = 0.0;
+
+    mdp::set_drone_position(donutDrone, donutMsg);
+    mdp::sleep_until_idle(donutDrone);
+    donutMsg.duration = 0.5;
+
+    mdp::spin_once();
+    for (size_t i = 0; i < positions.size(); i++) {
+        baseMsg.position = positions[i];
+        mdp::set_drone_position(baseDrone, baseMsg);
+        mdp::spin_once();
+
+        while (mdp::get_state(baseDrone) != mdp::drone_state::HOVERING) {
+            baseDronePos = mdp::get_position(baseDrone);
+
+            double timeNow = ros::Time::now().toSec();
+            double donutX = sin(timeNow) * 0.6;
+            double donutY = cos(timeNow) * 0.6;
+
+            donutMsg.position = {baseDronePos.x + donutX, baseDronePos.y + donutY, 0.0};
+            mdp::set_drone_position(donutDrone, donutMsg);
+
+            mdp::spin_once();
+        }
+    }
+
+    mdp::go_to_home(baseDrone);
+    mdp::go_to_home(donutDrone);
+
+    mdp::sleep_until_idle(baseDrone);
+    mdp::sleep_until_idle(donutDrone);
+}
+
 int main(int argc, char** argv)
 {
     mdp::initialise(10, "test_program"); // update rate of 10Hz
@@ -230,6 +294,12 @@ int main(int argc, char** argv)
     #if (DO_FIGURE_EIGHT)
         do_figure_eight_with_follower();
     #endif /* DO_FIGURE_EIGHT */
+
+#if (DO_DONUTS)
+        if (drones.size() >= 2) {
+            do_donuts(drones[0], drones[1]);
+        }
+#endif
 
     mdp::terminate();
 

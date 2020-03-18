@@ -175,7 +175,11 @@ float duration, bool relativeXY, bool relativeZ) {
     desPoseMsg.header.stamp = timeOfLastApiUpdate;
     desiredPosePublisher.publish(desPoseMsg);
 
-    this->declare_expected_state(flight_state::MOVING);
+    /* declare flight state to moving if this is not a hover message */
+    if (!(pos.x == 0.0f && pos.y == 0.0f && pos.z == 0.0f && relativeXY && relativeZ)) {
+        this->declare_expected_state(flight_state::MOVING);
+    }
+
     this->on_set_position(pos, yaw, duration, relativeXY);
 }
 
@@ -203,7 +207,7 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
 
 bool rigidbody::is_msg_different(multi_drone_platform::api_update msg) {
     double timeBetweenCommonMsgs = 0.5;
-    double distanceBetweenCommonMsgs = 0.1;
+    double distanceBetweenCommonMsgs = 0.02;
     double timeBetweenTwoMsgs = ros::Time::now().toSec() - timeOfLastApiUpdate.toSec();
     if (timeBetweenTwoMsgs > timeBetweenCommonMsgs) return true; // there has been significant time between msgs
     if (msg.msgType != lastRecievedApiUpdate.msgType) return true;        // they are not the same msg type
@@ -470,6 +474,10 @@ void rigidbody::log(logger::log_type msgType, std::string message) {
 
 
 void rigidbody::update_current_flight_state() {
+    if (this->get_state() == flight_state::DELETED) {
+        return;
+    }
+
     /* determine whether the last few poses are significantly different to suggest the drone is moving */
     geometry_msgs::Vector3& vel = currentVelocity.linear;
     double velocityMag = sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z));
@@ -524,7 +532,6 @@ std::string rigidbody::get_flight_state_string(rigidbody::flight_state input) {
         case LANDED:            return "LANDED";
         case HOVERING:          return "HOVERING";
         case MOVING:            return "MOVING";
-        case SHUTTING_DOWN:     return "SHUTTING DOWN";
         case DELETED:           return "DELETED";
     }
 }
