@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <queue>
 #include <ros/ros.h>
 #include "ros/callback_queue.h"
 #include "geometry_msgs/PoseStamped.h"
@@ -27,6 +28,14 @@ static std::map<std::string, int> apiMap = {
     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
 };
 
+class hover_timer {
+    bool timerIsActive = false;
+    double timeoutTime;
+
+    void reset_timer(double duration);
+    bool has_timed_out();
+};
+
 /**
  * @brief The base class for all drone wrappers.
  * the rigidbody class should be inherited
@@ -39,6 +48,15 @@ static std::map<std::string, int> apiMap = {
  * @ingroup public_api
  */
 class rigidbody {
+    enum flight_state {
+        UNKNOWN,
+        LANDED,
+        HOVERING,
+        MOVING,
+        SHUTTING_DOWN,
+        DELETED
+    };
+
     friend class drone_server;
 /* DATA */
     private:
@@ -54,6 +72,8 @@ class rigidbody {
         ros::AsyncSpinner mySpin;
         ros::CallbackQueue myQueue;
         ros::Publisher apiPublisher;
+        flight_state state = flight_state::LANDED; /** The current state of the rigidbody */
+        ros::Time declaredStateTime;
         
     protected:
         std::vector<multi_drone_platform::api_update> commandQueue;
@@ -67,7 +87,7 @@ class rigidbody {
         ros::Time timeOfLastApiUpdate;
         ros::Time lastUpdate;
         ros::Time lastCommandSet;
-        std::vector<geometry_msgs::PoseStamped> motionCapture;
+        std::queue<geometry_msgs::PoseStamped> motionCapture;
 
         // velocity handles
         geometry_msgs::Twist desiredVelocity;
@@ -80,14 +100,20 @@ class rigidbody {
         ros::Subscriber motionSubscriber;
         ros::NodeHandle droneHandle;
 
-        std::string state = "LANDED"; /** The current state of the rigidbody */
-
 
     /* FUNCTIONS */
     private:
         void calculate_velocity();
-        double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
-        void set_state(const std::string& state);
+        static double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
+
+        /* this function declares that we are expecting the drone to enter this state very soon. This expected overrides the physical state for the next 100ms or so.
+         * This is so that state immediately changes when a call to set position for instance is made (and so that wait_till_idle on the user api is not skipped over) */
+        void declare_expected_state(flight_state inputState);
+        void set_state(const flight_state& state);
+        const flight_state& get_state() const;
+        static std::string get_flight_state_string(flight_state input);
+        void update_current_flight_state();
+
         void publish_physical_state() const;
 
         void handle_command();
