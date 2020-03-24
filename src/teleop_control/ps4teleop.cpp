@@ -3,14 +3,16 @@
 #include "sensor_msgs/Joy.h"
 #include <vector>
 #include "user_api.h"
+#include <cmath>
 
 #define INPUT_TOP "/ps4"
 #define SERVER_FREQ 10
-#define UPDATE_RATE 2
+#define UPDATE_RATE 10
 
 #define TAKEOFF_TIME 3.0f
 #define GO_TO_HOME 4.0f
 
+#define MSG_DUR 2.0f
 // LIMIT LEVEL
 // 0 DEMO - SAFE
 // 1 MORE CONTROL
@@ -40,8 +42,6 @@ float maxY;
 float maxRise;
 float maxFall;
 
-
-std::array<double, 3> axesInput;
 ros::NodeHandle* myNode;
 ros::Subscriber sub;
 ros::CallbackQueue myQueue;
@@ -54,6 +54,7 @@ void control_update();
 void reset_input();
 void terminate();
 
+bool checkForHover();
 void command_handle(const sensor_msgs::Joy::ConstPtr& msg);
 bool emergency_handle(int allDrones, int oneDrone);
 bool option_change_handle(float idChange, int coordChange);
@@ -168,17 +169,17 @@ bool ps4_remote::high_lvl_command_handle(int takeoff, int land, int hover, int g
 
 bool ps4_remote::last_input_handle(float xAxes, float yAxes, float zUpTrigger, float zDownTrigger, float yawAxes) {    
     // Left Joystick (Top/Bottom)
-    float x = maxX*xAxes*2.0;
+    float x = maxX*xAxes * MSG_DUR;
 
     // Left Joystick (Left/Right)
-    float y = maxY*yAxes*2.0;
+    float y = maxY*yAxes * MSG_DUR;
     
     // Right Joystick (Top/Bottom)
-    lastInput.yaw =maxYaw*yawAxes*2.0;
+    lastInput.yaw =maxYaw*yawAxes * MSG_DUR;
 
     // Triggers
     // LT go down RT go up
-    float z = (maxFall/2.0f) * (zDownTrigger - 1)-(maxRise/2.0f) * (zUpTrigger - 1);
+    float z = ((maxFall) / MSG_DUR) * (zDownTrigger - 1)-((maxRise) / MSG_DUR) * (zUpTrigger - 1);
 
     lastInput.axesInput = {x, y, z};
     lastInput.lastUpdate = ros::Time::now();
@@ -208,6 +209,18 @@ void ps4_remote::command_handle(const sensor_msgs::Joy::ConstPtr& msg) {
    
 }
 
+bool ps4_remote::checkForHover () {
+    float deadzone = 0.1;
+    bool hoverComm = true;
+    for(int i = 0; i < 3; i++) {
+        if (abs(lastInput.axesInput[i]) > deadzone) {
+            hoverComm = false;
+            break;
+        }
+    }
+    return hoverComm;
+}
+
 void ps4_remote::control_update() {
 
         ROS_INFO("Control update: %d", lastInput.lastUpdate.nsec);
@@ -215,24 +228,22 @@ void ps4_remote::control_update() {
             highLevelCommand = false;
         }
         if (!highLevelCommand) {
-            if (!localCoord) {
+            if (true) {
                 ROS_INFO("%s: Change position by [%.2f, %.2f, %.2f] and yaw by %f", drones[droneID].name.c_str(),
                          lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
                 mdp::position_msg posMsg;
-                posMsg.duration = 2.0f;
+                posMsg.duration = MSG_DUR;
                 posMsg.keepHeight = true;
                 posMsg.relative = true;
                 posMsg.position = lastInput.axesInput;
                 posMsg.yaw = lastInput.yaw;
                 mdp::set_drone_position(drones[droneID], posMsg);
             }
+            else {
+//                mdp::cmd_hover(drones[droneID]);
+//                highLevelCommand = true;
+            }
         }
-//    }
-//    else {
-//        if (!highLevelCommand) {
-//            //mdp::cmd_hover(drones[droneID]);
-//        }
-//    }
 }
 
 void ps4_remote::input_callback(const sensor_msgs::Joy::ConstPtr& msg) {
@@ -245,8 +256,8 @@ void ps4_remote::define_limits() {
             maxYaw = 0.0f;
             maxX = 0.75f;
             maxY = 0.75f;
-            maxRise = 0.5f;
-            maxFall = 0.25f;
+            maxRise = 1.0f;
+            maxFall = 0.5f;
             break;
         // TEST
         case 1:

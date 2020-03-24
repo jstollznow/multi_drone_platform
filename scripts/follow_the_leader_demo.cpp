@@ -9,7 +9,7 @@
 #define UPDATE_RATE 10
 
 #define TAKEOFF_TIME 3.0f
-#define GO_TO_HOME 4.0f
+#define GO_TO_HOME_TIME 4.0f
 
 // LIMIT LEVEL
 // 0 DEMO - SAFE
@@ -283,8 +283,8 @@ void ps4_remote::run(int argc, char **argv) {
             }
         }
 
-        mdp::go_to_home(drones[0], GO_TO_HOME);
-        mdp::go_to_home(drones[1], GO_TO_HOME);
+        mdp::go_to_home(drones[0], GO_TO_HOME_TIME);
+        mdp::go_to_home(drones[1], GO_TO_HOME_TIME);
         mdp::sleep_until_idle(drones[0]);
         mdp::sleep_until_idle(drones[1]);
     }

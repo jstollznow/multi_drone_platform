@@ -80,9 +80,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-file(GLOB obj_src
-  "${CMAKE_CURRENT_SOURCE_DIR}/src/objects/*.cpp"
-)
 file(GLOB test_src
   "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.cpp"
 )
@@ -101,6 +98,11 @@ add_library(RIGIDBODY
 target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
 add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
 
+add_library(TELEOP
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/teleop_control/teleop.cpp
+)
+target_link_libraries(TELEOP ${catkin_LIBRARIES})
+add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
 
 add_library(DEBUGAPP
   ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_app.cpp
@@ -142,9 +144,6 @@ target_link_libraries(script ${catkin_LIBRARIES} MDP_API)
 add_executable(follow scripts/follow_the_leader_demo.cpp)
 target_link_libraries(follow ${catkin_LIBRARIES} MDP_API)
 
-add_executable(ps4teleop src/PS4_control/ps4teleop.cpp)
-target_link_libraries(ps4teleop ${catkin_LIBRARIES} MDP_API) 
-
 add_executable(tst_program scripts/test_program_19Oct2019.cpp)
 target_link_libraries(tst_program ${catkin_LIBRARIES} MDP_API) 
 
@@ -155,4 +154,7 @@ add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
 
 add_executable(debugAppTest src/debug/debug_app/debug_app_test.cpp)
-target_link_libraries(debugAppTest ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW RIGIDBODY LOGGER) 
+target_link_libraries(debugAppTest ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW RIGIDBODY LOGGER)
+
+add_executable(teleopTest src/teleop_control/teleop_test.cpp)
+target_link_libraries(teleopTest ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} MDP_API LOGGER)

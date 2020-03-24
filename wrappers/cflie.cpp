@@ -83,8 +83,6 @@ class cflie : public rigidbody {
         if (msg->data <= 3.15f) {
             ROS_WARN("Battery dying soon...");
             batteryDying = true;
-        } else {
-            batteryDying = false;
         }
     }
 
@@ -99,7 +97,7 @@ class cflie : public rigidbody {
         msg.request.tf_prefix = tag;
         msg.request.roll_trim = 0.0f;
         msg.request.pitch_trim = 0.0f;
-        msg.request.enable_logging = false;
+        msg.request.enable_logging = true;
         msg.request.enable_parameters = true;
         msg.request.use_ros_time = true;
         msg.request.enable_logging_imu = false;

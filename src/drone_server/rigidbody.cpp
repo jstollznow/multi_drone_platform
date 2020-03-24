@@ -140,7 +140,7 @@ float duration, bool relativeXY, bool relativeZ) {
 
     /* Simple static safeguarding */
     struct {
-        std::array<double, 2> x = {{-1.60, 0.95}};
+        std::array<double, 2> x = {{-1.60, 0.70}};
         std::array<double, 2> y = {{-1.30, 1.30}};
         std::array<double, 2> z = {{ 0.10, 1.80}};
     } staticSafeguarding;
@@ -216,7 +216,7 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
 
 bool rigidbody::is_msg_different(multi_drone_platform::api_update msg) {
     double timeBetweenCommonMsgs = 0.5;
-    double distanceBetweenCommonMsgs = 0.1;
+    double distanceBetweenCommonMsgs = 0.5;
     double timeBetweenTwoMsgs = ros::Time::now().toSec() - timeOfLastApiUpdate.toSec();
     if (timeBetweenTwoMsgs > timeBetweenCommonMsgs) return true; // there has been significant time between msgs
     if (msg.msgType != lastRecievedApiUpdate.msgType) return true;        // they are not the same msg type
@@ -482,7 +482,7 @@ void rigidbody::go_home(float yaw, float duration, float height) {
 
 void rigidbody::reset_timeout(float timeout) {
     this->log(logger::INFO, "Reset timer to " + std::to_string(timeout) + " seconds");
-    timeout = timeout - 0.2f;
+    timeout = timeout - 0.02f;
     timeout = std::max(timeout, 0.0f);
     nextTimeoutGen = ros::Time::now().toSec() + timeout;
     lastCommandSet = ros::Time::now();
