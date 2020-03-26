@@ -64,24 +64,29 @@ class cflie : public rigidbody {
         goToMsg.request.goal.x = goal.x;
         goToMsg.request.goal.y = goal.y;
         goToMsg.request.goal.z = goal.z;
-        ROS_INFO("GOTO: [%f, %f, %f] in %f, relative: %d", goal.x, goal.y, goal.z, duration, isRelative);
+        std::ostringstream logMsg;
+        logMsg<<"GO_TO ["<<goal.x<<", "<<goal.y<<", "<<goal.z<<"] in "<<duration<<" relative: "<<isRelative;
+
+        this->log(logger::DEBUG, logMsg.str());
         goToMsg.request.duration = ros::Duration(duration);
         goToMsg.request.yaw = yaw;
         goToMsg.request.relative = isRelative;
         
         auto startPoint = std::chrono::high_resolution_clock::now();
+
         if (!goToService.call(goToMsg)) {
-            ROS_WARN("GOTO FAILED ON '%s'", tag.c_str());
+            this->log(logger::WARN,"GO_TO failed");
             goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to", true);
         }
         long long start = std::chrono::time_point_cast<std::chrono::milliseconds> (startPoint).time_since_epoch().count();
         long long end = std::chrono::time_point_cast<std::chrono::milliseconds> (std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-        ROS_WARN("GOTO TOOK %lld ms", end - start);
+
+        this->log(logger::WARN, "GO_TO TOOK "+ std::to_string(end - start) + " ms");
     }
 
     void battery_log(const std_msgs::Float32::ConstPtr &msg) {
         if (msg->data <= 3.15f) {
-            ROS_WARN("Battery dying soon...");
+            this->log(logger::WARN, "Battery dying soon...");
             batteryDying = true;
         }
     }
@@ -109,9 +114,9 @@ class cflie : public rigidbody {
         msg.request.enable_logging_packets = false;
 
         if (addCrazyflieService.call(msg)) {
-            ROS_INFO("%s launched on Crazyflie Server", tag.c_str());
+            this->log(logger::INFO, "Launched on Crazyflie Server");
         } else {
-            ROS_ERROR("Could not add %s to Crazyflie Server, please check the drone tag", tag.c_str());
+            this->log(logger::ERROR, "Could not add to Crazyflie Server, please check the drone tag");
         }
 
         updateParams = droneHandle.serviceClient<crazyflie_driver::UpdateParams>("/" + tag + "/update_params");
@@ -183,33 +188,33 @@ class cflie : public rigidbody {
     }
 
     void on_takeoff(float height, float duration) override {
-        ROS_INFO("Takeoff sent to %s", tag.c_str());
+        this->log(logger::INFO, "Takeoff requested");
         crazyflie_driver::Takeoff msg;
         msg.request.duration = ros::Duration(duration);
         msg.request.height = height;
         if (!takeoffService.call(msg)) {
-            ROS_ERROR("Takeoff service failed");
+            this->log(logger::ERROR, "Takeoff service failed");
         }
     }
 
     void on_land(float duration) override {
-        ROS_INFO("Land sent to %s", tag.c_str());
+        this->log(logger::INFO, "Land requested");
         crazyflie_driver::Land msg;
         msg.request.duration = ros::Duration(duration);
         // 5cm above the ground?
         msg.request.height = 0.05f;
         if (!landService.call(msg)) {
-            ROS_ERROR("Land service failed");
+            this->log(logger::ERROR, "Land service failed");
         }
     }
 
     void on_emergency() override {
-        ROS_INFO("Emergency sent to %s", tag.c_str());
+        this->log(logger::INFO, "Emergency requested");
         std_srvs::Empty msg;
         if(emergencyService.call(msg)) {
-            ROS_INFO("Emergency land for %s successful", tag.c_str());
+            this->log(logger::INFO, "Emergency land successful");
         } else {
-            ROS_INFO("Emergency land for %s not successful", tag.c_str());
+            this->log(logger::INFO, "Emergency land was not successful");
         }
     }
 };

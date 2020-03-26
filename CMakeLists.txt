@@ -156,5 +156,5 @@ target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API)
 add_executable(debugAppTest src/debug/debug_app/debug_app_test.cpp)
 target_link_libraries(debugAppTest ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW RIGIDBODY LOGGER)
 
-add_executable(teleopTest src/teleop_control/teleop_test.cpp)
-target_link_libraries(teleopTest ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} MDP_API LOGGER)
+add_executable(teleop_test src/teleop_control/teleop_test.cpp)
+target_link_libraries(teleop_test ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} MDP_API TELEOP LOGGER)

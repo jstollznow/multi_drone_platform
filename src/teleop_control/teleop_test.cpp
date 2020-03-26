@@ -1,6 +1,7 @@
 #include "teleop.h"
 
 #define NODE_NAME "teleop"
+#define UPDATE_RATE 10
 
 
 int main(int argc, char **argv) {
