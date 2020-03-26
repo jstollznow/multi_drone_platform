@@ -255,26 +255,39 @@ void rigidbody::calculate_velocity()
 }
 
 void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    geometry_msgs::PoseStamped motionMsg;
+
+//  convert VRPN data to Z-Up
+    motionMsg.header = msg->header;
+
+    motionMsg.pose.position.x = msg->pose.position.y * -1;
+    motionMsg.pose.position.y = msg->pose.position.x;
+    motionMsg.pose.position.z = msg->pose.position.z;
+
+    motionMsg.pose.orientation.x = msg->pose.orientation.y * -1;
+    motionMsg.pose.orientation.y = msg->pose.orientation.x;
+    motionMsg.pose.orientation.z = msg->pose.orientation.z;
+    motionMsg.pose.orientation.w = msg->pose.orientation.w;
+
     if(motionCapture.size() == 0) {
-        homePosition.x = msg->pose.position.x;
-        homePosition.y = msg->pose.position.y;
-        homePosition.z = msg->pose.position.z;
+        homePosition.x = motionMsg.pose.position.x;
+        homePosition.y = motionMsg.pose.position.y;
+        homePosition.z = motionMsg.pose.position.z;
         
         std::string homePosLog = "HOME POS: [" + std::to_string(homePosition.x) + ", " 
         + std::to_string(homePosition.y) + ", " + std::to_string(homePosition.z) + "]";
         this->log(logger::INFO, homePosLog);
     }
     
-    motionCapture.push_back(*msg);
+    motionCapture.push_back(motionMsg);
     if (motionCapture.size() >= 2){this->calculate_velocity();}
     currentPose = motionCapture.front().pose;
-    // ROS_INFO("Current Position: x: %f, y: %f, z: %f",currPos.position.x, currPos.position.y, currPos.position.z);
     // @TODO: Orientation implementation
 
     this->publish_physical_state();
 
     this->lastUpdate = ros::Time::now();
-    this->on_motion_capture(msg);
+    this->on_motion_capture(motionMsg);
 }
 
 geometry_msgs::PoseStamped rigidbody::get_motion_capture() {

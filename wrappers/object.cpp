@@ -24,7 +24,7 @@ class object : public rigidbody {
 
     }
 
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) final {
+    void on_motion_capture(geometry_msgs::PoseStamped msg) final {
 
     }
     

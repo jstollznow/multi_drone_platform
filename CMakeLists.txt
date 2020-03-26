@@ -66,17 +66,13 @@ catkin_package(
   rviz
   std_msgs
   crazyflie_ros
-#  DEPENDS 
 )
 
 ###########
 ## Build ##
 ###########
 
-## Specify additional locations of header files
-## Your package locations should be listed before other locations
 include_directories(
-# include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -84,47 +80,35 @@ file(GLOB test_src
   "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.cpp"
 )
 
-# Declare a C++ library
-add_library(LOGGER
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/logger/logger.cpp
-)
-
-target_link_libraries(LOGGER ${catkin_LIBRARIES})
-add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
-
-add_library(RIGIDBODY
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/rigidbody.cpp
-)
-target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
-add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
-
-add_library(TELEOP
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/teleop_control/teleop.cpp
-)
-target_link_libraries(TELEOP ${catkin_LIBRARIES})
-add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
-
-add_library(DEBUGAPP
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_app.cpp
-)
-add_library(DEBUGWINDOW
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_window.cpp
-)
-target_link_libraries(DEBUGWINDOW ${catkin_LIBRARIES})
-add_dependencies(DEBUGWINDOW multi_drone_platform_generate_messages_cpp)
-
-target_link_libraries(DEBUGAPP ${catkin_LIBRARIES})
-add_dependencies(DEBUGAPP multi_drone_platform_generate_messages_cpp)
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTKMM gtkmm-3.0)
-
-add_library(MDP_API
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/user_api/user_api.cpp
-)
+# User API
+add_library(MDP_API ${CMAKE_CURRENT_SOURCE_DIR}/src/user_api/user_api.cpp)
 target_link_libraries(MDP_API ${catkin_LIBRARIES})
 add_dependencies(MDP_API multi_drone_platform_generate_messages_cpp)
 
+#Various libraries in MDP
+
+add_library(LOGGER ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/logger/logger.cpp)
+target_link_libraries(LOGGER ${catkin_LIBRARIES})
+add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
+
+add_library(RIGIDBODY ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/rigidbody.cpp)
+target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
+add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
+
+add_library(TELEOP ${CMAKE_CURRENT_SOURCE_DIR}/src/teleop_control/teleop.cpp)
+target_link_libraries(TELEOP ${catkin_LIBRARIES})
+add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
+
+add_library(DEBUGAPP ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_app.cpp)
+target_link_libraries(DEBUGAPP ${catkin_LIBRARIES})
+add_dependencies(DEBUGAPP multi_drone_platform_generate_messages_cpp)
+
+add_library(DEBUGWINDOW ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_window.cpp)
+target_link_libraries(DEBUGWINDOW ${catkin_LIBRARIES})
+add_dependencies(DEBUGWINDOW multi_drone_platform_generate_messages_cpp)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GTKMM gtkmm-3.0)
 
 link_directories(${GTKMM_LIBRARY_DIRS})
 include_directories(include ${GTKMM_INCLUDE_DIRS})
@@ -138,23 +122,23 @@ add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE
 add_executable(shutdown_drone_server src/drone_server/shutdown_drone_server.cpp)
 target_link_libraries(shutdown_drone_server ${catkin_LIBRARIES})
 
-add_executable(script scripts/demoWk10.cpp)
-target_link_libraries(script ${catkin_LIBRARIES} MDP_API)
+add_executable(script_wk_10 scripts/demoWk10.cpp)
+target_link_libraries(script_wk_10 ${catkin_LIBRARIES} MDP_API)
 
-add_executable(follow scripts/follow_the_leader_demo.cpp)
-target_link_libraries(follow ${catkin_LIBRARIES} MDP_API)
+add_executable(follow_control scripts/follow_the_leader_demo.cpp)
+target_link_libraries(follow_control ${catkin_LIBRARIES} MDP_API)
 
-add_executable(tst_program scripts/test_program_19Oct2019.cpp)
-target_link_libraries(tst_program ${catkin_LIBRARIES} MDP_API) 
+add_executable(test_program scripts/test_program_19Oct2019.cpp)
+target_link_libraries(test_program ${catkin_LIBRARIES} MDP_API)
 
-add_executable(velControl scripts/testVelControl.cpp)
-target_link_libraries(velControl ${catkin_LIBRARIES} MDP_API) 
+add_executable(velocity_example scripts/testVelControl.cpp)
+target_link_libraries(velocity_example ${catkin_LIBRARIES} MDP_API)
 
 add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
 
-add_executable(debugAppTest src/debug/debug_app/debug_app_test.cpp)
-target_link_libraries(debugAppTest ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW RIGIDBODY LOGGER)
+add_executable(all_debug_windows src/debug/debug_app/debug_app_test.cpp)
+target_link_libraries(all_debug_windows ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW)
 
 add_executable(teleop_test src/teleop_control/teleop_test.cpp)
 target_link_libraries(teleop_test ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} MDP_API TELEOP LOGGER)

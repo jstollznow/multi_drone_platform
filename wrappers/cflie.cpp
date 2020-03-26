@@ -148,11 +148,11 @@ class cflie : public rigidbody {
         }
     }
     
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) override {
+    void on_motion_capture(geometry_msgs::PoseStamped msg) override {
         // external_pose.publish(msg);
         geometry_msgs::PointStamped pointMsg;
-        pointMsg.header = msg->header;
-        pointMsg.point = msg->pose.position;
+        pointMsg.header = msg.header;
+        pointMsg.point = msg.pose.position;
         externalPosition.publish(pointMsg);
     }
     

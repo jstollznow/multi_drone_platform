@@ -74,8 +74,11 @@ class vflie : public rigidbody {
 
 public:
     vflie(std::string tag, uint32_t id) : rigidbody(tag, id) {
+
+        std::string desPoseTopic = "mdp/drone_" + std::to_string(this->numericID) + "/des_pose";
+
         this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(tag), 1);
-        this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> ("/despos", 1);
+        this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (desPoseTopic, 1);
         // @TODO, add a unique home point system
         
         double hpx = 0.0;
@@ -126,7 +129,7 @@ public:
         this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    void on_motion_capture(geometry_msgs::PoseStamped msg) {
     }
     
     void on_update() override {

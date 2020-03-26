@@ -79,7 +79,6 @@ int main(int argc, char *argv[]) {
         
         for(size_t i = 0; i < myUIs.size(); i++) {
             app->add_window(*myUIs[i]);
-            // myUIs[i]->mySpin.start();
         }   
 
         });

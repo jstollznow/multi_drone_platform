@@ -49,7 +49,6 @@ class rigidbody {
         ros::Publisher currentTwistPublisher;
         ros::Publisher desiredPosePublisher;
         ros::Publisher desiredTwistPublisher;
-        uint32_t numericID;
         bool shutdownHasBeenCalled = false;
         ros::AsyncSpinner mySpin;
         ros::CallbackQueue myQueue;
@@ -58,6 +57,8 @@ class rigidbody {
     protected:
         std::vector<multi_drone_platform::api_update> commandQueue;
         std::string tag;
+        uint32_t numericID;
+
         bool controllable = false;
 
         bool batteryDying = false;
@@ -138,7 +139,7 @@ class rigidbody {
          * @param msg the motion capture frame presented as a ros PoseStamped. header contains time stamp information, pose
          * contains position data (cartesian from origin) and orientation data (as quaternion).
          */
-        virtual void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};
+        virtual void on_motion_capture(geometry_msgs::PoseStamped msg) {};
 
         /**
          * on_takeoff is called whenever a takeoff command is to be sent to the drone.
