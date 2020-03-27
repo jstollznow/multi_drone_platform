@@ -28,7 +28,7 @@ void do_drone_flight_test(mdp::id drone)
 
     for (size_t i = 0; i < 100; i++) {
         mdp::set_drone_position(drones[0], msg);    // tell drone to go to position outlined in msg
-        mdp::spin_once();
+        mdp::spin_until_rate();
     }
     // mdp::set_drone_position(drones[1], msg);
 
@@ -172,7 +172,7 @@ void do_figure_eight_with_follower()
     float seconds_to_run_for = 10.0f;
     int frames = seconds_to_run_for * 10;
 
-    mdp::spin_once();   // reset loop rate before beginning loop dependant code
+    mdp::spin_until_rate();   // reset loop rate before beginning loop dependant code
 
     for (int i = 0; i < frames; i++) {
         // loop for 10 seconds
@@ -183,7 +183,7 @@ void do_figure_eight_with_follower()
         mdp::set_drone_velocity(drones[0], vel_msg);
         mdp::set_drone_position(drones[1], msg);
 
-        mdp::spin_once();
+        mdp::spin_until_rate();
     }
 
     // set drones[1] height to just under drones[0] (so they dont crash into each other going home
@@ -223,7 +223,6 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
     baseMsg.duration = 6.0;
     baseMsg.yaw = 0.0;
 
-    mdp::spin_once();
     auto baseDronePos = mdp::get_position(baseDrone);
 
     mdp::position_msg donutMsg;
@@ -237,11 +236,11 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
     mdp::sleep_until_idle(donutDrone);
     donutMsg.duration = 0.5;
 
-    mdp::spin_once();
+    mdp::spin_until_rate();
     for (size_t i = 0; i < positions.size(); i++) {
         baseMsg.position = positions[i];
         mdp::set_drone_position(baseDrone, baseMsg);
-        mdp::spin_once();
+        mdp::spin_until_rate();
 
         while (mdp::get_state(baseDrone) != mdp::drone_state::HOVERING) {
             baseDronePos = mdp::get_position(baseDrone);
@@ -253,7 +252,7 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
             donutMsg.position = {baseDronePos.x + donutX, baseDronePos.y + donutY, 0.0};
             mdp::set_drone_position(donutDrone, donutMsg);
 
-            mdp::spin_once();
+            mdp::spin_until_rate();
         }
     }
 

@@ -3,6 +3,7 @@
 #include "ros/ros.h"
 #include "boost/algorithm/string/split.hpp"
 #include <unordered_map>
+#include <ros/callback_queue.h>
 
 #include "../drone_server/drone_server_msg_translations.cpp"
 
@@ -51,6 +52,7 @@ struct node_data {
     ros::ServiceClient dataClient;
     ros::ServiceClient listClient;
     std::unordered_map<uint32_t, drone_data> droneData;
+    ros::CallbackQueue asyncCallbackQueue;
 }* nodeData;
 
 void initialise(double pUpdateRate, std::string nodeName) {
@@ -68,6 +70,7 @@ void initialise(double pUpdateRate, std::string nodeName) {
     nodeData->listClient = nodeData->node->serviceClient<tf2_msgs::FrameGraph> ("mdp_list_srv");
 
     sleep(1);
+    nodeData->node->setCallbackQueue(&nodeData->asyncCallbackQueue);
     get_all_rigidbodies();
 
     ROS_INFO("Initialised Client API Connection");
@@ -84,6 +87,9 @@ void terminate() {
     for (const auto & drone : drones) {
         sleep_until_idle(drone);
     }
+
+    nodeData->droneData.clear();
+    nodeData->asyncCallbackQueue.disable();
 
     ROS_INFO("Finished Client API Connection");
     delete nodeData->loopRate;
@@ -113,20 +119,22 @@ std::vector<mdp::id> get_all_rigidbodies() {
 
         // add drone data for each drone
         for (size_t i = 0; i < vec.size(); i++) {
-            if (nodeData->droneData.count(vec[i].numericID) == 0) {
+            auto id = vec[i].numericID;
+            if (nodeData->droneData.count(id) == 0) {
                 /* create drone_data struct and init ros Subscribers */
-                nodeData->droneData[vec[i].numericID] = {};
+                nodeData->droneData[id] = {};
 
-                nodeData->droneData[vec[i].numericID].poseSubscriber = nodeData->node->subscribe<geometry_msgs::PoseStamped>(
-                    "mdp/drone_" + std::to_string(vec[i].numericID) + "/curr_pose",
+                nodeData->droneData[id].poseSubscriber = nodeData->node->subscribe<geometry_msgs::PoseStamped>(
+                    "mdp/drone_" + std::to_string(id) + "/curr_pose",
                     1, 
                     &drone_data::pose_callback, 
-                    &nodeData->droneData[vec[i].numericID]);
-                nodeData->droneData[vec[i].numericID].twistSubscriber = nodeData->node->subscribe<geometry_msgs::TwistStamped>(
-                    "mdp/drone_" + std::to_string(vec[i].numericID) + "/curr_twist",
+                    &nodeData->droneData[id]);
+
+                nodeData->droneData[id].twistSubscriber = nodeData->node->subscribe<geometry_msgs::TwistStamped>(
+                    "mdp/drone_" + std::to_string(id) + "/curr_twist",
                     1, 
                     &drone_data::twist_callback, 
-                    &nodeData->droneData[vec[i].numericID]);
+                    &nodeData->droneData[id]);
             }
         }
     } else {
@@ -180,6 +188,9 @@ position_data get_position(const mdp::id& pRigidbodyID) {
     // @TODO: make this a value you can check for validity
     if (nodeData->droneData.count(pRigidbodyID.numericID) == 0) return data;
 
+    // perform callback queue stuff to update positions
+    nodeData->asyncCallbackQueue.callAvailable();
+
     auto Pose = &nodeData->droneData[pRigidbodyID.numericID].pose;
     data.respectiveID =     pRigidbodyID;
     data.timeStampNsec =    Pose->header.stamp.toNSec();
@@ -194,6 +205,9 @@ velocity_data get_velocity(const mdp::id& pRigidbodyID) {
     velocity_data data;
     // if the drone id does not exist, return
     if (nodeData->droneData.count(pRigidbodyID.numericID) == 0) return data;
+
+    // perform callback queue stuff to update positions
+    nodeData->asyncCallbackQueue.callAvailable();
 
     auto Vel = &nodeData->droneData[pRigidbodyID.numericID].velocity;
     data.respectiveID =     pRigidbodyID;
@@ -336,10 +350,8 @@ timings get_operating_frequencies() {
     return timingsData;
 }
 
-void spin_once() {
+void spin_until_rate() {
     nodeData->loopRate->sleep();
-    if (ros::ok())
-        ros::spinOnce();
 }
 
 void sleep_until_idle(const mdp::id& pDroneID) {
@@ -360,7 +372,7 @@ void sleep_until_idle(const mdp::id& pDroneID) {
         if (droneState == "LANDED") break;
         if (droneState == "HOVERING") break;
 
-        spin_once();
+        spin_until_rate();
         if (!ros::param::get(stateParam, droneState)) {
             return;
         }

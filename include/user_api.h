@@ -239,7 +239,7 @@ timings get_operating_frequencies();
  * given in initialise(rate). It is recommended to call this function regularly throughout the program.
  * @see initialise
  */
-void spin_once();
+void spin_until_rate();
 
 /**
  * halts the program until the drone with the given id returns a state of IDLE, LANDED, or DELETED. i.e. this function
