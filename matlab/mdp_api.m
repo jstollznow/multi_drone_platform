@@ -10,7 +10,7 @@ classdef mdp_api
         list_srv_cli
         loop_rate_value
         loop_rate
-        DroneDataMap = containers.Map('KeyType', 'uint64')
+        DroneDataMap
     end
     
     methods (Access = private)
@@ -36,7 +36,7 @@ classdef mdp_api
             msg.Transform.Rotation.W = p.Results.duration;
         end
 
-        function Encoded = encoderelative(obj, relative, keep_height)
+        function Encoded = encoderelative(~, relative, keep_height)
             Encoded = ((1.0 * relative) + (2.0 * keep_height));
         end
     end
@@ -45,19 +45,22 @@ classdef mdp_api
         function obj = mdp_api(UpdateRate, NodeName)
             %MDP_API Construct an instance of this class
             %   Detailed explanation goes here
+            obj.DroneDataMap = containers.Map('KeyType', 'uint32', 'ValueType', 'any');
+            
             rosshutdown();
             rosinit();
-            obj.APINode = ros.Node(NodeName);
+            obj.APINode = robotics.ros.Node(NodeName);
 
             fprintf("Initialising Client API Connection\n");
-            obj.pub = rospublisher('/mdp_api', 'geometry_msgs/TransformStamped');
-            obj.list_srv_cli = rossvcclient('/mdp_api_list_srv');
-            obj.data_srv_cli = rossvcclient('/mdp_api_data_srv');
+            obj.pub = rospublisher('/mdp', 'geometry_msgs/TransformStamped');
+            obj.list_srv_cli = rossvcclient('/mdp_list_srv');
+            obj.data_srv_cli = rossvcclient('/mdp_data_srv');
 
             obj.loop_rate_value = UpdateRate;
             obj.loop_rate = rosrate(UpdateRate);
 
             pause(1.0);
+            getalldrones(obj);
             fprintf("Initialised Client API Connection\n");
             % pause for 1 seconds to ensure the publisher has initialised
         end
@@ -66,12 +69,14 @@ classdef mdp_api
             fprintf("Shutting Down Client API Connection\n");
             Drones = getalldrones(obj);
             for i = 1 : size(Drones)
-                cmdland(obj, Drones(i));
+                cmdland(obj, Drones(i), 4.0);
             end
             for i = 1 : size(Drones)
                 sleepuntilidle(obj, Drones(i));
             end
             fprintf("Finished Client API Connection\n");
+            delete(obj.APINode);
+            delete(obj.DroneDataMap);
             rosshutdown();
         end
 
@@ -88,13 +93,13 @@ classdef mdp_api
                 end
                 id_arr = split(drones_str(i), ':');
                 id = mdp_id(0, '');
-                id.NumericId = str2double(id_arr(1));
+                id.NumericId = uint32(str2double(id_arr(1)));
                 CellArr = id_arr(2);
                 id.Name = CellArr{:};
                 DroneList = [DroneList id];
 
                 % if drone does not exist in DroneDataMap, then add it
-                if not iskey(obj.DroneDataMap, id.NumericId)
+                if ~isKey(obj.DroneDataMap, id.NumericId)
                     DroneData = mdp_drone_data(obj.APINode, id.NumericId);
                     obj.DroneDataMap(id.NumericId) = DroneData;
                 end
@@ -104,11 +109,11 @@ classdef mdp_api
         function Pos = getposition(obj, drone_id)
             Pos = mdp_position_data;
 
-            if (iskey(obj.DroneDataMap, drone_id.NumericId))
-                Msg = obj.DroneDataMap(drone_id.NumericId).getlatestpose();
+            if (isKey(obj.DroneDataMap, drone_id.NumericId))
+                Msg = obj.DroneDataMap(drone_id.NumericId).getlatestpose()
 
                 Pos.DroneID = drone_id.NumericId;
-                Pos.TimeStampNSec = Msg.Header.Stamp.tonsec();
+                Pos.TimeStampNSec = Msg.Header.Stamp.Nsec;
                 Pos.X = Msg.Pose.Position.X;
                 Pos.Y = Msg.Pose.Position.Y;
                 Pos.Z = Msg.Pose.Position.Z;
@@ -127,11 +132,11 @@ classdef mdp_api
         function Vel = getvelocity(obj, drone_id)
             Vel = mdp_velocity_data;
 
-            if (iskey(obj.DroneDataMap, drone_id.NumericId))
+            if (isKey(obj.DroneDataMap, drone_id.NumericId))
                 Msg = obj.DroneDataMap(drone_id.NumericId).getlatesttwist();
 
                 Vel.DroneID = drone_id.NumericId;
-                Vel.TimeStampNSec = Msg.Header.Stamp.tonsec();
+                Vel.TimeStampNSec = Msg.Header.Stamp.Nsec;
                 Vel.X = Msg.Twist.Linear.X;
                 Vel.Y = Msg.Twist.Linear.Y;
                 Vel.Z = Msg.Twist.Linear.Z;

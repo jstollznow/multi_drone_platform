@@ -8,7 +8,7 @@ classdef mdp_flight_state
         DELETED
     end
 
-    methods
+    methods(Static)
         function State = convertstringtoflightstate(InputString)
             switch InputString
                 case 'UNKNOWN'
