@@ -4,11 +4,13 @@ classdef mdp_api
     %   Detailed explanation goes here
     
     properties (SetAccess = private)
+        APINode
         pub
         data_srv_cli
         list_srv_cli
         loop_rate_value
         loop_rate
+        DroneDataMap = containers.Map('KeyType', 'uint64')
     end
     
     methods (Access = private)
@@ -40,11 +42,13 @@ classdef mdp_api
     end
     
     methods
-        function obj = mdp_api(UpdateRate)
+        function obj = mdp_api(UpdateRate, NodeName)
             %MDP_API Construct an instance of this class
             %   Detailed explanation goes here
             rosshutdown();
             rosinit();
+            obj.APINode = ros.Node(NodeName);
+
             fprintf("Initialising Client API Connection\n");
             obj.pub = rospublisher('/mdp_api', 'geometry_msgs/TransformStamped');
             obj.list_srv_cli = rossvcclient('/mdp_api_list_srv');
@@ -67,8 +71,8 @@ classdef mdp_api
             for i = 1 : size(Drones)
                 sleepuntilidle(obj, Drones(i));
             end
-            rosshutdown();
             fprintf("Finished Client API Connection\n");
+            rosshutdown();
         end
 
         function DroneList = getalldrones(obj)
@@ -88,23 +92,28 @@ classdef mdp_api
                 CellArr = id_arr(2);
                 id.Name = CellArr{:};
                 DroneList = [DroneList id];
+
+                % if drone does not exist in DroneDataMap, then add it
+                if not iskey(obj.DroneDataMap, id.NumericId)
+                    DroneData = mdp_drone_data(obj.APINode, id.NumericId);
+                    obj.DroneDataMap(id.NumericId) = DroneData;
+                end
             end
         end
 
         function Pos = getposition(obj, drone_id)
-            req = rosmessage(obj.data_srv_cli);
-            req.Start.Header.Stamp.Sec = drone_id.NumericId;
-            req.Goal.Header.FrameId = 'POSITION';
-            
-            res = call(obj.data_srv_cli, req);
-            
             Pos = mdp_position_data;
-            Pos.X = res.Plan.Poses(1).Pose.Position.X;
-            Pos.Y = res.Plan.Poses(1).Pose.Position.Y;
-            Pos.Z = res.Plan.Poses(1).Pose.Position.Z;
-            
-            Pos.HeadingX = res.Plan.Poses(1).Pose.Orientation.X;
-            Pos.HeadingY = res.Plan.Poses(1).Pose.Orientation.Y;
+
+            if (iskey(obj.DroneDataMap, drone_id.NumericId))
+                Msg = obj.DroneDataMap(drone_id.NumericId).getlatestpose();
+
+                Pos.DroneID = drone_id.NumericId;
+                Pos.TimeStampNSec = Msg.Header.Stamp.tonsec();
+                Pos.X = Msg.Pose.Position.X;
+                Pos.Y = Msg.Pose.Position.Y;
+                Pos.Z = Msg.Pose.Position.Z;
+                Pos.Yaw = Msg.Pose.Orientation.Y;
+            end
         end
 
         function setposition(obj, drone_id, position_msg)
@@ -116,20 +125,18 @@ classdef mdp_api
         end    
         
         function Vel = getvelocity(obj, drone_id)
-            req = rosmessage(obj.data_srv_cli);
-            req.Start.Header.Stamp.Sec = drone_id.NumericId;
-            req.Goal.Header.FrameId = 'VELOCITY';
-            
-            res = call(obj.data_srv_cli, req);
-            
             Vel = mdp_velocity_data;
-            Vel.X = res.Plan.Poses(1).Pose.Position.X;
-            Vel.Y = res.Plan.Poses(1).Pose.Position.Y;
-            Vel.Z = res.Plan.Poses(1).Pose.Position.Z;
-            
-            Vel.HeadingX = res.Plan.Poses(1).Pose.Orientation.X;
-            Vel.HeadingY = res.Plan.Poses(1).Pose.Orientation.Y;
-            Vel.YawRate = res.Plan.Poses(1).Pose.Orientation.Z;
+
+            if (iskey(obj.DroneDataMap, drone_id.NumericId))
+                Msg = obj.DroneDataMap(drone_id.NumericId).getlatesttwist();
+
+                Vel.DroneID = drone_id.NumericId;
+                Vel.TimeStampNSec = Msg.Header.Stamp.tonsec();
+                Vel.X = Msg.Twist.Linear.X;
+                Vel.Y = Msg.Twist.Linear.Y;
+                Vel.Z = Msg.Twist.Linear.Z;
+                Vel.YawRate = Msg.Twist.Angular.Y;
+            end
         end
 
         function setvelocity(obj, drone_id, velocity_msg)
@@ -145,8 +152,8 @@ classdef mdp_api
             send(obj.pub, msg);
         end
         
-        function cmdland(obj, drone_id)
-            msg = genAPImsg(obj, drone_id.NumericId, "LAND");
+        function cmdland(obj, drone_id, duration)
+            msg = genAPImsg(obj, drone_id.NumericId, "LAND", 'duration', duration);
             send(obj.pub, msg);
         end
         
@@ -155,8 +162,8 @@ classdef mdp_api
             send(obj.pub, msg);
         end
         
-        function cmdhover(obj, drone_id)
-            msg = genAPImsg(obj, drone_id.NumericId, "HOVER");
+        function cmdhover(obj, drone_id, duration)
+            msg = genAPImsg(obj, drone_id.NumericId, "HOVER", 'duration', duration);
             send(obj.pub, msg);
         end
         
@@ -177,9 +184,6 @@ classdef mdp_api
             Pos.X = res.Plan.Poses(1).Pose.Position.X;
             Pos.Y = res.Plan.Poses(1).Pose.Position.Y;
             Pos.Z = res.Plan.Poses(1).Pose.Position.Z;
-            
-            Pos.HeadingX = res.Plan.Poses(1).Pose.Orientation.X;
-            Pos.HeadingY = res.Plan.Poses(1).Pose.Orientation.Y;
         end
         
         function cmdgohome(obj, drone_id, height, duration)
@@ -201,34 +205,32 @@ classdef mdp_api
             Timings = mdp_timings;
 
             Timings.DesiredDroneServerUpdateRate = res.Plan.Poses(1).Pose.Position.X;
-            Timings.AchievedDroneServerUpdateRate = res.Plan.Poses(1).Pose.Position.Y;
-            Timings.MotionCaptureUpdateRate = res.Plan.Poses(1).Pose.Position.Z;
+            Timings.ActualDroneServerUpdateRate = res.Plan.Poses(1).Pose.Position.Y;
+            Timings.MoCapUpdateRate = res.Plan.Poses(1).Pose.Position.Z;
             Timings.TimeToUpdateDrones = res.Plan.Poses(1).Pose.Orientation.X;
             Timings.WaitTimePerFrame = res.Plan.Poses(1).Pose.Orientation.Y;
         end
 
-        function spinonce(obj)
+        function spinuntilrate(obj)
             obj.loop_rate.waitfor();
-        end
-
-        function Rate = rate(obj)
-            Rate = obj.loop_rate_value;
         end
 
         function sleepuntilidle(obj, drone)
             fprintf("Sleeping until drone '%s' goes idle\n", drone.Name);
+
             obj.loop_rate.reset();
             obj.loop_rate.waitfor();
+
             StateParam = strcat("mdp/drone_", num2str(drone.NumericId), "/state");
             DroneState = "";
             Ptree = rosparam();
             DroneState = Ptree.get(StateParam);
             while true
-                if (DroneState == "DELETED" || DroneState == "LANDED" || DroneState == "IDLE" || DroneState == "")
+                if (DroneState == "DELETED" || DroneState == "LANDED" || DroneState == "HOVERING" || DroneState == "" || DroneState == "UNKNOWN")
                     break;
                 end
 
-                obj.spinonce();
+                obj.spinuntilrate();
                 DroneState = Ptree.get(StateParam);
             end
         end
@@ -236,7 +238,8 @@ classdef mdp_api
         function State = getstate(obj, drone)
             StateParam = strcat("mdp/drone_", num2str(drone.NumericId), "/state");
             Ptree = rosparam();
-            State = Ptree.get(StateParam);
+            StrState = Ptree.get(StateParam);
+            State = mdp_flight_state.convertstringtoflightstate(StrState);
         end
     end
 end
