@@ -8,8 +8,8 @@ classdef mdp_drone_data
     methods
         function obj = mdp_drone_data(RosNode, DroneID)
             TopicHeader = strcat('/mdp/drone_', num2str(DroneID));
-            obj.PoseSubscriber = robotics.ros.Subscriber(RosNode, strcat(TopicHeader, '/curr_pose'))
-            obj.TwistSubscriber = robotics.ros.Subscriber(RosNode, strcat(TopicHeader, '/curr_twist'))
+            obj.PoseSubscriber = robotics.ros.Subscriber(RosNode, strcat(TopicHeader, '/curr_pose'));
+            obj.TwistSubscriber = robotics.ros.Subscriber(RosNode, strcat(TopicHeader, '/curr_twist'));
         end
 
         function Pose = getlatestpose(obj)

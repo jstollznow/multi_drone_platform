@@ -110,7 +110,7 @@ classdef mdp_api
             Pos = mdp_position_data;
 
             if (isKey(obj.DroneDataMap, drone_id.NumericId))
-                Msg = obj.DroneDataMap(drone_id.NumericId).getlatestpose()
+                Msg = obj.DroneDataMap(drone_id.NumericId).getlatestpose();
 
                 Pos.DroneID = drone_id.NumericId;
                 Pos.TimeStampNSec = Msg.Header.Stamp.Nsec;
