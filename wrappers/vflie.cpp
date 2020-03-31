@@ -1,6 +1,6 @@
 #include "rigidbody.h"
 
-std::string get_pose_topic(std::string& tag) {
+std::string get_pose_topic(const std::string& tag) {
     return "/vrpn_client_node/" + tag + "/pose";
 }
 
@@ -29,7 +29,7 @@ geometry_msgs::Quaternion to_quaternion(double yaw) {
     return q;
 }
 
-class vflie : public rigidbody {
+class DRONE_WRAPPER(vflie, homePosX, homePosY)
     private:
     ros::Publisher posePub;
     ros::Publisher desPub;
@@ -73,35 +73,23 @@ class vflie : public rigidbody {
     }
 
 public:
-    vflie(std::string tag, uint32_t id) : rigidbody(tag, id) {
-        this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(tag), 1);
+    void on_init(std::vector<std::string> args) final {
+        this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(this->get_tag()), 1);
         this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> ("/despos", 1);
         // @TODO, add a unique home point system
-        
-        double hpx = 0.0;
-        if (tag == "vflie_00") {
-            hpx = -1.0;
-        } else if (tag == "vflie_01") {
-            hpx = 1.0;
-        } else if (tag == "vflie_02") {
-            hpx = 0.5;
-        } else if (tag == "vflie_03") {
-            hpx = -0.5;
-        }
-        this->homePosition.x = -1.0;
-        this->homePosition.y = hpx;
+
+        this->homePosition.x = atof(args[0].c_str());
+        this->homePosition.y = atof(args[1].c_str());
         this->homePosition.z = 0.0;
-        this->positionArray = {-1.0, hpx, 0.0};
+        this->positionArray = {this->homePosition.x, this->homePosition.y, 0.0};
 
         this->publish_current_pose();
     };
 
-    ~vflie() {
-
-    }
+    void on_deinit() final {}
 
     void on_set_position(geometry_msgs::Vector3 pos, 
-                        float yaw, 
+                        float Yaw,
                         float duration, 
                         bool isRelative) override {
 
@@ -126,7 +114,7 @@ public:
         this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) final {
     }
     
     void on_update() override {

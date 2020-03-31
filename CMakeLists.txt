@@ -37,6 +37,7 @@ add_message_files(
 
 add_service_files(
   FILES
+        add_drone.srv
 )
 
 
@@ -78,6 +79,11 @@ catkin_package(
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
+)
+
+link_directories(
+        ${catkin_LINK_DIRS}
+        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/natnet/lib
 )
 
 file(GLOB obj_src
@@ -130,8 +136,12 @@ include_directories(include ${GTKMM_INCLUDE_DIRS})
 # Programs and Bindings
 
 add_executable(drone_server src/drone_server/drone_server.cpp)
-target_link_libraries(drone_server ${catkin_LIBRARIES} RIGIDBODY LOGGER) 
+target_link_libraries(drone_server ${catkin_LIBRARIES} RIGIDBODY LOGGER)
 add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
+
+add_executable(add_drone src/drone_server/add_drone.cpp)
+target_link_libraries(add_drone ${catkin_LIBRARIES} RIGIDBODY LOGGER)
+add_dependencies(add_drone multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
 add_executable(shutdown_drone_server src/drone_server/shutdown_drone_server.cpp)
 target_link_libraries(shutdown_drone_server ${catkin_LIBRARIES})

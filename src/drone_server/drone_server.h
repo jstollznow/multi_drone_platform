@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 #include <vector>
 #include <memory>
+#include <multi_drone_platform/add_drone.h>
 
 #include "rigidbody.h"
 #include "wrappers.h"
@@ -15,11 +16,8 @@
 #define SUB_TOPIC "mdp"
 #define EMERGENCY_TOPIC "mdp_emergency"
 #define SHUTDOWN_PARAM "mdp/should_shut_down"
+#define ADD_DRONE_TOPIC "mdp/add_drone_srv"
 
-struct mdp_id {
-    std::string name = "";
-    uint32_t numeric_id = 0;
-};
 
 class drone_server {
     private:
@@ -31,6 +29,7 @@ class drone_server {
         ros::Publisher logPublisher;
         ros::ServiceServer listServer;
         ros::ServiceServer dataServer;
+        ros::ServiceServer addDroneServer;
 
         ros::Rate loopRate;
         float desiredLoopRate = LOOP_RATE_HZ;
@@ -41,7 +40,7 @@ class drone_server {
 
         void init_rigidbodies_from_VRPN();
 
-        mdp_id add_new_rigidbody(const std::string& pTag);
+        bool add_new_rigidbody(const std::string& pTag, std::vector<std::string> args);
         void remove_rigidbody(unsigned int pDroneID);
 
         void log(logger::log_type logType, std::string message);
@@ -56,6 +55,7 @@ class drone_server {
         void emergency_callback(const std_msgs::Empty::ConstPtr& msg);
         bool api_get_data_service(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &res);
         bool api_list_service(tf2_msgs::FrameGraph::Request &req, tf2_msgs::FrameGraph::Response &res);
+        bool add_drone_service(multi_drone_platform::add_drone::Request &req, multi_drone_platform::add_drone::Response &res);
 
         void run();
         void shutdown();
