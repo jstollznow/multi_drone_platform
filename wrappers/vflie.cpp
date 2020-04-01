@@ -132,7 +132,7 @@ public:
     void on_update() override {
         if (lastPoseUpdate < 0.0) {lastPoseUpdate = ros::Time::now().toSec(); return;}
         double deltaTime = ros::Time::now().toSec() - lastPoseUpdate;
-        double T = 2 * deltaTime;
+        double T = 10 * deltaTime;
 
         switch (moveType) {
             case move_type::POSITION: {

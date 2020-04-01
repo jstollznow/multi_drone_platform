@@ -1,4 +1,4 @@
-Api = mdp_api(10);
+Api = mdp_api(10, 'm');
 
 Drones = Api.getalldrones();
 if length(Drones) >= 1
@@ -27,8 +27,8 @@ if length(Drones) >= 1
     Api.sleepuntilidle(Drones(1));
     Api.sleepuntilidle(Drones(2));
 
-    Api.cmdland(Drones(1));
-    Api.cmdland(Drones(2));
+    Api.cmdland(Drones(1), 3.0);
+    Api.cmdland(Drones(2), 3.0);
 
     Api.sleepuntilidle(Drones(1));
     Api.sleepuntilidle(Drones(2));
