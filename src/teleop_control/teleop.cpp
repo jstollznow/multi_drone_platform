@@ -57,12 +57,6 @@ void teleop::run() {
     }
 }
 
-void teleop::reset_input() {
-    lastInput.axesInput = {0.0f, 0.0f, 0.0f};
-    lastInput.lastUpdate = ros::Time::now();
-    lastInput.yaw = 0.0f;
-}
-
 void teleop::log(logger::log_type logLevel, std::string msg) {
     logger::post_log(logLevel, NODE_NAME, msg, logPublisher);
 }
@@ -169,14 +163,14 @@ bool teleop::last_input_handle(float xAxes, float yAxes, float zUpTrigger, float
     float y = maxY * yAxes * MSG_DUR;
 
     // Right Joystick (Top/Bottom)
-    lastInput.yaw = maxYaw * yawAxes * MSG_DUR;
+    teleopInput.yaw = maxYaw * yawAxes * MSG_DUR;
 
     // Triggers
     // LT go down RT go up
     float z = ((maxFall) / MSG_DUR) * (zDownTrigger - 1) - ((maxRise) / MSG_DUR) * (zUpTrigger - 1);
 
-    lastInput.axesInput = {x, y, z};
-    lastInput.lastUpdate = ros::Time::now();
+    teleopInput.axesInput = {x, y, z};
+    teleopInput.lastUpdate = ros::Time::now();
 }
 void teleop::command_handle(const sensor_msgs::Joy::ConstPtr& msg) {
 
@@ -201,22 +195,39 @@ void teleop::command_handle(const sensor_msgs::Joy::ConstPtr& msg) {
 
 }
 
+std::array<double, 3> teleop::input_capped() {
+    double maxVelChange = 1.0;
+    std::array<double, 3> ret;
+    for (int i = 0; i < 3; i ++) {
+        double dir = (teleopInput.axesInput[i]/std::abs(teleopInput.axesInput[i]));
+        double relChange = std::min(maxVelChange, std::abs(lastMsgSent.velocity[i] - teleopInput.axesInput[i]));
+        ret[i] = dir * relChange;
+
+    }
+    return ret;
+}
+
+double teleop::yaw_capped() {
+
+}
+
 void teleop::control_update() {
 
-    if (lastInput.axesInput[0] != 0.0f || lastInput.axesInput[1] != 0.0f || lastInput.axesInput[2] != 0.0f || lastInput.yaw != 0.0f) {
+    if (teleopInput.axesInput[0] != 0.0f || teleopInput.axesInput[1] != 0.0f || teleopInput.axesInput[2] != 0.0f || teleopInput.yaw != 0.0f) {
         highLevelCommand = false;
     }
 
     if (!highLevelCommand) {
         ROS_INFO("%s: Change position by [%.2f, %.2f, %.2f] and yaw by %f", drones[controlIndex].name.c_str(),
-                 lastInput.axesInput[0], lastInput.axesInput[1], lastInput.axesInput[2], lastInput.yaw);
-        mdp::position_msg posMsg;
-        posMsg.duration = MSG_DUR;
-        posMsg.keepHeight = true;
-        posMsg.relative = true;
-        posMsg.position = lastInput.axesInput;
-        posMsg.yaw = lastInput.yaw;
-        mdp::set_drone_position(drones[controlIndex], posMsg);
+                 teleopInput.axesInput[0], teleopInput.axesInput[1], teleopInput.axesInput[2], teleopInput.yaw);
+        mdp::velocity_msg velocityMsg;
+        velocityMsg.duration = MSG_DUR;
+        velocityMsg.keepHeight = true;
+        velocityMsg.relative = true;
+        velocityMsg.velocity = input_capped();
+        velocityMsg.yawRate = teleopInput.yaw;
+        lastMsgSent = velocityMsg;
+        mdp::set_drone_velocity(drones[controlIndex], velocityMsg);
     }
     else if (ros::Time::now().toNSec() > highLevelCommandEnd.toNSec()){
         mdp::cmd_hover(drones[controlIndex], HOVER_TIME);

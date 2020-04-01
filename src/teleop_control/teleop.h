@@ -28,7 +28,8 @@ public:
     explicit teleop(std::vector<mdp::id> drones);
     void log (logger::log_type logLevel, std::string msg);
 private:
-    input lastInput;
+    input teleopInput;
+    mdp::velocity_msg lastMsgSent;
     std::vector<mdp::id> drones;
     int controlIndex;
     bool highLevelCommand;
@@ -50,16 +51,16 @@ private:
     void set_limits();
     void input_callback(const sensor_msgs::Joy::ConstPtr& msg);
     void control_update();
-    void reset_input();
-    void terminate();
 
-    bool checkForHover();
     void command_handle(const sensor_msgs::Joy::ConstPtr& msg);
     bool emergency_handle(int allDronesButton, int oneDroneButton);
     bool option_change_handle(float idChange, int coordChange);
     bool high_lvl_command_handle(int takeoff, int land, int hover, int goToHome);
     bool last_input_handle(float xAxes, float yAxes, float zUpTrigger, float zDownTrigger, float yawAxes);
+    void terminate();
 
+    std::array<double, 3> input_capped();
+    double yaw_capped();
 
 };
 
