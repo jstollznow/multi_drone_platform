@@ -25,7 +25,7 @@ teleop::teleop(std::vector<mdp::id> drones):spin(1, &queue) {
     node = ros::NodeHandle();
     node.setCallbackQueue(&queue);
 
-    std::string logTopic = "/" + (std::string)NODE_NAME + "/log";
+    std::string logTopic = "/mdp/" + (std::string)NODE_NAME + "/log";
 
     logPublisher = node.advertise<multi_drone_platform::log> (logTopic, 20);
     joySubscriber = node.subscribe<sensor_msgs::Joy>(INPUT_TOPIC, 1, &teleop::input_callback, this);
@@ -58,7 +58,7 @@ void teleop::run() {
 }
 
 void teleop::log(logger::log_type logLevel, std::string msg) {
-    logger::post_log(logLevel, NODE_NAME, msg, logPublisher);
+    logger::post_log(logLevel, NODE_NAME, logPublisher, msg);
 }
 
 bool teleop::emergency_handle(int allDronesButton, int oneDroneButton) {
@@ -196,13 +196,20 @@ void teleop::command_handle(const sensor_msgs::Joy::ConstPtr& msg) {
 }
 
 std::array<double, 3> teleop::input_capped() {
-    double maxVelChange = 1.0;
+    double maxVelChange = 0.25;
     std::array<double, 3> ret;
     for (int i = 0; i < 3; i ++) {
-        double dir = (teleopInput.axesInput[i]/std::abs(teleopInput.axesInput[i]));
-        double relChange = std::min(maxVelChange, std::abs(lastMsgSent.velocity[i] - teleopInput.axesInput[i]));
-        ret[i] = dir * relChange;
+        double dir = (teleopInput.axesInput[i] - lastMsgSent.velocity[i])/std::abs(teleopInput.axesInput[i] - lastMsgSent.velocity[i]);
+        double relChange = std::min(maxVelChange, std::abs(teleopInput.axesInput[i] - lastMsgSent.velocity[i]));
+        if (std::isnan(dir)) dir = 1.0f;
 
+        ret[i] =  lastMsgSent.velocity[i] + dir * relChange;
+        if (ret[i] != 0)
+        this->log(logger::DEBUG, "teleop: " +
+        std::to_string(teleopInput.axesInput[i]) +
+        " lastMsg: " +
+        std::to_string(lastMsgSent.velocity[i]) +
+        " Rel: " + std::to_string(ret[i]));
     }
     return ret;
 }

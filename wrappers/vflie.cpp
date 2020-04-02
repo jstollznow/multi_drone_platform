@@ -52,15 +52,21 @@ class vflie : public rigidbody {
     double lastPoseUpdate = -1.0;
 
     void publish_current_pose() {
-        geometry_msgs::PoseStamped msg;
-        msg.pose.position.x = positionArray[0];
-        msg.pose.position.y = positionArray[1];
-        msg.pose.position.z = positionArray[2];
-        msg.pose.orientation = to_quaternion(this->yaw);
+        geometry_msgs::Quaternion orientationVRPN = to_quaternion(this->yaw);
 
-        msg.header.stamp = ros::Time::now();
-        msg.header.frame_id = "map";
-        this->posePub.publish(msg);
+        geometry_msgs::PoseStamped translatedMsg;
+        translatedMsg.pose.position.x = positionArray[1];
+        translatedMsg.pose.position.y = positionArray[0] * -1;
+        translatedMsg.pose.position.z = positionArray[2];
+
+        translatedMsg.pose.orientation.x = orientationVRPN.y;
+        translatedMsg.pose.orientation.y = orientationVRPN.x * -1;
+        translatedMsg.pose.orientation.z = orientationVRPN.z;
+        translatedMsg.pose.orientation.w = orientationVRPN.w;
+
+        translatedMsg.header.stamp = ros::Time::now();
+        translatedMsg.header.frame_id = "map";
+        this->posePub.publish(translatedMsg);
     }
 
     void pub_des() {
@@ -95,7 +101,6 @@ public:
         this->homePosition.y = hpx;
         this->homePosition.z = 0.0;
         this->positionArray = {-1.0, hpx, 0.0};
-
         this->publish_current_pose();
     };
 
@@ -136,7 +141,6 @@ public:
         if (lastPoseUpdate < 0.0) {lastPoseUpdate = ros::Time::now().toSec(); return;}
         double deltaTime = ros::Time::now().toSec() - lastPoseUpdate;
         double T = 2 * deltaTime;
-
         switch (moveType) {
             case move_type::POSITION: {
 

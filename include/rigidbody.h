@@ -126,7 +126,17 @@ class rigidbody {
          * @param message message contains the text message
          */
         void log(logger::log_type msgType, std::string message);
-        
+
+        /**
+         * This log_coord function is very similar to log but eases the process of logging a Vector3 object
+         * which is used in velocity and position ROS messages
+         * @param msgType msgType contains the level of the log. This can be one of four levels including
+         * INFO, DEBUG, WARN, ERROR.
+         * @param dataLabel dataLabel contains the message to be sent with the set of coordinates
+         * @param data data contains the coordinates to be posted
+         */
+        void log_coord(logger::log_type msgType, std::string dataLabel, geometry_msgs::Vector3 data);
+
         // Wrapper Methods
         /**
          * The on_update function is called at the update rate defined in the drone-server, by default this is 100Hz

@@ -469,6 +469,7 @@ void rigidbody::hover(float duration) {
     // pos.x += CurrentVelocity.linear.x * 0.3;
     // pos.y += CurrentVelocity.linear.y * 0.3;
     // pos.z += CurrentVelocity.linear.z * 0.3;
+    this->log_coord(logger::DEBUG, "Position at hover request: ", mdp_conversions::point_to_vector3(currentPose.position));
     set_desired_position(pos, 0.0f, duration, true, true);
 }
 
@@ -502,5 +503,12 @@ void rigidbody::reset_timeout(float timeout) {
 }
 
 void rigidbody::log(logger::log_type msgType, std::string message) {
-    logger::post_log(msgType, this->tag, message, logPublisher);
+    logger::post_log(msgType, this->tag, logPublisher, message);
+}
+
+void rigidbody::log_coord(logger::log_type msgType, std::string dataLabel, geometry_msgs::Vector3 data) {
+    std::string message = dataLabel;
+    message += ": [";
+    message += std::to_string(data.x) + ", " + std::to_string(data.y) + ", " + std::to_string(data.z) +"]";
+    logger::post_log(msgType, this->tag, logPublisher, message);
 }

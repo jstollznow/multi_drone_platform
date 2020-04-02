@@ -301,7 +301,7 @@ bool drone_server::api_list_service(tf2_msgs::FrameGraph::Request &req, tf2_msgs
 }
 
 void drone_server::log(logger::log_type logType, std::string message) {
-    logger::post_log(logType, "Drone Server", std::move(message), logPublisher);
+    logger::post_log(logType, "Drone Server", logPublisher, std::move(message));
 }
 
 
