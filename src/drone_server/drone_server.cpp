@@ -67,7 +67,7 @@ void drone_server::shutdown() {
         for (size_t i = 0; i < rigidbodyList.size(); i++) {
             if (rigidbodyList[i] != nullptr) {
                 rigidbodyList[i]->update(rigidbodyList);
-                if (rigidbodyList[i]->state != std::string("LANDED")) {
+                if (rigidbodyList[i]->get_state() != rigidbody::flight_state::LANDED) {
                     allLanded = false;
                 }
             }
@@ -78,6 +78,7 @@ void drone_server::shutdown() {
         }
     }
 
+    this->log(logger::INFO, "Removing drones...");
     for (size_t i = 0; i < rigidbodyList.size(); i++) {
         remove_rigidbody(i);
     }

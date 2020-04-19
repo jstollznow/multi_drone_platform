@@ -1,10 +1,10 @@
+#include <queue>
 #include "rigidbody.h"
 #include "element_conversions.cpp"
 
 rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->tag = tag;
     this->numericID = id;
-    this->controllable = true; // drone or obstacle
     this->batteryDying = false;
     this->lastRecievedApiUpdate.msgType = "";
   
@@ -43,9 +43,7 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->log(logger::INFO, "Publishing current velocity to: " + currTwistTopic);
     this->log(logger::INFO, "Publishing desired velocity to: " + desTwistTopic);
 
-    // 1000 seconds on ground before timeout engaged 
-    set_state("LANDED");
-    reset_timeout(1000.0f);
+    this->set_state(flight_state::LANDED);
 }
 
 rigidbody::~rigidbody() {
@@ -68,12 +66,6 @@ void rigidbody::shutdown() {
 
     /* immediately handle go home command */
     this->handle_command();
-}
-
-void rigidbody::set_state(const std::string& state) {
-    this->log(logger::INFO, "Setting state to " + state);
-    this->state = state;
-    droneHandle.setParam("mdp/drone_" + std::to_string(this->numericID) + "/state", state);
 }
 
 std::string rigidbody::get_name() {
@@ -119,7 +111,7 @@ double rigidbody::vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3
 
 void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw,
 float duration, bool relativeXY, bool relativeZ) {
-    if (state.compare("LANDED") == 0) {
+    if (this->get_state() == flight_state::LANDED) {
         this->log(logger::WARN, "Go to position called on landed drone, ignoring");
         return;
     }
@@ -140,7 +132,7 @@ float duration, bool relativeXY, bool relativeZ) {
 
     /* Simple static safeguarding */
     struct {
-        std::array<double, 2> x = {{-1.60, 0.70}};
+        std::array<double, 2> x = {{-1.60, 0.95}};
         std::array<double, 2> y = {{-1.30, 1.30}};
         std::array<double, 2> z = {{ 0.10, 1.80}};
     } staticSafeguarding;
@@ -183,14 +175,16 @@ float duration, bool relativeXY, bool relativeZ) {
     desPoseMsg.header.stamp = timeOfLastApiUpdate;
     desiredPosePublisher.publish(desPoseMsg);
 
-    this->on_set_position(pos, yaw, duration, relativeXY);
-    this->set_state("MOVING");
+    /* declare flight state to moving if this is not a hover message */
+    if (!(pos.x == 0.0f && pos.y == 0.0f && pos.z == 0.0f && relativeXY && relativeZ)) {
+        this->declare_expected_state(flight_state::MOVING);
+    }
 
-    reset_timeout(duration);
+    this->on_set_position(pos, yaw, duration, relativeXY);
 }
 
 void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeZ) {
-    if (state.compare("LANDED") == 0) {
+    if (this->get_state() == flight_state::LANDED) {
         this->log(logger::WARN, "set velocity called on landed drone, ignoring");
         return;
     }
@@ -207,16 +201,13 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
 
     desiredTwistPublisher.publish(desTwistMsg);
 
+    this->declare_expected_state(flight_state::MOVING);
     this->on_set_velocity(vel, yawRate, duration, relativeXY);
-    
-    this->set_state("MOVING");
-
-    this->reset_timeout(duration);
 }
 
 bool rigidbody::is_msg_different(multi_drone_platform::api_update msg) {
     double timeBetweenCommonMsgs = 0.5;
-    double distanceBetweenCommonMsgs = 0.5;
+    double distanceBetweenCommonMsgs = 0.02;
     double timeBetweenTwoMsgs = ros::Time::now().toSec() - timeOfLastApiUpdate.toSec();
     if (timeBetweenTwoMsgs > timeBetweenCommonMsgs) return true; // there has been significant time between msgs
     if (msg.msgType != lastRecievedApiUpdate.msgType) return true;        // they are not the same msg type
@@ -247,14 +238,12 @@ void rigidbody::set_home_coordiates(geometry_msgs::Vector3 pos, bool relative) {
 
 void rigidbody::calculate_velocity()
 {
-    geometry_msgs::PoseStamped lastPos = motionCapture.front();
-    motionCapture.erase(motionCapture.begin());
-    geometry_msgs::PoseStamped firstPos = motionCapture.front();
-    currentVelocity = mdp_conversions::calc_vel(firstPos,lastPos);
+    currentVelocity = mdp_conversions::calc_vel(motionCapture.back(), motionCapture.front());
     // ROS_INFO("%s linear velocity [x: %f,y: %f,z: %f]", tag.c_str(), currVel.linear.x, currVel.linear.y, currVel.linear.z);
 }
 
 void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {
+    /* if this is the first recieved message, fill motionCapture with homePositions */
     geometry_msgs::PoseStamped motionMsg;
 
 //  convert VRPN data to Z-Up
@@ -270,6 +259,9 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     motionMsg.pose.orientation.w = msg->pose.orientation.w;
 
     if(motionCapture.size() == 0) {
+        motionCapture.push(motionMsg);
+        motionCapture.push(motionMsg);
+
         homePosition.x = motionMsg.pose.position.x;
         homePosition.y = motionMsg.pose.position.y;
         homePosition.z = motionMsg.pose.position.z;
@@ -278,12 +270,19 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
         + std::to_string(homePosition.y) + ", " + std::to_string(homePosition.z) + "]";
         this->log(logger::INFO, homePosLog);
     }
-    
-    motionCapture.push_back(motionMsg);
-    if (motionCapture.size() >= 2){this->calculate_velocity();}
-    currentPose = motionCapture.front().pose;
+
+    /* otherwise, erase oldest message and push back newest message */
+    motionCapture.pop();
+    motionCapture.push(motionMsg);
+    this->calculate_velocity();
+
+    currentPose = motionCapture.back().pose;
+    // ROS_INFO("Current Position: x: %f, y: %f, z: %f",currPos.position.x, currPos.position.y, currPos.position.z);
     // @TODO: Orientation implementation
 
+    if (ros::Time::now().toSec() > this->declaredStateEndTime) {
+        this->update_current_flight_state();
+    }
     this->publish_physical_state();
 
     this->lastUpdate = ros::Time::now();
@@ -291,11 +290,11 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
 }
 
 geometry_msgs::PoseStamped rigidbody::get_motion_capture() {
-    return motionCapture.front();
+    return motionCapture.back();
 }
 
 void rigidbody::publish_physical_state() const {
-    currentPosePublisher.publish(motionCapture.front());
+    currentPosePublisher.publish(motionCapture.back());
 
     geometry_msgs::TwistStamped stampedVel = {};
     stampedVel.header.stamp = ros::Time::now();
@@ -304,27 +303,17 @@ void rigidbody::publish_physical_state() const {
 }
 
 void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
-    if (ros::Time::now().toSec() >= nextTimeoutGen) {
-        if (state == "LANDING" || state == "LANDED") {
-            set_state("LANDED");
-            reset_timeout(100);
+    if (this->hoverTimer.has_timed_out()) {
+        if (this->hoverTimer.is_stage_timeout()) {
+            this->log(logger::WARN, "Timeout stage 2: Landing drone");
+
+            /* send land command through api */
+            multi_drone_platform::api_update msg;
+            msg.msgType = "LAND";
+            msg.duration = 5.0f;
+            apiPublisher.publish(msg);
         } else {
-            if (state != "IDLE") {
-                if (commandQueue.size() > 0) {
-                    this->log(logger::DEBUG, "Performing next queued command");
-                    handle_command();
-                } else {
-                    /* Go to hover */
-                    this->log(logger::DEBUG, "Timeout stage 1");
-                    this->log(logger::WARN, "Timeout hover");
-                    this->hover(TIMEOUT_HOVER);
-                    this->set_state("IDLE");
-                }
-            } else {
-                /* land drone because timeout */
-                this->log(logger::DEBUG, "Timeout stage 2");
-                this->land();
-            }
+            this->do_stage_1_timeout();
         }
     }
 
@@ -355,6 +344,7 @@ void rigidbody::handle_command() {
     noMove.x = noMove.y = noMove.z = 0.0f;
 
     if (commandQueue.size() > 0) {
+        this->hoverTimer.close_timer(); // stop timeout 2 from happening as drone has received a message
         bool isGoHomeMessage = false;
         multi_drone_platform::api_update msg = this->commandQueue.front();
         if (is_msg_different(msg)) {
@@ -389,6 +379,7 @@ void rigidbody::handle_command() {
                     if (msg.duration == 0.0f) msg.duration = 2.0f;
 
                     this->hover(msg.duration);
+                    this->hoverTimer.reset_timer(msg.duration - 0.05f);
                     break;
                 /* EMERGENCY */
                 case 5: 
@@ -430,47 +421,45 @@ void rigidbody::dequeue_command() {
 }
 
 void rigidbody::emergency() {
-    this->set_state("EMERGENCY");
+    this->set_state(flight_state::DELETED);
     this->on_emergency();
 }
 
 void rigidbody::land(float duration) {
     /* ignore if drone has already landed, or is already landing */
-    if (state.compare("LANDED") == 0 || state.compare("LANDING") == 0) {
+    if (this->get_state() == flight_state::LANDED) {
         return;
     }
 
-    this->set_state("LANDING");
+    this->declare_expected_state(flight_state::MOVING);
     this->on_land(duration);
-    reset_timeout(duration);
 }
 
 void rigidbody::takeoff(float height, float duration) {
-    if (state.compare("LANDED") != 0) {
+    if (this->get_state() != flight_state::LANDED) {
         this->log(logger::WARN, "takeoff called when already in flight, ignoring");
         return;
     }
 
-    this->set_state("TAKING OFF");
+    this->declare_expected_state(flight_state::MOVING);
     this->on_takeoff(height, duration);
-    reset_timeout(duration);
 }
 
 void rigidbody::hover(float duration) {
-    if (state.compare("LANDED") == 0) {
+    if (this->get_state() == flight_state::LANDED) {
         this->log(logger::WARN, "hover called on landed drone, ignoring");
         return;
     }
 
-    this->set_state("HOVER");
     // set the hover point based on current velocity
     // auto pos = this->CurrentPose.position;
-    geometry_msgs::Vector3 pos;
+    geometry_msgs::Vector3 pos{};
     // pos.x += CurrentVelocity.linear.x * 0.3;
     // pos.y += CurrentVelocity.linear.y * 0.3;
     // pos.z += CurrentVelocity.linear.z * 0.3;
     this->log_coord(logger::DEBUG, "Position at hover request: ", mdp_conversions::point_to_vector3(currentPose.position));
     set_desired_position(pos, 0.0f, duration, true, true);
+    this->declare_expected_state(flight_state::HOVERING);
 }
 
 void rigidbody::go_home(float yaw, float duration, float height) {
@@ -494,14 +483,6 @@ void rigidbody::go_home(float yaw, float duration, float height) {
     }
 }
 
-void rigidbody::reset_timeout(float timeout) {
-    this->log(logger::INFO, "Reset timer to " + std::to_string(timeout) + " seconds");
-    timeout = timeout - 0.02f;
-    timeout = std::max(timeout, 0.0f);
-    nextTimeoutGen = ros::Time::now().toSec() + timeout;
-    lastCommandSet = ros::Time::now();
-}
-
 void rigidbody::log(logger::log_type msgType, std::string message) {
     logger::post_log(msgType, this->tag, logPublisher, message);
 }
@@ -511,4 +492,105 @@ void rigidbody::log_coord(logger::log_type msgType, std::string dataLabel, geome
     message += ": [";
     message += std::to_string(data.x) + ", " + std::to_string(data.y) + ", " + std::to_string(data.z) +"]";
     logger::post_log(msgType, this->tag, logPublisher, message);
+}
+
+
+void rigidbody::update_current_flight_state() {
+    if (this->get_state() == flight_state::DELETED) {
+        return;
+    }
+
+    /* determine whether the last few poses are significantly different to suggest the drone is moving */
+    geometry_msgs::Vector3& vel = currentVelocity.linear;
+    double velocityMag = sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z));
+    // @TODO: find a good value for this
+    bool droneHasMoved = velocityMag > 0.02;
+
+    /* determine whether the drone is considered to be on the ground */
+    /* in this case, if the drone is less than 5cm in from its home height it is considered landed */
+    // @TODO: find a good value for this
+    bool droneIsOnTheGround = (motionCapture.back().pose.position.z < (homePosition.z + 0.05));
+
+
+    /* switch rigidbody's state to the detected state */
+    if (droneHasMoved) {
+        this->set_state(flight_state::MOVING);
+    } else if (!droneIsOnTheGround) {
+        /* if the drone is in flight and the drone has no velocity: 'HOVER' */
+        if (this->get_state() == flight_state::MOVING) {
+            // @TODO: FIX for landing (think of crazyflie landing routine, it will go into hover mode 5cm above ground)
+            /* drone has flicked from moving to hover, i.e. it has completed a command
+             * if the drone has any remaining commands begin that, otherwise go into timeout stage 1 */
+            if (!commandQueue.empty()) {
+                this->log(logger::DEBUG, "Performing next queued command");
+                handle_command();
+            } else {
+                /* Timeout stage 1 */
+                this->do_stage_1_timeout();
+            }
+        }
+    } else {
+        /* drone is not moving and it is on the ground */
+        this->set_state(flight_state::LANDED);
+    }
+
+}
+
+void rigidbody::set_state(const flight_state& inputState) {
+    if (inputState != this->get_state()) {
+        this->log(logger::INFO, "Setting state to " + get_flight_state_string(inputState));
+        this->state = inputState;
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->numericID) + "/state", get_flight_state_string(this->state));
+    }
+}
+
+const rigidbody::flight_state &rigidbody::get_state() const {
+    return this->state;
+}
+
+std::string rigidbody::get_flight_state_string(rigidbody::flight_state input) {
+    switch (input) {
+        case UNKNOWN:           return "UNKNOWN";
+        case LANDED:            return "LANDED";
+        case HOVERING:          return "HOVERING";
+        case MOVING:            return "MOVING";
+        case DELETED:           return "DELETED";
+    }
+}
+
+void rigidbody::declare_expected_state(rigidbody::flight_state inputState) {
+    this->set_state(inputState);
+    this->declaredStateEndTime = ros::Time::now().toSec() + 0.1;
+}
+
+void rigidbody::do_stage_1_timeout() {
+    this->log(logger::DEBUG, "Timeout stage 1");
+    this->hover(TIMEOUT_HOVER+1.0f);
+    this->hoverTimer.reset_timer(TIMEOUT_HOVER, true);
+    this->set_state(flight_state::HOVERING);
+}
+
+
+void mdp_timer::reset_timer(double duration, bool Stage1Timeout) {
+    this->timeoutTime = ros::Time::now().toSec() + duration;
+    this->timerIsActive = true;
+    this->isStage1Timeout = Stage1Timeout;
+}
+
+bool mdp_timer::has_timed_out() {
+    if (timerIsActive) {
+        if (ros::Time::now().toSec() >= this->timeoutTime) {
+            this->timerIsActive = false;
+            return true;
+        }
+    }
+    return false;
+}
+
+void mdp_timer::close_timer() {
+    this->timerIsActive = false;
+}
+
+bool mdp_timer::is_stage_timeout() const {
+    return this->isStage1Timeout;
 }

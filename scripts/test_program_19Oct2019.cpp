@@ -1,17 +1,18 @@
 #include "user_api.h"
 #include "ros/ros.h"
 
-#define DO_FLIGHT_TEST      1
+#define DO_FLIGHT_TEST      0
 #define DO_HOVER_TEST       0
 #define DO_BASEBALL_RUN     0
 #define DO_FIGURE_EIGHT     0   // velocity control, may be a bit risky
+#define DO_DONUTS           1
 
 
 void do_drone_flight_test(mdp::id drone)
 {
     auto drones = mdp::get_all_rigidbodies();
     if (drones.size() < 1) return;
-    mdp::cmd_takeoff(drones[0], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
+    mdp::cmd_takeoff(drones[0], 1.0, 5.0); // takeoff to a height of 0.5 over 2.0 seconds
     // mdp::cmd_takeoff(drones[1], 0.5, 2.0); // takeoff to a height of 0.5 over 2.0 seconds
 
     mdp::sleep_until_idle(drones[0]);
@@ -27,7 +28,7 @@ void do_drone_flight_test(mdp::id drone)
 
     for (size_t i = 0; i < 100; i++) {
         mdp::set_drone_position(drones[0], msg);    // tell drone to go to position outlined in msg
-        mdp::spin_once();
+        mdp::spin_until_rate();
     }
     // mdp::set_drone_position(drones[1], msg);
 
@@ -171,7 +172,7 @@ void do_figure_eight_with_follower()
     float seconds_to_run_for = 10.0f;
     int frames = seconds_to_run_for * 10;
 
-    mdp::spin_once();   // reset loop rate before beginning loop dependant code
+    mdp::spin_until_rate();   // reset loop rate before beginning loop dependant code
 
     for (int i = 0; i < frames; i++) {
         // loop for 10 seconds
@@ -182,7 +183,7 @@ void do_figure_eight_with_follower()
         mdp::set_drone_velocity(drones[0], vel_msg);
         mdp::set_drone_position(drones[1], msg);
 
-        mdp::spin_once();
+        mdp::spin_until_rate();
     }
 
     // set drones[1] height to just under drones[0] (so they dont crash into each other going home
@@ -198,6 +199,68 @@ void do_figure_eight_with_follower()
 
     mdp::sleep_until_idle(drones[0]);
     mdp::sleep_until_idle(drones[1]);
+}
+
+void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
+    mdp::cmd_takeoff(baseDrone);
+    mdp::cmd_takeoff(donutDrone, 1.0);
+
+    mdp::sleep_until_idle(baseDrone);
+    mdp::sleep_until_idle(donutDrone);
+
+    std::array<std::array<double, 3>, 5> positions = {
+            {{-0.5, 0, 0.0},
+            {0.0, -0.5, 0.0},
+            {1.0, 0.0, 0.0},
+            {0.0, 0.5, 0.0},
+            {-0.5, 0.0, 0.0}}
+    };
+
+    mdp::position_msg baseMsg;
+    baseMsg.relative = false;
+    baseMsg.keepHeight = true;
+    baseMsg.position = positions[0];
+    baseMsg.duration = 6.0;
+    baseMsg.yaw = 0.0;
+
+    auto baseDronePos = mdp::get_position(baseDrone);
+
+    mdp::position_msg donutMsg;
+    donutMsg.relative = false;
+    donutMsg.keepHeight = true;
+    donutMsg.position = {baseDronePos.x, baseDronePos.y, 0.0};
+    donutMsg.duration = 3.0;
+    donutMsg.yaw = 0.0;
+
+    mdp::set_drone_position(donutDrone, donutMsg);
+    mdp::sleep_until_idle(donutDrone);
+    donutMsg.duration = 0.5;
+
+    mdp::spin_until_rate();
+    for (size_t i = 0; i < positions.size(); i++) {
+        baseMsg.position = positions[i];
+        mdp::set_drone_position(baseDrone, baseMsg);
+        mdp::spin_until_rate();
+
+        while (mdp::get_state(baseDrone) != mdp::drone_state::HOVERING) {
+            baseDronePos = mdp::get_position(baseDrone);
+
+            double timeNow = ros::Time::now().toSec();
+            double donutX = sin(timeNow) * 0.6;
+            double donutY = cos(timeNow) * 0.6;
+
+            donutMsg.position = {baseDronePos.x + donutX, baseDronePos.y + donutY, 0.0};
+            mdp::set_drone_position(donutDrone, donutMsg);
+
+            mdp::spin_until_rate();
+        }
+    }
+
+    mdp::go_to_home(baseDrone);
+    mdp::go_to_home(donutDrone);
+
+    mdp::sleep_until_idle(baseDrone);
+    mdp::sleep_until_idle(donutDrone);
 }
 
 int main(int argc, char** argv)
@@ -230,6 +293,12 @@ int main(int argc, char** argv)
     #if (DO_FIGURE_EIGHT)
         do_figure_eight_with_follower();
     #endif /* DO_FIGURE_EIGHT */
+
+#if (DO_DONUTS)
+        if (drones.size() >= 2) {
+            do_donuts(drones[0], drones[1]);
+        }
+#endif
 
     mdp::terminate();
 

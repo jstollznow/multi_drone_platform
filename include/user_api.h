@@ -106,6 +106,18 @@ struct timings {
 };
 
 /**
+ * A possible state the drone can be in. This enum is returned by mdp::get_state(...)
+ * @see get_state
+ */
+enum drone_state {
+    UNKNOWN,
+    LANDED,
+    HOVERING,
+    MOVING,
+    DELETED
+};
+
+/**
  * initialises the required data structures and connections to communicate with the multi-drone platform.
  * @param updateRate the desired update rate for this user application.
  * @param nodeName the name of the node.
@@ -223,11 +235,24 @@ void set_drone_server_update_frequency(float updateFrequency);
 timings get_operating_frequencies();
 
 /**
- * evokes the user system to update drone position and velocity information. will also quantize to the update rate
- * given in initialise(rate). It is recommended to call this function regularly throughout the program.
+ * sleeps the program until the rate has passed as defined in mdp::initialise.
+ * Calling this regularly results in code being run in quantised time.
+ * for example in the following code, the function foo() will be called every 10Hz:
+ * @code
+ * void main() {
+ *   mdp::initialise(10, "example"); // loop rate set to 10Hz
+ *
+ *   while(true) {
+ *     foo(); // because of the spin below, this is called every 10Hz as defined in initialise
+ *     mdp::spin_until_rate(); // blocks until 10Hz has passed since last spin
+ *   }
+ *
+ *   mdp::terminate();
+ * }
+ * @endcode
  * @see initialise
  */
-void spin_once();
+void spin_until_rate();
 
 /**
  * halts the program until the drone with the given id returns a state of IDLE, LANDED, or DELETED. i.e. this function
@@ -242,6 +267,6 @@ void sleep_until_idle(const mdp::id& id);
  * @param id the id of the subject drone
  * @return a string representing the drones current state
  */
-std::string get_state(const mdp::id& id);
+drone_state get_state(const mdp::id& id);
 
 }
