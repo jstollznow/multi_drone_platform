@@ -15,6 +15,8 @@
 // 1 MORE CONTROL
 #define LIMIT_LEVEL 0
 
+
+
 teleop::teleop(std::vector<mdp::id> drones):spin(1, &queue) {
     this->drones = drones;
     this->controlIndex = 0;
@@ -101,19 +103,6 @@ bool teleop::option_change_handle(float idChange, int coordChange) {
 
         return true;
     }
-//    // options button
-//    else if (coordChange != 0) {
-//        highLevelCommand = true;
-//        if (localCoord) {
-//            localCoord = false;
-//            ROS_INFO("%s: Changing control to absolute coord", drones[controlIndex].name.c_str());
-//        }
-//        else {
-//            localCoord = true;
-//            ROS_INFO("%s: Changing control to relative coord", drones[controlIndex].name.c_str());
-//        }
-//        return true;
-//    }
     return false;
 }
 
@@ -124,7 +113,7 @@ bool teleop::high_lvl_command_handle(int takeoff, int land, int hover, int goToH
         highLevelCommand = true;
         highLevelCommandEnd = ros::Time::now() + ros::Duration(TAKEOFF_TIME);
         this->log(logger::DEBUG, "Takeoff requested for " + drones[controlIndex].name);
-        mdp::cmd_takeoff(drones[controlIndex], 0.5f, TAKEOFF_TIME);
+        commandQueue.push(TAKEOFF);
         return true;
     }
         // circle
@@ -132,7 +121,7 @@ bool teleop::high_lvl_command_handle(int takeoff, int land, int hover, int goToH
         highLevelCommand = true;
         highLevelCommandEnd = ros::Time::now() + ros::Duration(LAND_TIME);
         this->log(logger::DEBUG, "Land requested for " + drones[controlIndex].name);
-        mdp::cmd_land(drones[controlIndex], LAND_TIME);
+        commandQueue.push(LAND);
         return true;
     }
         // triangle
@@ -140,7 +129,7 @@ bool teleop::high_lvl_command_handle(int takeoff, int land, int hover, int goToH
         highLevelCommand = true;
         highLevelCommandEnd = ros::Time::now() + ros::Duration(HOVER_TIME);
         this->log(logger::DEBUG, "Hover requested for " + drones[controlIndex].name);
-        mdp::cmd_hover(drones[controlIndex], HOVER_TIME);
+        commandQueue.push(HOVER);
         return true;
     }
         // square
@@ -148,7 +137,7 @@ bool teleop::high_lvl_command_handle(int takeoff, int land, int hover, int goToH
         highLevelCommand = true;
         highLevelCommandEnd = ros::Time::now() + ros::Duration(GO_TO_HOME_TIME + 3.0f);
         this->log(logger::DEBUG, "GoToHome requested for " + drones[controlIndex].name);
-        mdp::go_to_home(drones[controlIndex], GO_TO_HOME_TIME);
+        commandQueue.push(GO_TO_HOME);
         return true;
     }
 
@@ -218,25 +207,43 @@ double teleop::yaw_capped() {
 
 }
 
+void teleop::joystick_command(std::array<double, 3> vel) {
+    ROS_INFO("%s: Change position by [%.2f, %.2f, %.2f] and yaw by %f", drones[controlIndex].name.c_str(),
+             teleopInput.axesInput[0], teleopInput.axesInput[1], teleopInput.axesInput[2], teleopInput.yaw);
+    mdp::velocity_msg velocityMsg;
+    velocityMsg.duration = MSG_DUR;
+    velocityMsg.keepHeight = true;
+    velocityMsg.relative = true;
+    velocityMsg.velocity = vel;
+    velocityMsg.yawRate = teleopInput.yaw;
+    lastMsgSent = velocityMsg;
+    mdp::set_drone_velocity(drones[controlIndex], velocityMsg);
+}
+
 void teleop::control_update() {
-
+    bool joystickInput = false;
     if (teleopInput.axesInput[0] != 0.0f || teleopInput.axesInput[1] != 0.0f || teleopInput.axesInput[2] != 0.0f || teleopInput.yaw != 0.0f) {
-        highLevelCommand = false;
+        joystickInput = true;
     }
 
-    if (!highLevelCommand) {
-        ROS_INFO("%s: Change position by [%.2f, %.2f, %.2f] and yaw by %f", drones[controlIndex].name.c_str(),
-                 teleopInput.axesInput[0], teleopInput.axesInput[1], teleopInput.axesInput[2], teleopInput.yaw);
-        mdp::velocity_msg velocityMsg;
-        velocityMsg.duration = MSG_DUR;
-        velocityMsg.keepHeight = true;
-        velocityMsg.relative = true;
-        velocityMsg.velocity = input_capped();
-        velocityMsg.yawRate = teleopInput.yaw;
-        lastMsgSent = velocityMsg;
-        mdp::set_drone_velocity(drones[controlIndex], velocityMsg);
+    if (joystickInput) {
+        joystick_command(input_capped());
     }
-    else if (ros::Time::now().toNSec() > highLevelCommandEnd.toNSec()){
+    else if (commandQueue.size() > 0){
+        auto front = commandQueue.front();
+        switch(front) {
+            case GO_TO_HOME:
+                mdp::go_to_home(drones[controlIndex], GO_TO_HOME_TIME);
+                commandQueue.pop();
+                break;
+            case TAKEOFF:
+                mdp::cmd_takeoff(drones[controlIndex], TAKEOFF_TIME);
+                commandQueue.pop();
+                break;
+            case LAND:
+                if (mdp::get_state(drones[controlIndex]) == '')
+                break;
+        }
         mdp::cmd_hover(drones[controlIndex], HOVER_TIME);
         highLevelCommandEnd = ros::Time::now() + ros::Duration(HOVER_TIME);
         highLevelCommand = true;

@@ -1,15 +1,14 @@
 //
 // Created by jacob on 18/3/20.
 //
-#include <ros/callback_queue.h>
 #include "ros/ros.h"
 #include "user_api.h"
 #include "sensor_msgs/Joy.h"
 #include "../debug/logger/logger.h"
+#include <ros/callback_queue.h>
+
 #include <sstream>
-
-
-
+#include <queue>
 
 #ifndef MULTI_DRONE_PLATFORM_TELEOP_H
 #define MULTI_DRONE_PLATFORM_TELEOP_H
@@ -18,6 +17,10 @@ struct input{
     ros::Time lastUpdate;
     std::array<double, 3> axesInput;
     float yaw;
+};
+
+enum command {
+    TAKEOFF, LAND, HOVER, GO_TO_HOME
 };
 
 class teleop {
@@ -33,6 +36,7 @@ private:
     mdp::velocity_msg lastMsgSent;
     std::vector<mdp::id> drones;
     int controlIndex;
+    std::queue<command> commandQueue;
     bool highLevelCommand;
     ros::Time highLevelCommandEnd;
     bool emergency;
@@ -53,6 +57,7 @@ private:
     void input_callback(const sensor_msgs::Joy::ConstPtr& msg);
     void control_update();
 
+
     void command_handle(const sensor_msgs::Joy::ConstPtr& msg);
     bool emergency_handle(int allDronesButton, int oneDroneButton);
     bool option_change_handle(float idChange, int coordChange);
@@ -62,6 +67,7 @@ private:
 
     std::array<double, 3> input_capped();
     double yaw_capped();
+    void joystick_command(std::array<double, 3> vel);
 
 };
 
