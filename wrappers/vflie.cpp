@@ -43,8 +43,8 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
         POSITION, VELOCITY
     } moveType = move_type::VELOCITY;
     
-    double yaw = 0.0;
-    double yawRate = 0.0;
+    double current_yaw = 0.0;
+    double current_yawRate = 0.0;
 
 
     double endOfCommand = 0.0;
@@ -56,7 +56,7 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
         msg.pose.position.x = positionArray[0];
         msg.pose.position.y = positionArray[1];
         msg.pose.position.z = positionArray[2];
-        msg.pose.orientation = to_quaternion(this->yaw);
+        msg.pose.orientation = to_quaternion(this->current_yaw);
 
         msg.header.stamp = ros::Time::now();
         msg.header.frame_id = "map";
@@ -78,8 +78,8 @@ public:
         this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> ("/despos", 1);
         // @TODO, add a unique home point system
 
-        this->homePosition.x = atof(args[0].c_str());
-        this->homePosition.y = atof(args[1].c_str());
+        this->homePosition.x = std::stof(args[0]);
+        this->homePosition.y = std::stof(args[1]);
         this->homePosition.z = 0.0;
         this->positionArray = {this->homePosition.x, this->homePosition.y, 0.0};
 
@@ -89,7 +89,7 @@ public:
     void on_deinit() final {}
 
     void on_set_position(geometry_msgs::Vector3 pos, 
-                        float Yaw,
+                        float yaw,
                         float duration, 
                         bool isRelative) override {
 
@@ -181,7 +181,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = height;
 
-        on_set_position(pos, this->yaw, duration, false);
+        on_set_position(pos, this->current_yaw, duration, false);
     }
 
     void on_land(float duration) override {
@@ -190,7 +190,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        on_set_position(pos, this->yaw, duration, false);
+        on_set_position(pos, this->current_yaw, duration, false);
     }
 
     void on_emergency() override {
@@ -199,7 +199,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        on_set_position(pos, this->yaw, 0.5, false);
+        on_set_position(pos, this->current_yaw, 0.5, false);
     }
 };
 

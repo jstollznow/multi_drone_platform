@@ -90,7 +90,7 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
 
     public:
     void on_init(std::vector<std::string> args) final {
-        droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1, this->get_tag().length()));
+        droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
         myUri = linkUri + "/0xE7E7E7E7" + droneAddress;
 
