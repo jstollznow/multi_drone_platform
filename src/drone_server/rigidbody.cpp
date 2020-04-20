@@ -578,6 +578,14 @@ void rigidbody::do_stage_1_timeout() {
     this->set_state(flight_state::HOVERING);
 }
 
+const std::string& rigidbody::get_tag() {
+    return this->tag;
+}
+
+uint32_t rigidbody::get_id() {
+    return this->numericID;
+}
+
 
 void mdp_timer::reset_timer(double duration, bool Stage1Timeout) {
     this->timeoutTime = ros::Time::now().toSec() + duration;

@@ -38,7 +38,7 @@
 ***************************************************************************************************************************************/
 
 
-class cflie : public rigidbody {
+class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     private:
     const std::string linkUri = "radio://0/80/2M";
     std::string myUri;
@@ -75,8 +75,8 @@ class cflie : public rigidbody {
         auto startPoint = std::chrono::high_resolution_clock::now();
 
         if (!goToService.call(goToMsg)) {
-            this->log(logger::WARN,"GO_TO failed");
-            goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to", true);
+            ROS_WARN("GOTO FAILED ON '%s'", this->get_tag().c_str());
+            goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + this->get_tag() + "/go_to", true);
         }
         long long start = std::chrono::time_point_cast<std::chrono::milliseconds> (startPoint).time_since_epoch().count();
         long long end = std::chrono::time_point_cast<std::chrono::milliseconds> (std::chrono::high_resolution_clock::now()).time_since_epoch().count();
@@ -92,14 +92,14 @@ class cflie : public rigidbody {
     }
 
     public:
-    cflie(std::string tag, uint32_t id):rigidbody(tag, id) {
-        droneAddress = (tag.substr(tag.find_first_of('_')+1, tag.length()));
+    void on_init(std::vector<std::string> args) final {
+        droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
         myUri = linkUri + "/0xE7E7E7E7" + droneAddress;
 
         crazyflie_driver::AddCrazyflie msg;
         msg.request.uri = myUri;
-        msg.request.tf_prefix = tag;
+        msg.request.tf_prefix = this->get_tag();
         msg.request.roll_trim = 0.0f;
         msg.request.pitch_trim = 0.0f;
         msg.request.enable_logging = true;
@@ -119,22 +119,23 @@ class cflie : public rigidbody {
             this->log(logger::ERROR, "Could not add to Crazyflie Server, please check the drone tag");
         }
 
-        updateParams = droneHandle.serviceClient<crazyflie_driver::UpdateParams>("/" + tag + "/update_params");
-        emergencyService = droneHandle.serviceClient<std_srvs::Empty>("/" + tag + "/emergency");        
-        externalPosition = droneHandle.advertise<geometry_msgs::PointStamped>("/" + tag + "/external_position", 1);
+        updateParams = droneHandle.serviceClient<crazyflie_driver::UpdateParams>("/" + this->get_tag() + "/update_params");
+        emergencyService = droneHandle.serviceClient<std_srvs::Empty>("/" + this->get_tag() + "/emergency");
+        externalPosition = droneHandle.advertise<geometry_msgs::PointStamped>("/" + this->get_tag() + "/external_position", 1);
 
         // high level commands
-        takeoffService = droneHandle.serviceClient<crazyflie_driver::Takeoff>("/" + tag + "/takeoff");
-        landService = droneHandle.serviceClient<crazyflie_driver::Land>("/" + tag + "/land");
-        stopService = droneHandle.serviceClient<crazyflie_driver::Stop>("/" + tag + "/stop");
-        goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + tag + "/go_to", true);
+        takeoffService = droneHandle.serviceClient<crazyflie_driver::Takeoff>("/" + this->get_tag() + "/takeoff");
+        landService = droneHandle.serviceClient<crazyflie_driver::Land>("/" + this->get_tag() + "/land");
+        stopService = droneHandle.serviceClient<crazyflie_driver::Stop>("/" + this->get_tag() + "/stop");
+        goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + this->get_tag() + "/go_to", true);
 
         // feedback
-        batteryCheck = droneHandle.subscribe<std_msgs::Float32>("/" + tag + "/battery", 10, &cflie::battery_log, this); 
+        batteryCheck = droneHandle.subscribe<std_msgs::Float32>("/" + this->get_tag() + "/battery", 10, &cflie::battery_log, this);
 
     };
 
-    ~cflie() {
+    void on_deinit() final {
+        std::string tag = this->get_tag();
         /* remove the crazyflie from the crazyserver */
         auto removeService = droneHandle.serviceClient<crazyflie_driver::RemoveCrazyflie> ("/remove_crazyflie");
 
@@ -142,9 +143,9 @@ class cflie : public rigidbody {
         msg.request.uri = myUri;
 
         if (removeService.call(msg)) {
-            this->log(logger::INFO, "Removed " + tag + " from the crazyflie server");
+            this->log(logger::INFO, "Removed " + this->get_tag() + " from the crazyflie server");
         } else {
-            this->log(logger::WARN, "Failed to remove " + tag + " from the crazyflie server");
+            this->log(logger::WARN, "Failed to remove " + this->get_tag() + " from the crazyflie server");
         }
     }
     
@@ -158,10 +159,10 @@ class cflie : public rigidbody {
     
     void on_update() override {
         if (!hasInitParams) {
-            droneHandle.setParam( "/" + tag + "/commander/enHighLevel", 1);
-            droneHandle.setParam("/" + tag + "/stabilizer/estimator", 2);
-            droneHandle.setParam( "/" + tag + "/stabilizer/controller", 2);
-            droneHandle.setParam( "/" + tag + "/kalman/resetEstimation", 1);
+            droneHandle.setParam( "/" + this->get_tag() + "/commander/enHighLevel", 1);
+            droneHandle.setParam("/" + this->get_tag() + "/stabilizer/estimator", 2);
+            droneHandle.setParam( "/" + this->get_tag() + "/stabilizer/controller", 2);
+            droneHandle.setParam( "/" + this->get_tag() + "/kalman/resetEstimation", 1);
             crazyflie_driver::UpdateParams paramsMsg;
             paramsMsg.request.params = {
                 "commander/enHighLevel",

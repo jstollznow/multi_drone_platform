@@ -1,6 +1,6 @@
 #include "rigidbody.h"
 
-std::string get_pose_topic(std::string& tag) {
+std::string get_pose_topic(const std::string& tag) {
     return "/vrpn_client_node/" + tag + "/pose";
 }
 
@@ -29,7 +29,7 @@ geometry_msgs::Quaternion to_quaternion(double yaw) {
     return q;
 }
 
-class vflie : public rigidbody {
+class DRONE_WRAPPER(vflie, homePosX, homePosY)
     private:
     ros::Publisher posePub;
     ros::Publisher desPub;
@@ -43,8 +43,8 @@ class vflie : public rigidbody {
         POSITION, VELOCITY
     } moveType = move_type::VELOCITY;
     
-    double yaw = 0.0;
-    double yawRate = 0.0;
+    double currentYaw = 0.0;
+    double currentYawRate = 0.0;
 
 
     double endOfCommand = 0.0;
@@ -79,37 +79,25 @@ class vflie : public rigidbody {
     }
 
 public:
-    vflie(std::string tag, uint32_t id) : rigidbody(tag, id) {
+    void on_init(std::vector<std::string> args) final {
+        std::string desPoseTopic = "mdp/drone_" + std::to_string(this->get_id()) + "/des_pose";
 
-        std::string desPoseTopic = "mdp/drone_" + std::to_string(this->numericID) + "/des_pose";
-
-        this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(tag), 1);
+        this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(this->get_tag()), 1);
         this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (desPoseTopic, 1);
         // @TODO, add a unique home point system
-        
-        double hpx = 0.0;
-        if (tag == "vflie_00") {
-            hpx = -1.0;
-        } else if (tag == "vflie_01") {
-            hpx = 1.0;
-        } else if (tag == "vflie_02") {
-            hpx = 0.5;
-        } else if (tag == "vflie_03") {
-            hpx = -0.5;
-        }
-        this->homePosition.x = -1.0;
-        this->homePosition.y = hpx;
+
+        this->homePosition.x = std::stof(args[0]);
+        this->homePosition.y = std::stof(args[1]);
         this->homePosition.z = 0.0;
-        this->positionArray = {-1.0, hpx, 0.0};
+        this->positionArray = {this->homePosition.x, this->homePosition.y, 0.0};
+
         this->publish_current_pose();
     };
 
-    ~vflie() {
-
-    }
+    void on_deinit() final {}
 
     void on_set_position(geometry_msgs::Vector3 pos, 
-                        float yaw, 
+                        float yaw,
                         float duration, 
                         bool isRelative) override {
 
@@ -134,7 +122,7 @@ public:
         this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
-    void on_motion_capture(geometry_msgs::PoseStamped msg) {
+    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) final {
     }
     
     void on_update() override {
@@ -201,7 +189,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = height;
 
-        on_set_position(pos, this->yaw, duration, false);
+        on_set_position(pos, this->currentYaw, duration, false);
     }
 
     void on_land(float duration) override {
@@ -210,7 +198,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        on_set_position(pos, this->yaw, duration, false);
+        on_set_position(pos, this->currentYaw, duration, false);
     }
 
     void on_emergency() override {
@@ -219,7 +207,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        on_set_position(pos, this->yaw, 0.5, false);
+        on_set_position(pos, this->currentYaw, 0.5, false);
     }
 };
 

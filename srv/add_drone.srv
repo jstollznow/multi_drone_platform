@@ -1,0 +1,5 @@
+string droneName
+string[] arguments
+---
+bool success
+string reason

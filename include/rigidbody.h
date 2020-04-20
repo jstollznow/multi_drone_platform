@@ -65,6 +65,8 @@ class rigidbody {
     friend class drone_server;
 /* DATA */
     private:
+        uint32_t numericID;
+        std::string tag;
         ros::Subscriber apiSubscriber;
         ros::Publisher logPublisher;
         ros::Publisher batteryPublisher;
@@ -81,16 +83,10 @@ class rigidbody {
         flight_state state = flight_state::UNKNOWN; /** The current state of the rigidbody */
         mdp_timer hoverTimer;
         double declaredStateEndTime = 0.0;
+        std::vector<multi_drone_platform::api_update> commandQueue;
 
     protected:
-        std::vector<multi_drone_platform::api_update> commandQueue;
-        std::string tag;
-        uint32_t numericID;
-
-        bool controllable = false;
-
-        bool batteryDying = false;
-
+        bool batteryDying = false; // @TODO: formalise wrapper drone use of this variable (and cflie)
         multi_drone_platform::api_update lastRecievedApiUpdate;
         ros::Time timeOfLastApiUpdate;
         ros::Time lastUpdate;
@@ -169,7 +165,14 @@ class rigidbody {
          */
         void log_coord(logger::log_type msgType, std::string dataLabel, geometry_msgs::Vector3 data);
 
+
+        const std::string& get_tag();
+        uint32_t get_id();
+
         // Wrapper Methods
+
+        virtual void on_init(std::vector<std::string> args) = 0;
+        virtual void on_deinit() = 0;
         /**
          * The on_update function is called at the update rate defined in the drone-server, by default this is 100Hz
          * but is modifiable by a user application
@@ -258,3 +261,12 @@ class rigidbody {
         double predict_current_yaw();
 
 };
+
+#define DRONE_WRAPPER(DroneName, ...) \
+    DroneName : protected rigidbody { \
+        public:\
+            static std::string get_data_desc() { std::string desc = #__VA_ARGS__; desc.erase(remove_if(desc.begin(), desc.end(), ::isspace), desc.end()); return desc; } \
+            DroneName(const std::string& tag, uint32_t id, std::vector<std::string> args) : rigidbody(tag, id) {this->on_init(std::move(args));} \
+            ~DroneName() {this->on_deinit();} \
+        private:
+

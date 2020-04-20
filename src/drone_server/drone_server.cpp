@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "multi_drone_platform/api_update.h"
+#include "multi_drone_platform/add_drone.h"
 
 drone_server* globalDroneServer = nullptr;
 bool globalShouldShutdown = false;
@@ -22,7 +23,7 @@ drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
     
     dataServer = node.advertiseService(SRV_TOPIC, &drone_server::api_get_data_service, this);
     listServer = node.advertiseService(LIST_SRV_TOPIC, &drone_server::api_list_service, this);
-    
+    addDroneServer = node.advertiseService(ADD_DRONE_TOPIC, &drone_server::add_drone_service, this);
     // std::string droneName1;
     // std::string droneName2;
 //    add_new_rigidbody("cflie_E7");
@@ -92,24 +93,20 @@ void drone_server::init_rigidbodies_from_VRPN() {
 }
 
 
-mdp_id drone_server::add_new_rigidbody(const std::string& pTag) {
-    mdp_id ID;
-    ID.name = "";
-    ID.numeric_id = rigidbodyList.size();
+bool drone_server::add_new_rigidbody(const std::string& pTag, std::vector<std::string> args) {
     rigidbody* RB;
-    if (mdp_wrappers::create_new_rigidbody(pTag, ID.numeric_id, RB)) {
+    if (mdp_wrappers::create_new_rigidbody(pTag, rigidbodyList.size(), std::move(args), RB)) {
         /* update drone state on param server */
 
         rigidbodyList.push_back(RB);
-        ID.name = pTag;
-        
         RB->mySpin.start();
 
         this->log(logger::DEBUG, "Successfully added '" + pTag + "'");
+        return true;
     } else {
         this->log(logger::ERROR, "Unable to add '" + pTag + "', check if drone type naming is correct.");
+        return false;
     }
-    return ID;
 }
 
 void drone_server::remove_rigidbody(unsigned int pDroneID) {
@@ -300,6 +297,26 @@ bool drone_server::api_list_service(tf2_msgs::FrameGraph::Request &req, tf2_msgs
     }
     return true;
 }
+
+bool drone_server::add_drone_service(multi_drone_platform::add_drone::Request &req, multi_drone_platform::add_drone::Response &res) {
+    if (mdp_wrappers::get_drone_type_id(req.droneName) == 0) {
+        res.success = false;
+        res.reason = "Drone of type declared by tag '" + req.droneName + "' does not exist";
+        return true;
+    }
+    for (auto& r : this->rigidbodyList) {
+        if (r->get_tag() == req.droneName) {
+            res.success = false;
+            res.reason = "Drone with tag '" + req.droneName + "' already exists on the drone server";
+            return true;
+        }
+    }
+
+    this->add_new_rigidbody(req.droneName, req.arguments);
+    res.success = true;
+    return true;
+}
+
 
 void drone_server::log(logger::log_type logType, std::string message) {
     logger::post_log(logType, "Drone Server", logPublisher, std::move(message));
