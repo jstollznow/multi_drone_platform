@@ -184,7 +184,7 @@ class rigidbody {
          * @param msg the motion capture frame presented as a ros PoseStamped. header contains time stamp information, pose
          * contains position data (cartesian from origin) and orientation data (as quaternion).
          */
-        virtual void on_motion_capture(geometry_msgs::PoseStamped msg) {};
+        virtual void on_motion_capture(const geometry_msgs::PoseStamped& msg) {};
 
         /**
          * on_takeoff is called whenever a takeoff command is to be sent to the drone.

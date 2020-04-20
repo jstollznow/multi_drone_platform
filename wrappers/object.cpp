@@ -24,7 +24,7 @@ class DRONE_WRAPPER(object)
 
     }
 
-    void on_motion_capture(geometry_msgs::PoseStamped msg) final {
+    void on_motion_capture(const geometry_msgs::PoseStamped& msg) final {
 
     }
     

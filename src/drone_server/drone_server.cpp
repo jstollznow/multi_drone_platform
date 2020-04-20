@@ -24,27 +24,6 @@ drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
     dataServer = node.advertiseService(SRV_TOPIC, &drone_server::api_get_data_service, this);
     listServer = node.advertiseService(LIST_SRV_TOPIC, &drone_server::api_list_service, this);
     addDroneServer = node.advertiseService(ADD_DRONE_TOPIC, &drone_server::add_drone_service, this);
-    // std::string droneName1;
-    // std::string droneName2;
-//    add_new_rigidbody("cflie_E7");
-    // if (Node.hasParam("cflie_test1"))
-    // {
-    //     Node.getParam("cflie_test1", droneName2);
-    //     ROS_INFO("Adding %s", droneName2.c_str());
-    //     addNewRigidbody(droneName2);
-    // }
-    int n = 6;
-
-    add_new_rigidbody("vflie_00");
-
-    for (int i = 1; i < n; i++) {
-        std::string droneStr = "vflie_";
-        if (i < 10) {
-            droneStr += "0";
-        }
-        droneStr += std::to_string(i);
-        add_new_rigidbody(droneStr);
-    }
 }
 
 drone_server::~drone_server() {

@@ -149,7 +149,7 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         }
     }
     
-    void on_motion_capture(geometry_msgs::PoseStamped msg) override {
+    void on_motion_capture(const geometry_msgs::PoseStamped& msg) override {
         // external_pose.publish(msg);
         geometry_msgs::PointStamped pointMsg;
         pointMsg.header = msg.header;

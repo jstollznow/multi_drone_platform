@@ -52,7 +52,7 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
     double lastPoseUpdate = -1.0;
 
     void publish_current_pose() {
-        geometry_msgs::Quaternion orientationVRPN = to_quaternion(this->yaw);
+        geometry_msgs::Quaternion orientationVRPN = to_quaternion(this->currentYaw);
 
         geometry_msgs::PoseStamped translatedMsg;
         translatedMsg.pose.position.x = positionArray[1];
@@ -122,7 +122,8 @@ public:
         this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) final {
+    void on_motion_capture(const geometry_msgs::PoseStamped& msg) final {
+
     }
     
     void on_update() override {
