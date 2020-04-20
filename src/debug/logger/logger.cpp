@@ -5,7 +5,7 @@ std::map<logger::log_type,std::string> logLevel = {
         {logger::WARN, "WARN"}, {logger::ERROR, "ERROR"}
 };
 
-void logger::post_log(log_type type, std::string caller, ros::Publisher &logPublisher, std::string message) {
+void logger::post_log(const log_type type, const std::string& caller, const ros::Publisher& logPublisher, const std::string& message) {
 
     multi_drone_platform::log myLogPost;
     myLogPost.type = logLevel[type];
@@ -25,9 +25,4 @@ void logger::post_log(log_type type, std::string caller, ros::Publisher &logPubl
             ROS_ERROR("%s: %s", caller.c_str(), message.c_str());
             break;
     }
-}
-
-template<class T>
-void logger::post_log(log_type type, std::string caller, ros::Publisher &logPublisher, std::string dataLabel, T data) {
-
 }

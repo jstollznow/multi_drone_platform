@@ -10,7 +10,5 @@ class logger {
         WARN, 
         ERROR
     };
-    static void post_log(log_type type, std::string caller, ros::Publisher &logPublisher, std::string message);
-    template <class T>
-    static void post_log(log_type type, std::string caller, ros::Publisher &logPublisher, std::string dataLabel, T data);
+    static void post_log(const log_type type, const std::string& caller, const ros::Publisher& logPublisher, const std::string& message);
 };

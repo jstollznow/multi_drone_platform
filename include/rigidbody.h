@@ -32,7 +32,7 @@ class mdp_timer {
 private:
     bool isStage1Timeout = false;
     bool timerIsActive = false;
-    double timeoutTime{};
+    double timeoutTime {};
 
 public:
     void close_timer();
@@ -72,6 +72,8 @@ class rigidbody {
         ros::Publisher currentTwistPublisher;
         ros::Publisher desiredPosePublisher;
         ros::Publisher desiredTwistPublisher;
+        ros::Time commandEnd;
+
         bool shutdownHasBeenCalled = false;
         ros::AsyncSpinner mySpin;
         ros::CallbackQueue myQueue;

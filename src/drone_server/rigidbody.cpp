@@ -132,9 +132,14 @@ float duration, bool relativeXY, bool relativeZ) {
 
     /* Simple static safeguarding */
     struct {
-        std::array<double, 2> x = {{-1.60, 0.95}};
-        std::array<double, 2> y = {{-1.30, 1.30}};
-        std::array<double, 2> z = {{ 0.10, 1.80}};
+//        std::array<double, 2> x = {{-1.60, 0.95}};
+//        std::array<double, 2> y = {{-1.30, 1.30}};
+//        std::array<double, 2> z = {{ 0.10, 1.80}};
+
+// for vflie
+        std::array<double, 2> x = {{-3.00, 3.00}};
+        std::array<double, 2> y = {{-3.00, 3.00}};
+        std::array<double, 2> z = {{ 0.10, 3.00}};
     } staticSafeguarding;
 
     if (relativeXY) {
@@ -351,6 +356,7 @@ void rigidbody::handle_command() {
             this->log(logger::INFO, "=> Handling command: " + msg.msgType);
             this->lastRecievedApiUpdate = msg;
             this->timeOfLastApiUpdate = ros::Time::now();
+            this->commandEnd = timeOfLastApiUpdate + ros::Duration(msg.duration);
             switch(apiMap[msg.msgType]) {
                 /* VELOCITY */
                 case 0:
@@ -414,8 +420,10 @@ void rigidbody::enqueue_command(multi_drone_platform::api_update command) {
 
 void rigidbody::dequeue_command() {
     // @TODO: the application is seg faulting here for some reason, please fix
+    // Why is this a vector not a queue? Queues are good for multithreading applications
+    // It was originally a queue
     if (commandQueue.size() > 0) { // this is a hack fix
-        auto it = commandQueue.begin(); 
+        auto it = commandQueue.begin();
         commandQueue.erase(it);
     }
 }
@@ -513,7 +521,7 @@ void rigidbody::update_current_flight_state() {
 
 
     /* switch rigidbody's state to the detected state */
-    if (droneHasMoved) {
+    if (droneHasMoved && ros::Time::now().toNSec() <= commandEnd.toNSec()) {
         this->set_state(flight_state::MOVING);
     } else if (!droneIsOnTheGround) {
         /* if the drone is in flight and the drone has no velocity: 'HOVER' */

@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     else {
         myTeleop.log(logger::ERROR, "No controllable objects");
     }
-
+    myTeleop.terminate();
     mdp::terminate();
 
     return 0;

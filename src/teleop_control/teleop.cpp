@@ -19,11 +19,15 @@
 
 
 
-teleop::teleop(std::vector<mdp::id> drones):spin(1, &queue) {
+teleop::teleop(std::vector<mdp::id>& drones):spin(1, &queue) {
     this->drones = drones;
     this->controlIndex = 0;
     this->emergency = false;
+    this->isSynced = false;
+    this->ltMax = 0.0f;
+    this->rtMax = 0.0f;
 
+    set_limits();
     node = ros::NodeHandle();
 
     node.setCallbackQueue(&queue);
@@ -41,12 +45,7 @@ void teleop::run() {
     ros::Rate loop_rate(UPDATE_RATE);
     this->log(logger::INFO, "Initialised PS4 Remote");
 
-    sync = false;
 
-    ltMax = 0.0f;
-    rtMax = 0.0f;
-
-    set_limits();
 
     this->log(logger::INFO, "Please sync remote by pressing the left and right triggers...");
 
@@ -54,18 +53,18 @@ void teleop::run() {
 
     while (ros::ok() && !emergency) {
         ros::spinOnce();
-        if (sync) {
+        if (isSynced) {
             control_update();
             loop_rate.sleep();
         }
     }
 }
 
-void teleop::log(logger::log_type logLevel, std::string msg) {
+void teleop::log(const logger::log_type logLevel, const std::string& msg) {
     logger::post_log(logLevel, NODE_NAME, logPublisher, msg);
 }
 
-bool teleop::emergency_handle(int allDronesButton, int oneDroneButton, int safeShutdownButton) {
+bool teleop::emergency_handle(const int allDronesButton, const int oneDroneButton, const int safeShutdownButton) {
     // PS Button
     if (allDronesButton) {
         emergency = true;
@@ -91,7 +90,7 @@ bool teleop::emergency_handle(int allDronesButton, int oneDroneButton, int safeS
     }
     return false;
 }
-bool teleop::option_change_handle(float idChange) {
+bool teleop::option_change_handle(const float idChange) {
 
     // up or down D-Pad
     if ((int)idChange != 0) {
@@ -111,7 +110,7 @@ bool teleop::option_change_handle(float idChange) {
     return false;
 }
 
-bool teleop::high_lvl_command_handle(int takeoff, int land, int hover, int goToHome) {
+bool teleop::high_lvl_command_handle(const int takeoff, const int land, const int hover, const int goToHome) {
 
     // cross
     if (takeoff) {
@@ -145,7 +144,7 @@ bool teleop::high_lvl_command_handle(int takeoff, int land, int hover, int goToH
     return false;
 }
 
-bool teleop::last_input_handle(float xAxes, float yAxes, float zUpTrigger, float zDownTrigger, float yawAxes) {
+bool teleop::last_input_handle(const float xAxes, const float yAxes, const float zUpTrigger, const float zDownTrigger, const float yawAxes) {
 
     // Left Joystick (Top/Bottom)
     float x = maxX * xAxes * MSG_DUR;
@@ -164,7 +163,7 @@ bool teleop::last_input_handle(float xAxes, float yAxes, float zUpTrigger, float
 }
 void teleop::command_handle(const sensor_msgs::Joy::ConstPtr& msg) {
 
-    if (sync) {
+    if (isSynced) {
         if (!emergency_handle(msg->buttons[10], msg->buttons[8], msg->buttons[9])) {
             if (!option_change_handle(msg->axes[7])) {
                 high_lvl_command_handle(msg->buttons[0], msg->buttons[1], msg->buttons[2], msg->buttons[3]);
@@ -177,21 +176,21 @@ void teleop::command_handle(const sensor_msgs::Joy::ConstPtr& msg) {
         // sync triggers
         ltMax = std::max(msg->axes[5], ltMax);
         rtMax = std::max(msg->axes[2], rtMax);
-        if (rtMax && ltMax) {
-            sync = true;
+        if ((bool)ltMax && (bool)rtMax) {
+            isSynced = true;
             this->log(logger::INFO, "Ready for take off");
         }
     }
 
 }
 
-std::array<double, 3> teleop::input_capped(std::array<double, 3> requestedVelocity) {
+std::array<double, 3> teleop::input_capped(const std::array<double, 3> requestedVelocity) {
     double maxVelChange = 0.25;
-    std::array<double, 3> ret;
+    std::array<double, 3> ret = {};
     std::array<double, 3> currVelArr = {currentVelocity.x, currentVelocity.y, currentVelocity.z};
     for (int i = 0; i < 3; i ++) {
-        double dir = (teleopInput.axesInput[i] - currVelArr[i])/std::abs(teleopInput.axesInput[i] - currVelArr[i]);
-        double relChange = std::min(maxVelChange, std::abs(teleopInput.axesInput[i] - currVelArr[i]));
+        double dir = (requestedVelocity[i] - currVelArr[i])/std::abs(requestedVelocity[i] - currVelArr[i]);
+        double relChange = std::min(maxVelChange, std::abs(requestedVelocity[i] - currVelArr[i]));
         if (std::isnan(dir)) dir = 1.0f;
 
         ret[i] =  currVelArr[i] + dir * relChange;
@@ -208,10 +207,10 @@ std::array<double, 3> teleop::input_capped(std::array<double, 3> requestedVeloci
 }
 
 double teleop::yaw_capped() {
-
+    // to be configured soon
 }
 
-void teleop::joystick_command(std::array<double, 3> vel) {
+void teleop::joystick_command(const std::array<double, 3> vel) {
     mdp::velocity_msg velocityMsg;
     velocityMsg.duration = MSG_DUR;
     velocityMsg.keepHeight = true;
@@ -231,15 +230,15 @@ bool teleop::stable_for_command() {
             std::abs(currentVelocity.z) <= THRESHOLD_VEL);
 }
 
-void teleop::id_switch(bool up) {
+void teleop::id_switch(const bool up) {
     controlIndex += up ? 1 : -1;
-    if (controlIndex < 0) controlIndex = drones.size() - 1;
+    if (controlIndex < 0) controlIndex = (int)drones.size() - 1;
     if (controlIndex >= drones.size()) controlIndex = 0;
     this->log(logger::DEBUG, "Now controlling " + drones[controlIndex].name);
 }
 
 void teleop::clear_command_queue() {
-    commandQueue = std::queue<command>();
+    commandQueue = std::queue<commandType>();
 }
 
 void teleop::control_update() {
@@ -322,10 +321,11 @@ void teleop::control_update() {
                 break;
         }
     }
-    else if (ros::Time::now().toNSec() > timeoutEnd.toNSec()) {
+    else if (ros::Time::now().toNSec() > timeoutEnd.toNSec() &&
+    mdp::get_state(drones[controlIndex]) != mdp::drone_state::LANDED) {
         clear_command_queue();
         commandQueue.push(HOVER);
-        this->log(logger::DEBUG, "Queuing hover due to no input");
+        this->log(logger::DEBUG, "Queuing hover due to no input on " + drones[controlIndex].name);
     }
 }
 
@@ -357,4 +357,6 @@ void teleop::set_limits() {
 
 void teleop::terminate() {
     this->log(logger::INFO, "Shutting Down PS4 Teleop");
+    joySubscriber.shutdown();
+    node.shutdown();
 }
