@@ -23,11 +23,23 @@ for i in range(len(wrapper_files)):
     wrapper_h.write("\n")
 wrapper_h.write("};\n\n")
 
-# write in the create rigidbody function
-wrapper_h.write("namespace mdp_wrappers {\nbool create_new_rigidbody(std::string pTag, uint32_t id, rigidbody* &pRigidbodyPtr) {\n")
-wrapper_h.write("    std::string droneType = pTag.substr(0, pTag.find_first_of('_'));\n    switch(droneTypeMap[droneType]) {\n")
+wrapper_h.write("namespace mdp_wrappers {\n")
+# write in common function
+wrapper_h.write("unsigned int get_drone_type_id(std::string droneTag) {\n")
+wrapper_h.write("    std::string droneType = droneTag.substr(0, droneTag.find_first_of('_'));\n    if (droneTypeMap.count(droneType) == 0) {\n        return 0;\n    } else {\n        return droneTypeMap[droneType];\n    }\n}\n\n")
+
+# write in get data descriptions function
+wrapper_h.write("std::string get_data_desc(std::string pTag) {\n")
+wrapper_h.write("    switch(get_drone_type_id(pTag)) {\n")
 for i in range(len(wrapper_files)):
-    wrapper_h.write("        case " + str(i+1) + ": {pRigidbodyPtr = (rigidbody*)(new " + wrapper_files[i][:-4] + "(pTag, id)); return true;}\n")
+    wrapper_h.write("        case " + str(i+1) + ": return " + wrapper_files[i][:-4] + "::get_data_desc();\n")
+wrapper_h.write("        default: return \"\";\n    }\n}\n\n")
+
+# write in the create rigidbody function
+wrapper_h.write("bool create_new_rigidbody(std::string pTag, uint32_t id, std::vector<std::string> args, rigidbody* &pRigidbodyPtr) {\n")
+wrapper_h.write("    switch(get_drone_type_id(pTag)) {\n")
+for i in range(len(wrapper_files)):
+    wrapper_h.write("        case " + str(i+1) + ": {pRigidbodyPtr = (rigidbody*)(new " + wrapper_files[i][:-4] + "(pTag, id, args)); return true;}\n")
 wrapper_h.write("        default: {pRigidbodyPtr = nullptr; return false;}\n    }\n}\n}\n")
 
 wrapper_h.close()

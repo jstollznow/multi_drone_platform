@@ -4,15 +4,15 @@
  * file is included in the /wrappers/ folder, then it will automatically be compiled with the drone server. When developing
  * a new drone wrapper, run catkin_make in the base folder of the catkin workspace to recompile the platform including the new drone.
  */
-class object : public rigidbody {
+class DRONE_WRAPPER(object)
     private:
 
     public:
-    object(std::string tag, uint32_t id) : rigidbody(tag, id) {
+    void on_init(std::vector<std::string> args) final {
 
     };
 
-    ~object() final {
+    void on_deinit() final {
 
     }
 
