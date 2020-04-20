@@ -12,7 +12,7 @@ int main() {
         mdp::sleep_until_idle(drones[0]);
         
         mdp::velocity_msg myMsg;
-        myMsg.duration = 2.0;
+        myMsg.duration = 1.0;
         myMsg.keepHeight = true;
         myMsg.relative = true;
         myMsg.velocity = {1.5, 0, 0};

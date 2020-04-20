@@ -123,8 +123,8 @@ void debug_window::update_ui_on_resume() {
     toAddToLog = "";
     update_ui_labels();
 
-    Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
-    scrollAdjust->set_value(scrollAdjust->get_upper());
+//    Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
+//    scrollAdjust->set_value(scrollAdjust->get_upper());
 
 }
 void debug_window::fetch_state_param() {

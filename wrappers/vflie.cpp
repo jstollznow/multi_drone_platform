@@ -43,8 +43,8 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
         POSITION, VELOCITY
     } moveType = move_type::VELOCITY;
     
-    double current_yaw = 0.0;
-    double current_yawRate = 0.0;
+    double currentYaw = 0.0;
+    double currentYawRate = 0.0;
 
 
     double endOfCommand = 0.0;
@@ -52,15 +52,21 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
     double lastPoseUpdate = -1.0;
 
     void publish_current_pose() {
-        geometry_msgs::PoseStamped msg;
-        msg.pose.position.x = positionArray[0];
-        msg.pose.position.y = positionArray[1];
-        msg.pose.position.z = positionArray[2];
-        msg.pose.orientation = to_quaternion(this->current_yaw);
+        geometry_msgs::Quaternion orientationVRPN = to_quaternion(this->currentYaw);
 
-        msg.header.stamp = ros::Time::now();
-        msg.header.frame_id = "map";
-        this->posePub.publish(msg);
+        geometry_msgs::PoseStamped translatedMsg;
+        translatedMsg.pose.position.x = positionArray[1];
+        translatedMsg.pose.position.y = positionArray[0] * -1;
+        translatedMsg.pose.position.z = positionArray[2];
+
+        translatedMsg.pose.orientation.x = orientationVRPN.y;
+        translatedMsg.pose.orientation.y = orientationVRPN.x * -1;
+        translatedMsg.pose.orientation.z = orientationVRPN.z;
+        translatedMsg.pose.orientation.w = orientationVRPN.w;
+
+        translatedMsg.header.stamp = ros::Time::now();
+        translatedMsg.header.frame_id = "map";
+        this->posePub.publish(translatedMsg);
     }
 
     void pub_des() {
@@ -74,8 +80,10 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
 
 public:
     void on_init(std::vector<std::string> args) final {
+        std::string desPoseTopic = "mdp/drone_" + std::to_string(this->get_id()) + "/des_pose";
+
         this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(this->get_tag()), 1);
-        this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> ("/despos", 1);
+        this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (desPoseTopic, 1);
         // @TODO, add a unique home point system
 
         this->homePosition.x = std::stof(args[0]);
@@ -114,7 +122,8 @@ public:
         this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) final {
+    void on_motion_capture(const geometry_msgs::PoseStamped& msg) final {
+
     }
     
     void on_update() override {
@@ -181,7 +190,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = height;
 
-        on_set_position(pos, this->current_yaw, duration, false);
+        on_set_position(pos, this->currentYaw, duration, false);
     }
 
     void on_land(float duration) override {
@@ -190,7 +199,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        on_set_position(pos, this->current_yaw, duration, false);
+        on_set_position(pos, this->currentYaw, duration, false);
     }
 
     void on_emergency() override {
@@ -199,7 +208,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        on_set_position(pos, this->current_yaw, 0.5, false);
+        on_set_position(pos, this->currentYaw, 0.5, false);
     }
 };
 

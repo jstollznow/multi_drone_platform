@@ -298,7 +298,7 @@ bool drone_server::add_drone_service(multi_drone_platform::add_drone::Request &r
 
 
 void drone_server::log(logger::log_type logType, std::string message) {
-    logger::post_log(logType, "Drone Server", std::move(message), logPublisher);
+    logger::post_log(logType, "Drone Server", logPublisher, std::move(message));
 }
 
 

@@ -8,7 +8,7 @@
 
 #define NODE_NAME "debug_application"
 #define NUM_WINDOWS 20
-#define EXPANDED true
+#define EXPANDED false
 
 class debug_app: public Gtk::Application {
     private:
