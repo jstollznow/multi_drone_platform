@@ -4,6 +4,7 @@ Our honours project drone environment, if this goes public we have made it
 ## Installation
 
 follow this guide to install ROS kinetic: http://wiki.ros.org/kinetic/Installation
+
 follow this guide to create a ROS catkin workspace: http://wiki.ros.org/catkin/Tutorials/create_a_workspace
 
 | name | how to install | reason |
