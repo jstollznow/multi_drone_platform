@@ -1,7 +1,11 @@
 #include "rigidbody.h"
 
 std::string get_pose_topic(const std::string& tag) {
+#if USE_NATNET
+    return "/mocap/rigid_bodies/" + tag + "/pose";
+#else
     return "/vrpn_client_node/" + tag + "/pose";
+#endif
 }
 
 double lerp(double begin, double end, double t) {
@@ -52,20 +56,33 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
     double lastPoseUpdate = -1.0;
 
     void publish_current_pose() {
-        geometry_msgs::Quaternion orientationVRPN = to_quaternion(this->currentYaw);
+        geometry_msgs::Quaternion orientation = to_quaternion(this->currentYaw);
 
         geometry_msgs::PoseStamped translatedMsg;
+#if USE_NATNET
+        // natnet is z up
+        translatedMsg.pose.position.x = positionArray[0];
+        translatedMsg.pose.position.y = positionArray[1];
+        translatedMsg.pose.position.z = positionArray[2];
+
+        translatedMsg.pose.orientation.x = orientation.x;
+        translatedMsg.pose.orientation.y = orientation.y;
+        translatedMsg.pose.orientation.z = orientation.z;
+        translatedMsg.pose.orientation.w = orientation.w;
+        translatedMsg.header.frame_id = "mocap";
+#else /* USE VRPN */
+        // convert to y up
         translatedMsg.pose.position.x = positionArray[1];
         translatedMsg.pose.position.y = positionArray[0] * -1;
         translatedMsg.pose.position.z = positionArray[2];
 
-        translatedMsg.pose.orientation.x = orientationVRPN.y;
-        translatedMsg.pose.orientation.y = orientationVRPN.x * -1;
-        translatedMsg.pose.orientation.z = orientationVRPN.z;
-        translatedMsg.pose.orientation.w = orientationVRPN.w;
-
-        translatedMsg.header.stamp = ros::Time::now();
+        translatedMsg.pose.orientation.x = orientation.y;
+        translatedMsg.pose.orientation.y = orientation.x * -1;
+        translatedMsg.pose.orientation.z = orientation.z;
+        translatedMsg.pose.orientation.w = orientation.w;
         translatedMsg.header.frame_id = "map";
+#endif
+        translatedMsg.header.stamp = ros::Time::now();
         this->posePub.publish(translatedMsg);
     }
 

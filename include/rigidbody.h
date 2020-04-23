@@ -19,6 +19,8 @@
 #define DEFAULT_QUEUE 10
 #define TIMEOUT_HOVER 20
 
+#define USE_NATNET 1
+
 // api structures
 
 static std::map<std::string, int> apiMap = {
