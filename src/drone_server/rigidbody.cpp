@@ -1,6 +1,7 @@
 #include <queue>
 #include "rigidbody.h"
 #include "element_conversions.cpp"
+#include "collision_management.h"
 
 rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->tag = tag;
@@ -122,7 +123,7 @@ float duration, bool relativeXY, bool relativeZ) {
     // ROS_INFO("Relative: %d", relative);
     // manage relative x, y values 
 
-    /* get z values in terms of x,y values (synchronise relativity) */
+    /* get z values in same form as of x,y values (synchronise relativity) */
     if (relativeZ && !relativeXY) {
         pos.z = pos.z + currentPosition.z;
     }
@@ -193,8 +194,7 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
         this->log(logger::WARN, "set velocity called on landed drone, ignoring");
         return;
     }
-    // @TODO: velocity based safeguarding
-
+    vel = collision_management::check_static_limits(this, vel);
     // onVelocity command
 
     this->desiredVelocity.linear = vel;

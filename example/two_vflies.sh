@@ -12,3 +12,5 @@ vflie_01
 
 END
 !
+
+rosrun multi_drone_platform all_debug_windows

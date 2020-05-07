@@ -63,6 +63,7 @@ class rigidbody {
     };
 
     friend class drone_server;
+    friend class collision_management;
 /* DATA */
     private:
         uint32_t numericID;

@@ -97,13 +97,17 @@ add_library(LOGGER ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/logger/logger.cpp)
 target_link_libraries(LOGGER ${catkin_LIBRARIES})
 add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
 
+add_library(COLLISION ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/collision_management.cpp)
+target_link_libraries(COLLISION ${catkin_LIBRARIES})
+add_dependencies(COLLISION multi_drone_platform_generate_messages_cpp)
+
 add_library(RIGIDBODY ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/rigidbody.cpp)
-target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
-add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
+target_link_libraries(RIGIDBODY COLLISION ${catkin_LIBRARIES})
+add_dependencies(RIGIDBODY COLLISION multi_drone_platform_generate_messages_cpp)
 
 add_library(TELEOP ${CMAKE_CURRENT_SOURCE_DIR}/src/teleop_control/teleop.cpp)
 target_link_libraries(TELEOP ${catkin_LIBRARIES})
-add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
+add_dependencies(TELEOP multi_drone_platform_generate_messages_cpp)
 
 add_library(DEBUGAPP ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_app.cpp)
 target_link_libraries(DEBUGAPP ${catkin_LIBRARIES})
@@ -112,6 +116,8 @@ add_dependencies(DEBUGAPP multi_drone_platform_generate_messages_cpp)
 add_library(DEBUGWINDOW ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_window.cpp)
 target_link_libraries(DEBUGWINDOW ${catkin_LIBRARIES})
 add_dependencies(DEBUGWINDOW multi_drone_platform_generate_messages_cpp)
+
+
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTKMM gtkmm-3.0)
@@ -122,11 +128,11 @@ include_directories(include ${GTKMM_INCLUDE_DIRS})
 # Programs and Bindings
 
 add_executable(drone_server src/drone_server/drone_server.cpp)
-target_link_libraries(drone_server ${catkin_LIBRARIES} RIGIDBODY LOGGER)
+target_link_libraries(drone_server ${catkin_LIBRARIES} COLLISION RIGIDBODY LOGGER)
 add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
 add_executable(add_drone src/drone_server/add_drone.cpp)
-target_link_libraries(add_drone ${catkin_LIBRARIES} RIGIDBODY LOGGER)
+target_link_libraries(add_drone ${catkin_LIBRARIES} COLLISION RIGIDBODY LOGGER)
 add_dependencies(add_drone multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
 add_executable(shutdown_drone_server src/drone_server/shutdown_drone_server.cpp)
