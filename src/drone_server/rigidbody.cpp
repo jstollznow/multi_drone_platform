@@ -8,7 +8,12 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->numericID = id;
     this->batteryDying = false;
     this->lastRecievedApiUpdate.msgType = "";
-  
+
+//    initialise physical velocity limits in m/s
+    this->physical_limits.x = {{-10.0, 10.0}};
+    this->physical_limits.y = {{-10.0, 10.0}};
+    this->physical_limits.z = {{-10.0, 10.0}};
+
     // look for drone under tag namespace then vrpn output
     std::string idStr = std::to_string(numericID);
 
@@ -73,34 +78,6 @@ std::string rigidbody::get_name() {
     return this->tag;
 }
 
-geometry_msgs::Vector3 rigidbody::predict_current_position() {
-    double timeSinceMoCapUpdate = ros::Time::now().toSec() - lastUpdate.toSec();
-    if (timeSinceMoCapUpdate < 0.0) {
-        ROS_WARN("time since update returning less than 0");
-        timeSinceMoCapUpdate = 0.0;
-    }
-
-    geometry_msgs::Vector3 pos = mdp_conversions::point_to_vector3(currentPose.position);
-    pos.x += (currentVelocity.linear.x * timeSinceMoCapUpdate);
-    pos.y += (currentVelocity.linear.y * timeSinceMoCapUpdate);
-    pos.z += (currentVelocity.linear.z * timeSinceMoCapUpdate);
-
-    return pos;
-}
-
-double rigidbody::predict_current_yaw() {
-    double timeSinceMoCapUpdate = ros::Time::now().toSec() - lastUpdate.toSec();
-    if (timeSinceMoCapUpdate < 0.0) {
-        ROS_WARN("time since update returning less than 0");
-        timeSinceMoCapUpdate = 0.0;
-    }
-
-    double yaw = mdp_conversions::get_yaw_from_pose(currentPose);
-    yaw += (currentVelocity.angular.z * timeSinceMoCapUpdate);
-
-    return yaw;
-}
-
 double rigidbody::vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b)
 {
     double dist = 0.0;
@@ -117,61 +94,19 @@ float duration, bool relativeXY, bool relativeZ) {
         return;
     }
 
-    auto currentPosition = predict_current_position();
-    // ROS_INFO("Current:");
-    // ROS_INFO("x: %f, y: %f, z: %f", CurrentPosition.position.x, CurrentPosition.position.y, CurrentPosition.position.z);
-    // ROS_INFO("Relative: %d", relative);
-    // manage relative x, y values 
-
     /* get z values in same form as of x,y values (synchronise relativity) */
-    if (relativeZ && !relativeXY) {
-        pos.z = pos.z + currentPosition.z;
+    if (!relativeXY) {
+        pos.x -= this->currentPose.position.x;
+        pos.y -= this->currentPose.position.y;
     }
-    if (!relativeZ && relativeXY) {
-        pos.z = pos.z - currentPosition.z;
-    }
+    if (!relativeZ) pos.z -= this->currentPose.position.z;
 
-    /* Simple static safeguarding */
-    struct {
-//        std::array<double, 2> x = {{-1.60, 0.95}};
-//        std::array<double, 2> y = {{-1.30, 1.30}};
-//        std::array<double, 2> z = {{ 0.10, 1.80}};
+    // limits are processed in relative form
+    duration = collision_management::adjust_for_physical_limits(this, pos, duration);
 
-// for vflie
-        std::array<double, 2> x = {{-3.00, 3.00}};
-        std::array<double, 2> y = {{-3.00, 3.00}};
-        std::array<double, 2> z = {{ 0.10, 3.00}};
-    } staticSafeguarding;
-
-    if (relativeXY) {
-        /* lowest pos value */
-        pos.x = std::max(staticSafeguarding.x[0] - currentPosition.x, pos.x);
-        pos.y = std::max(staticSafeguarding.y[0] - currentPosition.y, pos.y);
-        pos.z = std::max(staticSafeguarding.z[0] - currentPosition.z, pos.z);
-
-        /* highest pos value */
-        pos.x = std::min(staticSafeguarding.x[1] - currentPosition.x, pos.x);
-        pos.y = std::min(staticSafeguarding.y[1] - currentPosition.y, pos.y);
-        pos.z = std::min(staticSafeguarding.z[1] - currentPosition.z, pos.z);
-    } else {
-        /* both */
-        pos.x = std::min(std::max(staticSafeguarding.x[0], pos.x), staticSafeguarding.x[1]);
-        pos.y = std::min(std::max(staticSafeguarding.y[0], pos.y), staticSafeguarding.y[1]);
-        pos.z = std::min(std::max(staticSafeguarding.z[0], pos.z), staticSafeguarding.z[1]);
-    }
-
-    geometry_msgs::Vector3 abs_pos = pos;
-    if (relativeXY) {
-        abs_pos.x += this->currentPose.position.x;
-        abs_pos.y += this->currentPose.position.y;
-    }
-    if (relativeZ) {
-        abs_pos.z += this->currentPose.position.z;
-    }
-
-    this->desiredPose.position.x = abs_pos.x;
-    this->desiredPose.position.y = abs_pos.y;
-    this->desiredPose.position.z = abs_pos.z;
+    this->desiredPose.position.x = pos.x + this->currentPose.position.x;
+    this->desiredPose.position.y = pos.y + this->currentPose.position.y;
+    this->desiredPose.position.z = pos.z + this->currentPose.position.z;
     // @TODO: need to manage orientation
 
     this->log(logger::DEBUG, "DesPos: [" + std::to_string(desiredPose.position.x) + ", " + std::to_string(desiredPose.position.y) +
@@ -186,7 +121,7 @@ float duration, bool relativeXY, bool relativeZ) {
         this->declare_expected_state(flight_state::MOVING);
     }
 
-    this->on_set_position(pos, yaw, duration, relativeXY);
+    this->on_set_position(pos, yaw, duration, true);
 }
 
 void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeZ) {
@@ -194,8 +129,8 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
         this->log(logger::WARN, "set velocity called on landed drone, ignoring");
         return;
     }
-    vel = collision_management::check_static_limits(this, vel);
-    // onVelocity command
+
+    vel = collision_management::adjust_for_physical_limits(this, vel);
 
     this->desiredVelocity.linear = vel;
     this->desiredVelocity.angular.z = yawRate;
@@ -320,6 +255,9 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
         } else {
             this->do_stage_1_timeout();
         }
+    }
+    else if (this->get_state() == MOVING || this->get_state() == HOVERING){
+        collision_management::check(this, rigidbodies);
     }
 
     this->on_update();

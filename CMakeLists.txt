@@ -158,3 +158,6 @@ target_link_libraries(all_debug_windows ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBR
 
 add_executable(teleop_test src/teleop_control/teleop_test.cpp)
 target_link_libraries(teleop_test ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} MDP_API TELEOP LOGGER)
+
+add_executable(pos_example scripts/testPosControl.cpp)
+target_link_libraries(pos_example ${catkin_LIBRARIES} MDP_API)

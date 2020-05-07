@@ -104,6 +104,11 @@ class rigidbody {
         ros::Subscriber motionSubscriber;
         ros::NodeHandle droneHandle;
 
+        struct {
+            std::array<double, 2> x;
+            std::array<double, 2> y;
+            std::array<double, 2> z;
+        } physical_limits;
 
     /* FUNCTIONS */
     private:
@@ -248,19 +253,6 @@ class rigidbody {
          * @return string name
          */
         std::string get_name();
-
-        /**
-         * predicts the current position of the rigidbody based upon its last known location and its velocity
-         * @return a geometry_msgs::Vector3 depicting the rigidbody's predicted location
-         */
-        geometry_msgs::Vector3 predict_current_position();
-
-        /**
-         * perdicts the current yaw of the rigidbody based upon its last known yaw and yawrate
-         * @return the predicted yaw
-         */
-        double predict_current_yaw();
-
 };
 
 #define DRONE_WRAPPER(DroneName, ...) \

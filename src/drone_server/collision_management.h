@@ -31,18 +31,19 @@ struct static_limits {
 class collision_management {
 
 private:
-
-
-//    std::map<int, coord_array> positionLimitations;
-//    std::map<int, coord_array> dynamicLimitations;
-//    coord_array predict_velocity(coord_array currVelocity, coord_array desiredVelocity);
     static std::array<double, 2> individual_velocity_boundaries(std::array<double, 2> limit, double currPos, double accel);
     static static_limits generate_velocity_boundaries(geometry_msgs::Vector3 currPos, double accel);
     static geometry_msgs::Vector3 predict_position(ros::Time lastUpdate, geometry_msgs::Twist currVel, geometry_msgs::Pose currPos, int timeSteps);
-
+    static double predict_current_yaw(ros::Time lastUpdate, geometry_msgs::Twist currVel, geometry_msgs::Pose currPos, int timeSteps);
+    static geometry_msgs::Vector3 vel_static_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
+    static geometry_msgs::Vector3 pos_static_limits(rigidbody* d, geometry_msgs::Vector3 requestedPos, double dur);
+    static geometry_msgs::Vector3 check_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
+    static bool vector3_equality(geometry_msgs::Vector3 vec1, geometry_msgs::Vector3 vec2);
 public:
     static static_limits staticBoundary;
-    static geometry_msgs::Vector3 check_static_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
+    static bool check(rigidbody* d, std::vector<rigidbody*>& rigidbodies);
+    static double adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedPosition, double dur);
+    static geometry_msgs::Vector3 adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
 };
 
 

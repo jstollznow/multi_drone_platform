@@ -82,6 +82,10 @@ public:
     void on_init(std::vector<std::string> args) final {
         std::string desPoseTopic = "mdp/drone_" + std::to_string(this->get_id()) + "/des_pose";
 
+        this->physical_limits.x = {{-3.0, 3.0}};
+        this->physical_limits.y = {{-3.0, 3.0}};
+        this->physical_limits.z = {{-3.0, 2.0}};
+
         this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(this->get_tag()), 1);
         this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (desPoseTopic, 1);
         // @TODO, add a unique home point system
