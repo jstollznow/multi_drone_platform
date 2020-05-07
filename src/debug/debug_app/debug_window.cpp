@@ -1,5 +1,5 @@
 #include "debug_window.h"
-
+#include <fstream>
 #define VNAME(x) #x
 
 struct importError : public std::exception {
@@ -26,7 +26,6 @@ Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatch
 void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, bool expanded) {
 
     myDrone = droneName;
-
     logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
 
     std::string currPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/curr_pose";
@@ -79,8 +78,6 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
     if (startLocation != std::array<int,2>({0, 0})) {
         this->move(startLocation[0], startLocation[1]);
     }
-
-
     this->show();
 }
 
@@ -119,17 +116,25 @@ void debug_window::update_ui_labels() {
 }
 void debug_window::update_ui_on_resume() {
     logTextBuffer->insert(logTextBuffer->end(), toAddToLog);
-
+    write_to_file();
     toAddToLog = "";
     update_ui_labels();
-
 //    Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
 //    scrollAdjust->set_value(scrollAdjust->get_upper());
+}
 
+void debug_window::write_to_file() {
+    std::ofstream file;
+    file.open("drone_" + std::to_string(myDrone.numericID) + ".txt");
+    file << toAddToLog;
+    file.close();
 }
 void debug_window::fetch_state_param() {
     if (windowNode.hasParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state")) {
         windowNode.getParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state", currState);
+    }
+    else {
+        this->close();
     }
 }
 bool debug_window::ros_spin() {
@@ -194,16 +199,13 @@ void debug_window::on_expandButton_clicked() {
     expanded = !expanded;
 }
 
-
-void debug_window::on_debugWindow_destroy() {
-    std::cout<<"TCHUSSSS"<<std::endl;
+void debug_window::on_debugWindow_delete_event() {
+    ROS_INFO("I should show!!");
 }
 
 void debug_window::on_logTextBuffer_changed() {
 
 }
-
-
 void debug_window::link_widgets() {
     try {
         builder->get_widget(VNAME(droneNameLabel), droneNameLabel);

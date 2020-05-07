@@ -24,7 +24,7 @@ class debug_window: public Gtk::Window {
         debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
         void init(mdp::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
         void update_ui_labels();
-
+        void on_debugWindow_delete_event();
     private:
         // functions
         std::string round_to_string(double val, int n);
@@ -37,8 +37,7 @@ class debug_window: public Gtk::Window {
         void on_speedScale_value_changed();
         void on_expandButton_clicked();
         void on_logTextBuffer_changed();
-        void on_debugWindow_destroy();
-        
+        void write_to_file();
         void log_callback(const multi_drone_platform::log::ConstPtr& msg);
         void curr_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
         void des_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);

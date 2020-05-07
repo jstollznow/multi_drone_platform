@@ -60,10 +60,10 @@ static_limits collision_management::generate_velocity_boundaries(geometry_msgs::
 }
 geometry_msgs::Vector3 collision_management::vel_static_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity) {
     // time steps, how far in advance should we predict position
-    auto positionPrediction = predict_position(d->timeOfLastApiUpdate, d->currentVelocity, d->currentPose, 1);
+    auto positionPrediction = predict_position(d->timeOfLastApiUpdate, d->currentVelocity, d->currentPose, 0);
 
     // acceleration, how quickly can we slow down
-    auto velocityLimits = generate_velocity_boundaries(positionPrediction, 0.5);
+    auto velocityLimits = generate_velocity_boundaries(positionPrediction, 1);
 
     geometry_msgs::Vector3 limitAdjustedVel;
 
@@ -118,49 +118,52 @@ double collision_management::adjust_for_physical_limits(rigidbody* d, geometry_m
 
 bool collision_management::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies) {
     double remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
-    geometry_msgs::Vector3 limitedCommand;
+    if (remainingDuration > 0.00) {
+        geometry_msgs::Vector3 limitedCommand;
+//        d->log(logger::INFO, "Remaining dur: " + std::to_string(remainingDuration));
 //    @TODO: This is currently not configured for yaw
-    switch(apiMap[d->lastRecievedApiUpdate.msgType]) {
-        /* VELOCITY */
-        case 0:
-            limitedCommand = vel_static_limits(d, d->lastRecievedApiUpdate.posVel);
-            if (!vector3_equality(limitedCommand, d->lastRecievedApiUpdate.posVel)) {
-                d->set_desired_velocity(limitedCommand, 0.0, remainingDuration, true, true);
-            }
-            break;
-            /* POSITION */
-        case 1:
-            limitedCommand = pos_static_limits(d, d->lastRecievedApiUpdate.posVel, remainingDuration);
-            if (!vector3_equality(limitedCommand, d->lastRecievedApiUpdate.posVel)) {
-                d->set_desired_position(limitedCommand, 0.0, remainingDuration, true, true);
-            }
-            break;
-            /* TAKEOFF */
-        case 2:
+        switch(apiMap[d->lastRecievedApiUpdate.msgType]) {
+            /* VELOCITY */
+            case 0:
+                limitedCommand = vel_static_limits(d, d->lastRecievedApiUpdate.posVel);
+                if (!vector3_equality(limitedCommand, d->lastRecievedApiUpdate.posVel)) {
+                    d->set_desired_velocity(limitedCommand, 0.0, remainingDuration, true, true);
+                }
+                break;
+                /* POSITION */
+            case 1:
+                limitedCommand = pos_static_limits(d, d->lastRecievedApiUpdate.posVel, remainingDuration);
+                if (!vector3_equality(limitedCommand, d->lastRecievedApiUpdate.posVel)) {
+                    d->set_desired_position(limitedCommand, 0.0, remainingDuration, true, true);
+                }
+                break;
+                /* TAKEOFF */
+            case 2:
 
-            break;
-            /* LAND */
-        case 3:
+                break;
+                /* LAND */
+            case 3:
 
-            break;
-            /* HOVER */
-        case 4:
+                break;
+                /* HOVER */
+            case 4:
 
-            break;
-            /* EMERGENCY */
-        case 5:
+                break;
+                /* EMERGENCY */
+            case 5:
 
-            break;
-            /* SET_HOME */
-        case 6:
+                break;
+                /* SET_HOME */
+            case 6:
 
-            break;
-            /* GOTO_HOME */
-        case 8:
+                break;
+                /* GOTO_HOME */
+            case 8:
 
-            break;
-        default:
+                break;
+            default:
 
-            break;
+                break;
+        }
     }
 }
