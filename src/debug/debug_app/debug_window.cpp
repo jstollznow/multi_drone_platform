@@ -140,7 +140,6 @@ void debug_window::write_to_file() {
         path += "/logs/";
         auto command = "mkdir -p " + path;
         system(command.c_str());
-        ROS_INFO(path.c_str());
         std::string fileName = round_to_string(firstTimeStamp.toSec(), 0) + "_drone_" + std::to_string(myDrone.numericID) + ".txt";
         file.open(path + fileName);
         file << logTextBuffer->get_text(true);

@@ -1,5 +1,5 @@
 #include "debug_app.h"
-
+#include <ros/package.h>
 std::array<int,2> debug_app::get_window_position(int droneNum, bool expanded) {
     int startPosX = 50;
     int startPosY = 30;
@@ -44,7 +44,8 @@ debug_app::debug_app(std::vector<mdp::id> myDrones, int argc, char **argv)
 
     for (size_t i = 0; i < myDrones.size(); i++) {
         debug_window *myWindow = 0;
-        auto ui = Gtk::Builder::create_from_file(UI_PATH);
+        std::string path = ros::package::getPath("multi_drone_platform") + UI_PATH;
+        auto ui = Gtk::Builder::create_from_file(path);
         ui->get_widget_derived("debugWindow", myWindow);
         myWindow->init(myDrones[i],this->get_window_position((int)i, expanded), expanded);
         myWindow->windowSpinner.start();
