@@ -36,8 +36,8 @@ class debug_window: public Gtk::Window {
         void on_emergencyButton_clicked();
         void on_speedScale_value_changed();
         void on_expandButton_clicked();
-        void on_logTextBuffer_changed();
         void write_to_file();
+        bool on_close(GdkEventAny* event);
         void log_callback(const multi_drone_platform::log::ConstPtr& msg);
         void curr_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
         void des_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);

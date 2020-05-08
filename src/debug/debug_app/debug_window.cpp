@@ -1,5 +1,7 @@
 #include "debug_window.h"
 #include <fstream>
+#include <ros/package.h>
+
 #define VNAME(x) #x
 
 struct importError : public std::exception {
@@ -27,6 +29,14 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
 
     myDrone = droneName;
     logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
+    firstTimeStamp = ros::Time().now();
+
+    logTextBuffer->set_text(
+            round_to_string(firstTimeStamp.toSec(), 4) +
+            ": All timing relative to " +
+            std::to_string(firstTimeStamp.toSec()) +
+            "\n");
+
 
     std::string currPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/curr_pose";
     std::string desPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/des_pose";
@@ -71,7 +81,6 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
     speedScale->set_round_digits(0);
     speedScale->set_value(5);
     speedMultiplierLabel->set_text("5");
-    logTextBuffer->set_text("");
 
     if (expanded) on_expandButton_clicked();
 
@@ -82,6 +91,9 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
 }
 
 std::string debug_window::round_to_string(double val, int n) {
+    double deci = val - (int)val;
+    val = (int)val % 10000;
+    val += deci;
     std::ostringstream streamObj;
     streamObj << std::fixed << std::setprecision(n) << val;
     return streamObj.str();
@@ -101,7 +113,6 @@ void debug_window::update_ui_labels() {
     // @TODO: fix yaw system wide
     // currYaw->set_text(round_to_string(currPositionMsg.orient.angular.z, 5));
 
-
     desVelX->set_text(round_to_string(desVelocityMsg.twist.linear.x, decimals));
     desVelY->set_text(round_to_string(desVelocityMsg.twist.linear.y, decimals));
     desVelZ->set_text(round_to_string(desVelocityMsg.twist.linear.z, decimals));
@@ -116,7 +127,6 @@ void debug_window::update_ui_labels() {
 }
 void debug_window::update_ui_on_resume() {
     logTextBuffer->insert(logTextBuffer->end(), toAddToLog);
-    write_to_file();
     toAddToLog = "";
     update_ui_labels();
 //    Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
@@ -125,9 +135,21 @@ void debug_window::update_ui_on_resume() {
 
 void debug_window::write_to_file() {
     std::ofstream file;
-    file.open("drone_" + std::to_string(myDrone.numericID) + ".txt");
-    file << toAddToLog;
-    file.close();
+    std::string path = ros::package::getPath("multi_drone_platform");
+    if (path != "") {
+        path += "/logs/";
+        auto command = "mkdir -p " + path;
+        system(command.c_str());
+        ROS_INFO(path.c_str());
+        std::string fileName = round_to_string(firstTimeStamp.toSec(), 0) + "_drone_" + std::to_string(myDrone.numericID) + ".txt";
+        file.open(path + fileName);
+        file << logTextBuffer->get_text(true);
+        file.close();
+    }
+    else {
+        ROS_ERROR("Could not find package");
+    }
+
 }
 void debug_window::fetch_state_param() {
     if (windowNode.hasParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state")) {
@@ -140,7 +162,6 @@ void debug_window::fetch_state_param() {
 bool debug_window::ros_spin() {
     windowQueue.callAvailable();
     fetch_state_param();
-
     dispatcher.emit();
     return true;
 }
@@ -153,14 +174,8 @@ void debug_window::on_emergencyButton_clicked() {
 }
 
 void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) {
-    if (first) {
-        first = false;
-        firstTimeStamp = msg->timeStamp;
-    }
-
     double time = ros::Duration(msg->timeStamp - firstTimeStamp).toSec();
-
-    std::string newLogLine = round_to_string(time, 4) + ": " + msg->type + " " + msg->logMessage + "\n";
+    std::string newLogLine = round_to_string(msg->timeStamp.toSec(), 4) + ": " + msg->type + " " + msg->logMessage + "\n";
 
     toAddToLog += newLogLine;
 }
@@ -199,13 +214,11 @@ void debug_window::on_expandButton_clicked() {
     expanded = !expanded;
 }
 
-void debug_window::on_debugWindow_delete_event() {
-    ROS_INFO("I should show!!");
+bool debug_window::on_close(GdkEventAny* event) {
+    write_to_file();
+    ROS_INFO("Closing");
 }
 
-void debug_window::on_logTextBuffer_changed() {
-
-}
 void debug_window::link_widgets() {
     try {
         builder->get_widget(VNAME(droneNameLabel), droneNameLabel);
@@ -261,12 +274,14 @@ void debug_window::link_widgets() {
         expandButton->signal_clicked().connect
         (sigc::mem_fun(*this, &debug_window::on_expandButton_clicked));
         
-        logTextBuffer->signal_changed().connect(
-                sigc::mem_fun(*this, &debug_window::on_logTextBuffer_changed)
-                );
+//        logTextBuffer->signal_changed().connect(
+//                sigc::mem_fun(*this, &debug_window::on_logTextBuffer_changed)
+//                );
 
         Glib::signal_timeout().connect( sigc::mem_fun(*this, &debug_window::ros_spin), LOG_POST_RATE);
-
+        this->signal_delete_event().connect(
+                sigc::mem_fun(*this, &debug_window::on_close)
+                );
         dispatcher.connect(sigc::mem_fun(*this, &debug_window::update_ui_on_resume));
 
     }
