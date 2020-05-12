@@ -95,22 +95,20 @@ float duration, bool relativeXY, bool relativeZ) {
     }
 
     /* get z values in same form as of x,y values (synchronise relativity) */
-    if (!relativeXY) {
-        pos.x -= this->currentPose.position.x;
-        pos.y -= this->currentPose.position.y;
+    if (relativeXY) {
+        pos.x += this->currentPose.position.x;
+        pos.y += this->currentPose.position.y;
     }
-    if (!relativeZ) pos.z -= this->currentPose.position.z;
+    if (relativeZ) pos.z += this->currentPose.position.z;
 
-    // limits are processed in relative form
+    // limits are processed in absolute form
     duration = collision_management::adjust_for_physical_limits(this, pos, duration);
-
-    this->desiredPose.position.x = pos.x + this->currentPose.position.x;
-    this->desiredPose.position.y = pos.y + this->currentPose.position.y;
-    this->desiredPose.position.z = pos.z + this->currentPose.position.z;
+    this->desiredPose.position.x = pos.x;
+    this->desiredPose.position.y = pos.y;
+    this->desiredPose.position.z = pos.z;
     // @TODO: need to manage orientation
-
-    this->log(logger::DEBUG, "DesPos: [" + std::to_string(desiredPose.position.x) + ", " + std::to_string(desiredPose.position.y) +
-    ", " + std::to_string(desiredPose.position.z) + "] Dur: " + std::to_string(duration));
+    this->log_coord<geometry_msgs::Point>(logger::DEBUG, "Desired Position", this->desiredPose.position);
+    this->log(logger::DEBUG, "Adjusted Dur: " + std::to_string(duration));
     geometry_msgs::PoseStamped desPoseMsg;
     desPoseMsg.pose = desiredPose;
     desPoseMsg.header.stamp = timeOfLastApiUpdate;
@@ -121,7 +119,7 @@ float duration, bool relativeXY, bool relativeZ) {
         this->declare_expected_state(flight_state::MOVING);
     }
 
-    this->on_set_position(pos, yaw, duration, true);
+    this->on_set_position(pos, yaw, duration, false);
 }
 
 void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeZ) {
@@ -131,7 +129,8 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
     }
 
     vel = collision_management::adjust_for_physical_limits(this, vel);
-
+    this->log_coord<geometry_msgs::Vector3>(logger::DEBUG, "Vel Command", vel);
+    this->log(logger::DEBUG, "Duration : " + std::to_string(duration));
     this->desiredVelocity.linear = vel;
     this->desiredVelocity.angular.z = yawRate;
 
@@ -292,6 +291,7 @@ void rigidbody::handle_command() {
         multi_drone_platform::api_update msg = this->commandQueue.front();
         if (is_msg_different(msg)) {
             this->log(logger::INFO, "=> Handling command: " + msg.msgType);
+            this->log(logger::DEBUG, "Duration " + std::to_string(msg.duration));
             this->lastRecievedApiUpdate = msg;
             this->timeOfLastApiUpdate = ros::Time::now();
             this->commandEnd = timeOfLastApiUpdate + ros::Duration(msg.duration);
@@ -314,7 +314,7 @@ void rigidbody::handle_command() {
                     break;
                 /* LAND */
                 case 3:
-                    if (msg.duration != 0.0f){ land(msg.duration); }
+                    if (msg.duration > 0.0f){ land(msg.duration); }
                     else { land(); }
                     break;
                 /* HOVER */
@@ -403,7 +403,7 @@ void rigidbody::hover(float duration) {
     // pos.x += CurrentVelocity.linear.x * 0.3;
     // pos.y += CurrentVelocity.linear.y * 0.3;
     // pos.z += CurrentVelocity.linear.z * 0.3;
-    this->log_coord(logger::DEBUG, "Position at hover request: ", mdp_conversions::point_to_vector3(currentPose.position));
+    this->log_coord<geometry_msgs::Point>(logger::DEBUG, "Position at hover request: ", currentPose.position);
     set_desired_position(pos, 0.0f, duration, true, true);
     this->declare_expected_state(flight_state::HOVERING);
 }
@@ -433,13 +433,13 @@ void rigidbody::log(logger::log_type msgType, std::string message) {
     logger::post_log(msgType, this->tag, logPublisher, message);
 }
 
-void rigidbody::log_coord(logger::log_type msgType, std::string dataLabel, geometry_msgs::Vector3 data) {
+template <class T>
+void rigidbody::log_coord(logger::log_type msgType, std::string dataLabel, T data) {
     std::string message = dataLabel;
     message += ": [";
     message += std::to_string(data.x) + ", " + std::to_string(data.y) + ", " + std::to_string(data.z) +"]";
     logger::post_log(msgType, this->tag, logPublisher, message);
 }
-
 
 void rigidbody::update_current_flight_state() {
     if (this->get_state() == flight_state::DELETED) {
@@ -511,7 +511,7 @@ void rigidbody::declare_expected_state(rigidbody::flight_state inputState) {
 
 void rigidbody::do_stage_1_timeout() {
     this->log(logger::DEBUG, "Timeout stage 1");
-    this->hover(TIMEOUT_HOVER+1.0f);
+    this->hover(TIMEOUT_HOVER);
     this->hoverTimer.reset_timer(TIMEOUT_HOVER, true);
     this->set_state(flight_state::HOVERING);
 }
@@ -523,7 +523,6 @@ const std::string& rigidbody::get_tag() {
 uint32_t rigidbody::get_id() {
     return this->numericID;
 }
-
 
 void mdp_timer::reset_timer(double duration, bool Stage1Timeout) {
     this->timeoutTime = ros::Time::now().toSec() + duration;

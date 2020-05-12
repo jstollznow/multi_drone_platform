@@ -169,8 +169,8 @@ class rigidbody {
          * @param dataLabel dataLabel contains the message to be sent with the set of coordinates
          * @param data data contains the coordinates to be posted
          */
-        void log_coord(logger::log_type msgType, std::string dataLabel, geometry_msgs::Vector3 data);
-
+        template <class T>
+        void log_coord(logger::log_type msgType, std::string dataLabel, T data);
 
         const std::string& get_tag();
         uint32_t get_id();

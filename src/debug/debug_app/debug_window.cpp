@@ -48,7 +48,7 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
     
     logSubscriber = windowNode.subscribe<multi_drone_platform::log>(
             logTopic,
-            10,
+            50,
             &debug_window::log_callback,
             this);
 
@@ -175,7 +175,6 @@ void debug_window::on_emergencyButton_clicked() {
 void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) {
     double time = ros::Duration(msg->timeStamp - firstTimeStamp).toSec();
     std::string newLogLine = round_to_string(msg->timeStamp.toSec(), 4) + ": " + msg->type + " " + msg->logMessage + "\n";
-
     toAddToLog += newLogLine;
 }
 
@@ -196,12 +195,11 @@ void debug_window::on_speedScale_value_changed() {
 	streamObj << std::fixed;
 	streamObj << std::setprecision(0);
 	streamObj << speedScale->get_value();
-  
     speedMultiplierLabel->set_label(streamObj.str());
 }
 void debug_window::on_expandButton_clicked() {
     if (!expanded) {
-        logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 10, &debug_window::log_callback, this);
+        logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 50, &debug_window::log_callback, this);
     }
     else {
         logSubscriber.shutdown();

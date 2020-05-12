@@ -193,7 +193,7 @@ position_data get_position(const mdp::id& pRigidbodyID) {
 
     auto Pose = &nodeData->droneData[pRigidbodyID.numericID].pose;
     data.respectiveID =     pRigidbodyID;
-    data.timeStampNsec =    Pose->header.stamp.toNSec();
+    data.timeStampSec =    Pose->header.stamp.sec;
     data.x =                Pose->pose.position.x;
     data.y =                Pose->pose.position.y;
     data.z =                Pose->pose.position.z;
@@ -211,7 +211,7 @@ velocity_data get_velocity(const mdp::id& pRigidbodyID) {
 
     auto Vel = &nodeData->droneData[pRigidbodyID.numericID].velocity;
     data.respectiveID =     pRigidbodyID;
-    data.timeStampNsec =    Vel->header.stamp.toNSec();
+    data.timeStampSec =    Vel->header.stamp.toSec();
     data.x =                Vel->twist.linear.x;
     data.y =                Vel->twist.linear.y;
     data.z =                Vel->twist.linear.z;
@@ -294,7 +294,7 @@ position_data get_home(const mdp::id& pDroneID) {
     position_data posData;
     posData.respectiveID = pDroneID;
     if (nodeData->dataClient.call(srvData)) {
-        posData.timeStampNsec = ros::Time::now().toNSec();
+        posData.timeStampSec = ros::Time::now().toSec();
         posData.x = feedbackSrv.vec3().x;
         posData.y = feedbackSrv.vec3().y;
         posData.z = feedbackSrv.vec3().z;
@@ -337,7 +337,7 @@ timings get_operating_frequencies() {
 
     timings timingsData{};
     if (nodeData->dataClient.call(srvData)) {
-        timingsData.timeStampNsec = ros::Time::now().toNSec();
+        timingsData.timeStampSec = ros::Time::now().toSec();
         timingsData.desDroneServerUpdateRate = feedbackSrv.vec3().x;
         timingsData.actualDroneServerUpdateRate = feedbackSrv.vec3().y;
         timingsData.moCapUpdateRate = feedbackSrv.vec3().z;
@@ -399,14 +399,14 @@ drone_state get_state(const mdp::id& pDroneID) {
 }
 
 bool position_data::isValid() const {
-    return (this->timeStampNsec > 0);
+    return (this->timeStampSec > 0);
 }
 
 bool velocity_data::isValid() const {
-    return (this->timeStampNsec > 0);
+    return (this->timeStampSec > 0);
 }
 
 bool timings::isValid() const {
-    return (this->timeStampNsec > 0);
+    return (this->timeStampSec > 0);
 }
 }

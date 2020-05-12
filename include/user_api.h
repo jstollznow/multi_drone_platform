@@ -35,7 +35,7 @@ struct id {
  */
 struct position_data {
     id respectiveID{};
-    uint64_t timeStampNsec = 0; // fun-fact: valid until July 21, 2554
+    float timeStampSec = 0.0f; // fun-fact: valid until July 21, 2554
     float x = 0.0f, y = 0.0f, z = 0.0f;
     float yaw = 0.0f;
     /**
@@ -51,7 +51,7 @@ struct position_data {
  */
 struct velocity_data {
     id respectiveID{};
-    uint64_t timeStampNsec = 0; // fun-fact: valid until July 21, 2554
+    float timeStampSec = 0.0f; // fun-fact: valid until July 21, 2554
     float x = 0.0f, y = 0.0f, z = 0.0f;
     float yawRate = 0.0f;
     /**
@@ -91,7 +91,7 @@ struct velocity_msg {
  * @see get_operating_frequencies
  */
 struct timings {
-    uint64_t timeStampNsec = 0;
+    float timeStampSec = 0.0f;
     float moCapUpdateRate = 0.0f;
     float desDroneServerUpdateRate = 0.0f;
     float actualDroneServerUpdateRate = 0.0f;

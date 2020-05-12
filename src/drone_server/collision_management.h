@@ -36,13 +36,16 @@ private:
     static geometry_msgs::Vector3 predict_position(ros::Time lastUpdate, geometry_msgs::Twist currVel, geometry_msgs::Pose currPos, int timeSteps);
     static double predict_current_yaw(ros::Time lastUpdate, geometry_msgs::Twist currVel, geometry_msgs::Pose currPos, int timeSteps);
     static geometry_msgs::Vector3 vel_static_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
-    static geometry_msgs::Vector3 pos_static_limits(rigidbody* d, geometry_msgs::Vector3 requestedPos, double dur);
+    static geometry_msgs::Point pos_static_limits(rigidbody* d, geometry_msgs::Point requestedPos, double dur);
     static geometry_msgs::Vector3 check_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
-    static bool vector3_equality(geometry_msgs::Vector3 vec1, geometry_msgs::Vector3 vec2);
+    static geometry_msgs::Vector3 check_physical_limits(geometry_msgs::Vector3 requestedPosition);
+    template <class T>
+    static bool coord_equality(T vec1, T vec2);
+    static geometry_msgs::Vector3 point_to_vec3 (geometry_msgs::Point input);
 public:
     static static_limits staticBoundary;
     static bool check(rigidbody* d, std::vector<rigidbody*>& rigidbodies);
-    static double adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedPosition, double dur);
+    static double adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3& requestedPosition, double dur);
     static geometry_msgs::Vector3 adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
 };
 

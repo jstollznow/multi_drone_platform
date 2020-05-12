@@ -69,39 +69,45 @@ classdef mdp_api
             fprintf("Shutting Down Client API Connection\n");
             Drones = getalldrones(obj);
             for i = 1 : size(Drones)
-                cmdland(obj, Drones(i), 4.0);
+                if getState(Drones(i)) ~= mdp_flight_state.DELETED
+                    cmdland(obj, Drones(i), 4.0);
+                end
             end
             for i = 1 : size(Drones)
-                sleepuntilidle(obj, Drones(i));
+                if getState(Drones(i)) ~= mdp_flight_state.DELETED
+                    sleepuntilidle(obj, Drones(i));
+                end
             end
             fprintf("Finished Client API Connection\n");
             delete(obj.APINode);
             delete(obj.DroneDataMap);
             rosshutdown();
         end
-
+        
         function DroneList = getalldrones(obj)
             req = rosmessage('tf2_msgs/FrameGraphRequest');
-            res = call(obj.list_srv_cli, req);
-            
-            drones_str = split(res.FrameYaml, ' ');
-
             DroneList = [];
-            for i = 1 : size(drones_str)
-                if (drones_str(i) == "")
-                    continue
-                end
-                id_arr = split(drones_str(i), ':');
-                id = mdp_id(0, '');
-                id.NumericId = uint32(str2double(id_arr(1)));
-                CellArr = id_arr(2);
-                id.Name = CellArr{:};
-                DroneList = [DroneList id];
+            if rosparam('get','mdp/should_shut_down') == false
+                res = call(obj.list_srv_cli, req);
+                disp(res);
+                drones_str = split(res.FrameYaml, ' ');
 
-                % if drone does not exist in DroneDataMap, then add it
-                if ~isKey(obj.DroneDataMap, id.NumericId)
-                    DroneData = mdp_drone_data(obj.APINode, id.NumericId);
-                    obj.DroneDataMap(id.NumericId) = DroneData;
+                for i = 1 : size(drones_str)
+                    if (drones_str(i) == "")
+                        continue
+                    end
+                    id_arr = split(drones_str(i), ':');
+                    id = mdp_id(0, '');
+                    id.NumericId = uint32(str2double(id_arr(1)));
+                    CellArr = id_arr(2);
+                    id.Name = CellArr{:};
+                    DroneList = [DroneList id];
+
+                    % if drone does not exist in DroneDataMap, then add it
+                    if ~isKey(obj.DroneDataMap, id.NumericId)
+                        DroneData = mdp_drone_data(obj.APINode, id.NumericId);
+                        obj.DroneDataMap(id.NumericId) = DroneData;
+                    end
                 end
             end
         end
@@ -113,7 +119,7 @@ classdef mdp_api
                 Msg = obj.DroneDataMap(drone_id.NumericId).getlatestpose();
 
                 Pos.DroneID = drone_id.NumericId;
-                Pos.TimeStampNSec = Msg.Header.Stamp.Nsec;
+                Pos.TimeStampSec = seconds(Msg.Header.Stamp);
                 Pos.X = Msg.Pose.Position.X;
                 Pos.Y = Msg.Pose.Position.Y;
                 Pos.Z = Msg.Pose.Position.Z;
@@ -136,7 +142,7 @@ classdef mdp_api
                 Msg = obj.DroneDataMap(drone_id.NumericId).getlatesttwist();
 
                 Vel.DroneID = drone_id.NumericId;
-                Vel.TimeStampNSec = Msg.Header.Stamp.Nsec;
+                Vel.TimeStampSec = seconds(Msg.Header.Stamp);
                 Vel.X = Msg.Twist.Linear.X;
                 Vel.Y = Msg.Twist.Linear.Y;
                 Vel.Z = Msg.Twist.Linear.Z;
@@ -243,8 +249,13 @@ classdef mdp_api
         function State = getstate(obj, drone)
             StateParam = strcat("mdp/drone_", num2str(drone.NumericId), "/state");
             Ptree = rosparam();
-            StrState = Ptree.get(StateParam);
-            State = mdp_flight_state.convertstringtoflightstate(StrState);
+            if has(Ptree,StateParam) 
+                StrState = Ptree.get(StateParam);
+                State = mdp_flight_state.convertstringtoflightstate(StrState);
+            else 
+                State = mdp_flight_state.convertstringtoflightstate("DELETED");
+            end
+            
         end
     end
 end
