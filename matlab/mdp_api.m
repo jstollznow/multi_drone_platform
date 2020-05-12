@@ -89,7 +89,6 @@ classdef mdp_api
             DroneList = [];
             if rosparam('get','mdp/should_shut_down') == false
                 res = call(obj.list_srv_cli, req);
-                disp(res);
                 drones_str = split(res.FrameYaml, ' ');
 
                 for i = 1 : size(drones_str)
@@ -250,10 +249,10 @@ classdef mdp_api
             StateParam = strcat("mdp/drone_", num2str(drone.NumericId), "/state");
             Ptree = rosparam();
             if has(Ptree,StateParam) 
-                StrState = Ptree.get(StateParam);
+                StrState = rosparam('get',StateParam);
                 State = mdp_flight_state.convertstringtoflightstate(StrState);
             else 
-                State = mdp_flight_state.convertstringtoflightstate("DELETED");
+                State = mdp_flight_state.convertstringtoflightstate('DELETED');
             end
             
         end

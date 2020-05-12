@@ -109,7 +109,7 @@ title('Y position');
 legend('Waypoint Drone', 'Follow Drone');
 
 %Z Coord
-subplot(3,1,2);
+subplot(3,1,3);
 plot(TimeStampsWay, WayDronePosY);
 hold on
 plot(TimeStampsFol, FolDronePosY);
