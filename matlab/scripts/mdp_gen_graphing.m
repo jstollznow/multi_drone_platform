@@ -74,7 +74,7 @@ xlabel('Time (Seconds)');
 ylabel('Position (m)');
 legend();
 hold off;
-
+saveas(gcf,'XYZGraphs.png');
 figure(2);
 clf;
 % lgd = legend;
@@ -85,17 +85,21 @@ for i = 1 : length(DroneGraphing)
     yArr = DroneGraphing(i).get_Y();
     plot(xArr, yArr, 'DisplayName', lineName);
     hold on;
-    startEndX = [xArr(1) xArr(length(xArr)-1)];
-    startEndY = [yArr(1) yArr(length(yArr)-1)];
-    startEndName = strcat(lineName, ' (Start-End)');
-    plot(startEndX, startEndY,'linestyle','none','marker','*',...
-        'MarkerSize',12 , 'DisplayName', startEndName);
-    hold on;
+    if length(xArr) > 1 && length(yArr) > 1
+        startEndX = [xArr(1) xArr(length(xArr)-1)];
+        startEndY = [yArr(1) yArr(length(yArr)-1)];
+        startEndName = strcat(lineName, " (Start-End)");
+        plot(startEndX, startEndY,'linestyle','none','marker','*',...
+            'MarkerSize',12 , 'DisplayName', startEndName);
+        hold on;
+    end
 end
 title('XY position');
 xlabel('Position (m)');
 ylabel('Position (m)');
 legend();
-hold off
+hold off;
+saveas(gcf,'XYGraph.png');
+uiwait(helpdlg('Examine the figures, then click OK to finish. Figures have been exported into local directory.'));
 
 

@@ -13,4 +13,6 @@ vflie_01
 END
 !
 
-rosrun multi_drone_platform all_debug_windows
+rosrun multi_drone_platform all_debug_windows&
+
+~/MATLAB/bin/matlab -nodesktop -nosplash -r "addpath('~/catkin_ws/src/multi_drone_platform/matlab'); run('~/catkin_ws/src/multi_drone_platform/matlab/scripts/mdp_gen_graphing.m');quit();"
