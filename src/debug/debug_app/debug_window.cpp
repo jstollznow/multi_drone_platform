@@ -10,7 +10,7 @@ struct importError : public std::exception {
     }
 };
 
-debug_window::debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade): 
+debug_window::debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade):
 Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatcher() {
     try {
         link_widgets();
@@ -25,19 +25,17 @@ Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatch
     
 
 }
+
 void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, bool expanded) {
 
     myDrone = droneName;
     logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
     firstTimeStamp = ros::Time().now();
-
     logTextBuffer->set_text(
             round_to_string(firstTimeStamp.toSec(), 4) +
             ": All timing relative to " +
             std::to_string(firstTimeStamp.toSec()) +
             "\n");
-
-
     std::string currPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/curr_pose";
     std::string desPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/des_pose";
 
@@ -135,20 +133,14 @@ void debug_window::update_ui_on_resume() {
 
 void debug_window::write_to_file() {
     std::ofstream file;
-    std::string path = ros::package::getPath("multi_drone_platform");
-    if (path != "") {
-        path += "/logs/";
-        auto command = "mkdir -p " + path;
-        system(command.c_str());
-        std::string fileName = round_to_string(firstTimeStamp.toSec(), 0) + "_drone_" + std::to_string(myDrone.numericID) + ".txt";
-        file.open(path + fileName);
-        file << logTextBuffer->get_text(true);
-        file.close();
+    std::string session = "";
+    if (ros::param::has(SESSION_PARAM)) {
+        ros::param::get(SESSION_PARAM, session);
     }
-    else {
-        ROS_ERROR("Could not find package");
-    }
-
+    std::string fileName = "drone_" + std::to_string(myDrone.numericID) + ".txt";
+    file.open(session + fileName);
+    file << logTextBuffer->get_text(true);
+    file.close();
 }
 void debug_window::fetch_state_param() {
     if (windowNode.hasParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state")) {
@@ -213,7 +205,6 @@ void debug_window::on_expandButton_clicked() {
 
 bool debug_window::on_close(GdkEventAny* event) {
     write_to_file();
-    ROS_INFO("Closing");
 }
 
 void debug_window::link_widgets() {

@@ -16,7 +16,7 @@
 #define UPDATE_RATE 10
 #define LOG_POST_RATE 500
 #define UI_PATH "/src/debug/debug_app/debug.ui"
-
+#define SESSION_PARAM "/mdp/session_directory"
 class debug_window: public Gtk::Window {
     public:
         ros::AsyncSpinner windowSpinner;
@@ -24,7 +24,6 @@ class debug_window: public Gtk::Window {
         debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade);
         void init(mdp::id droneName, std::array<int, 2> startLocation = {0, 0}, bool expanded = false);
         void update_ui_labels();
-        void on_debugWindow_delete_event();
     private:
         // functions
         std::string round_to_string(double val, int n);

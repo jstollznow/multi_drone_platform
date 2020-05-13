@@ -14,7 +14,14 @@ end
 AllLanded = false;
 ShutdownSeq = rosparam('get','mdp/should_shut_down');
 
-while (~AllLanded || ~ShutdownSeq) 
+SessionParam = '/mdp/session_directory';
+Ptree = rosparam();
+SessionPath = '';
+if has(Ptree,SessionParam) 
+    SessionPath = rosparam('get',SessionParam);
+end
+
+while (~AllLanded || ~ShutdownSeq)
     AllLanded = true;
     if isempty(Drones)
        break; 
@@ -30,7 +37,6 @@ while (~AllLanded || ~ShutdownSeq)
 end
 
 delete(Api);
-
 % plot the data
 figure(1);
 clf;
@@ -45,7 +51,7 @@ end
 title('X position');
 xlabel('Time (Seconds)');
 ylabel('Position (m)');
-legend();
+legend('Location', 'northeastoutside');
 hold off;
 %Y Coord
 subplot(3,1,2);
@@ -58,7 +64,7 @@ end
 title('Y position');
 xlabel('Time (Seconds)');
 ylabel('Position (m)');
-legend();
+legend('Location', 'northeastoutside');
 hold off;
 %Z Coord
 subplot(3,1,3);
@@ -72,9 +78,9 @@ end
 title('Z position');
 xlabel('Time (Seconds)');
 ylabel('Position (m)');
-legend();
+legend('Location', 'northeastoutside');
 hold off;
-saveas(gcf,'XYZGraphs.png');
+saveas(gcf,strcat(SessionPath,'XYZGraphs.png'));
 figure(2);
 clf;
 % lgd = legend;
@@ -97,9 +103,9 @@ end
 title('XY position');
 xlabel('Position (m)');
 ylabel('Position (m)');
-legend();
+legend('Location', 'northeastoutside');
 hold off;
-saveas(gcf,'XYGraph.png');
+saveas(gcf,strcat(SessionPath, 'XYGraph.png'));
 uiwait(helpdlg('Examine the figures, then click OK to finish. Figures have been exported into local directory.'));
 
 

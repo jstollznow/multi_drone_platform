@@ -13,6 +13,7 @@
 class debug_app: public Gtk::Application {
     private:
         std::array<int, 2> get_window_position(int droneNum, bool expanded);
+        void generate_session_folder();
     protected:
         std::map<std::string, debug_window*> droneDebugWindows;
     public:
