@@ -2,7 +2,7 @@
 #include "rigidbody.h"
 #include "element_conversions.cpp"
 
-rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
+rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue), icpObject(tag, droneHandle) {
     this->tag = tag;
     this->numericID = id;
     this->batteryDying = false;
@@ -23,7 +23,6 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     std::string desPoseTopic = "mdp/drone_" + idStr + "/des_pose";
     std::string currTwistTopic = "mdp/drone_" + idStr + "/curr_twist";
     std::string desTwistTopic = "mdp/drone_" + idStr + "/des_twist";
-    droneHandle = ros::NodeHandle();
     droneHandle.setCallbackQueue(&myQueue);
 
     apiPublisher = droneHandle.advertise<multi_drone_platform::api_update> (apiTopic, 2);
@@ -594,6 +593,11 @@ const std::string& rigidbody::get_tag() {
 
 uint32_t rigidbody::get_id() {
     return this->numericID;
+}
+
+const geometry_msgs::Pose& rigidbody::get_current_pose() const
+{
+    return this->currentPose;
 }
 
 

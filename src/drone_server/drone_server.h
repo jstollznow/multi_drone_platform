@@ -6,6 +6,7 @@
 #include "rigidbody.h"
 #include "wrappers.h"
 #include "../src/drone_server/drone_server_msg_translations.cpp"
+#include "../icp_implementation/icp_impl.h"
 
 #define LOOP_RATE_HZ 100
 #define TIMING_UPDATE 5
@@ -21,7 +22,7 @@
 
 class drone_server {
     private:
-        std::vector<rigidbody*> rigidbodyList;
+        std::vector<rigidbody*> rigidbodyList{};
 
         ros::NodeHandle node;
         ros::Subscriber inputAPISub;
@@ -37,6 +38,9 @@ class drone_server {
         float motionCaptureUpdateRate;
         float timeToUpdateDrones;
         float waitTime;
+
+        // @TODO: place this under a define so that we can enable or disable this feature
+        icp_impl icpImplementation;
 
         void init_rigidbodies_from_VRPN();
 

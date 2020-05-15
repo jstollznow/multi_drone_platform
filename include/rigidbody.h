@@ -15,6 +15,7 @@
 #include "std_msgs/Float64MultiArray.h"
 #include "../src/debug/logger/logger.h"
 #include "multi_drone_platform/api_update.h"
+#include "../src/icp_implementation/icp_object.h"
 
 #define DEFAULT_QUEUE 10
 #define TIMEOUT_HOVER 20
@@ -105,6 +106,8 @@ class rigidbody {
         ros::Subscriber motionSubscriber;
         ros::NodeHandle droneHandle;
 
+    public:
+        icp_object icpObject;
 
     /* FUNCTIONS */
     private:
@@ -166,10 +169,6 @@ class rigidbody {
          * @param data data contains the coordinates to be posted
          */
         void log_coord(logger::log_type msgType, std::string dataLabel, geometry_msgs::Vector3 data);
-
-
-        const std::string& get_tag();
-        uint32_t get_id();
 
         // Wrapper Methods
 
@@ -261,6 +260,11 @@ class rigidbody {
          * @return the predicted yaw
          */
         double predict_current_yaw();
+
+        const std::string& get_tag();
+        uint32_t get_id();
+
+        const geometry_msgs::Pose& get_current_pose() const;
 
 };
 

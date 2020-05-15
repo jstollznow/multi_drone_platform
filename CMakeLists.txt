@@ -97,8 +97,20 @@ add_library(LOGGER ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/logger/logger.cpp)
 target_link_libraries(LOGGER ${catkin_LIBRARIES})
 add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
 
+add_library(KD_TREE ${CMAKE_CURRENT_SOURCE_DIR}/src/icp_implementation/kd_tree_3d.cpp)
+target_link_libraries(KD_TREE ${catkin_LIBRARIES})
+add_dependencies(KD_TREE multi_drone_platform_generate_messages_cpp)
+
+add_library(ICP_OBJ ${CMAKE_CURRENT_SOURCE_DIR}/src/icp_implementation/icp_object.cpp)
+target_link_libraries(ICP_OBJ ${catkin_LIBRARIES})
+add_dependencies(ICP_OBJ multi_drone_platform_generate_messages_cpp)
+
+add_library(ICP_IMPL ${CMAKE_CURRENT_SOURCE_DIR}/src/icp_implementation/icp_impl.cpp)
+target_link_libraries(ICP_IMPL ${catkin_LIBRARIES} KD_TREE)
+add_dependencies(ICP_IMPL multi_drone_platform_generate_messages_cpp)
+
 add_library(RIGIDBODY ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/rigidbody.cpp)
-target_link_libraries(RIGIDBODY ${catkin_LIBRARIES})
+target_link_libraries(RIGIDBODY ${catkin_LIBRARIES} ICP_OBJ)
 add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
 
 add_library(TELEOP ${CMAKE_CURRENT_SOURCE_DIR}/src/teleop_control/teleop.cpp)
@@ -122,7 +134,7 @@ include_directories(include ${GTKMM_INCLUDE_DIRS})
 # Programs and Bindings
 
 add_executable(drone_server src/drone_server/drone_server.cpp)
-target_link_libraries(drone_server ${catkin_LIBRARIES} RIGIDBODY LOGGER)
+target_link_libraries(drone_server ${catkin_LIBRARIES} RIGIDBODY LOGGER ICP_IMPL)
 add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
 add_executable(add_drone src/drone_server/add_drone.cpp)
