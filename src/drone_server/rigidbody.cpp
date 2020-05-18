@@ -1,7 +1,7 @@
 #include <queue>
 #include "rigidbody.h"
 #include "element_conversions.cpp"
-#include "collision_management.h"
+#include "../collision_management/collision_management.h"
 
 rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->tag = tag;
