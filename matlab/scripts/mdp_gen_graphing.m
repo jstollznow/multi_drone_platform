@@ -106,6 +106,6 @@ ylabel('Position (m)');
 legend('Location', 'northeastoutside');
 hold off;
 saveas(gcf,strcat(SessionPath, 'XYGraph.png'));
-uiwait(helpdlg('Examine the figures, then click OK to finish. Figures have been exported into local directory.'));
+uiwait(helpdlg('Examine the figures, then click OK to finish. Figures have been exported into sessions directory.'));
 
 
