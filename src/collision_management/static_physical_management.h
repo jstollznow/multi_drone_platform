@@ -3,8 +3,8 @@
 //
 
 
-#ifndef MULTI_DRONE_PLATFORM_COLLISION_MANAGEMENT_H
-#define MULTI_DRONE_PLATFORM_COLLISION_MANAGEMENT_H
+#ifndef MULTI_DRONE_PLATFORM_STATIC_PHYSICAL_MANAGEMENT_H
+#define MULTI_DRONE_PLATFORM_STATIC_PHYSICAL_MANAGEMENT_H
 
 #include "rigidbody.h"
 
@@ -28,7 +28,7 @@ struct static_limits {
     }
 
 };
-class collision_management {
+class static_physical_management {
 
 private:
     static std::array<double, 2> individual_velocity_boundaries(std::array<double, 2> limit, double currPos, double accel);
@@ -44,10 +44,9 @@ private:
     static geometry_msgs::Vector3 point_to_vec3 (geometry_msgs::Point input);
 public:
     static static_limits staticBoundary;
-    static bool check(rigidbody* d, std::vector<rigidbody*>& rigidbodies);
     static double adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3& requestedPosition, double dur);
     static geometry_msgs::Vector3 adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
 };
 
 
-#endif //MULTI_DRONE_PLATFORM_COLLISION_MANAGEMENT_H
+#endif //MULTI_DRONE_PLATFORM_STATIC_PHYSICAL_MANAGEMENT_H

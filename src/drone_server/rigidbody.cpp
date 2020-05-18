@@ -1,7 +1,8 @@
 #include <queue>
 #include "rigidbody.h"
 #include "element_conversions.cpp"
-#include "../collision_management/collision_management.h"
+#include "../collision_management/static_physical_management.h"
+#include "../collision_management/potential_fields.h"
 
 rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->tag = tag;
@@ -102,7 +103,7 @@ float duration, bool relativeXY, bool relativeZ) {
     if (relativeZ) pos.z += this->currentPose.position.z;
 
     // limits are processed in absolute form
-    duration = collision_management::adjust_for_physical_limits(this, pos, duration);
+    duration = static_physical_management::adjust_for_physical_limits(this, pos, duration);
     this->desiredPose.position.x = pos.x;
     this->desiredPose.position.y = pos.y;
     this->desiredPose.position.z = pos.z;
@@ -128,7 +129,7 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
         return;
     }
 
-    vel = collision_management::adjust_for_physical_limits(this, vel);
+    vel = static_physical_management::adjust_for_physical_limits(this, vel);
     this->log_coord<geometry_msgs::Vector3>(logger::DEBUG, "Vel Command", vel);
     this->log(logger::DEBUG, "Duration : " + std::to_string(duration));
     this->desiredVelocity.linear = vel;
@@ -256,7 +257,7 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
         }
     }
     else if (this->get_state() == MOVING || this->get_state() == HOVERING){
-        collision_management::check(this, rigidbodies);
+        potential_fields::check(this, rigidbodies);
     }
 
     this->on_update();

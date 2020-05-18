@@ -20,7 +20,7 @@ SessionPath = '';
 if has(Ptree,SessionParam) 
     SessionPath = rosparam('get',SessionParam);
 end
-
+disp("Ready to record drone positions...");
 while (~AllLanded || ~ShutdownSeq)
     AllLanded = true;
     if isempty(Drones)
@@ -92,11 +92,15 @@ for i = 1 : length(DroneGraphing)
     plot(xArr, yArr, 'DisplayName', lineName);
     hold on;
     if length(xArr) > 1 && length(yArr) > 1
-        startEndX = [xArr(1) xArr(length(xArr)-1)];
-        startEndY = [yArr(1) yArr(length(yArr)-1)];
-        startEndName = strcat(lineName, " (Start-End)");
-        plot(startEndX, startEndY,'linestyle','none','marker','*',...
-            'MarkerSize',12 , 'DisplayName', startEndName);
+        startName = strcat(lineName, " Start");
+        endName = strcat(lineName, " End");
+        startPlot = plot(xArr(1), yArr(1),'linestyle','none','marker','^',...
+            'MarkerSize', 8, 'DisplayName', startName);
+        startPlot.MarkerFaceColor = startPlot.Color;
+        hold on;
+        endPlot = plot(xArr(length(xArr)), yArr(length(yArr)),'linestyle','none','marker','v',...
+            'MarkerSize', 8, 'DisplayName', endName);
+        endPlot.MarkerFaceColor = endPlot.Color;
         hold on;
     end
 end

@@ -97,7 +97,7 @@ add_library(LOGGER ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/logger/logger.cpp)
 target_link_libraries(LOGGER ${catkin_LIBRARIES})
 add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
 
-add_library(COLLISION ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/collision_management.cpp)
+add_library(COLLISION src/collision_management/static_physical_management.cpp src/collision_management/potential_fields.cpp)
 target_link_libraries(COLLISION ${catkin_LIBRARIES})
 add_dependencies(COLLISION multi_drone_platform_generate_messages_cpp)
 
@@ -109,13 +109,10 @@ add_library(TELEOP ${CMAKE_CURRENT_SOURCE_DIR}/src/teleop_control/teleop.cpp)
 target_link_libraries(TELEOP ${catkin_LIBRARIES})
 add_dependencies(TELEOP multi_drone_platform_generate_messages_cpp)
 
-add_library(DEBUGAPP ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_app.cpp)
+add_library(DEBUGAPP ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_app.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_window.cpp)
 target_link_libraries(DEBUGAPP ${catkin_LIBRARIES})
 add_dependencies(DEBUGAPP multi_drone_platform_generate_messages_cpp)
 
-add_library(DEBUGWINDOW ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_window.cpp)
-target_link_libraries(DEBUGWINDOW ${catkin_LIBRARIES})
-add_dependencies(DEBUGWINDOW multi_drone_platform_generate_messages_cpp)
 
 
 
@@ -154,10 +151,13 @@ add_executable(emergency_program src/user_api/emergency_program.cpp)
 target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
 
 add_executable(all_debug_windows src/debug/debug_app/debug_app_test.cpp)
-target_link_libraries(all_debug_windows ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW)
+target_link_libraries(all_debug_windows ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP)
 
 add_executable(teleop_test src/teleop_control/teleop_test.cpp)
 target_link_libraries(teleop_test ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} MDP_API TELEOP LOGGER)
 
-add_executable(pos_example scripts/testPosControl.cpp)
-target_link_libraries(pos_example ${catkin_LIBRARIES} MDP_API)
+add_executable(position_example scripts/testPosControl.cpp)
+target_link_libraries(position_example ${catkin_LIBRARIES} MDP_API)
+
+add_executable(collision_example scripts/testCollisionAvoidance.cpp)
+target_link_libraries(collision_example ${catkin_LIBRARIES} MDP_API)
