@@ -133,6 +133,9 @@ include_directories(include ${GTKMM_INCLUDE_DIRS})
 
 # Programs and Bindings
 
+add_executable(icp_test src/icp_implementation/icp_test.cpp)
+target_link_libraries(icp_test ${catkin_LIBRARIES} ICP_IMPL ICP_OBJ)
+
 add_executable(drone_server src/drone_server/drone_server.cpp)
 target_link_libraries(drone_server ${catkin_LIBRARIES} RIGIDBODY LOGGER ICP_IMPL)
 add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
