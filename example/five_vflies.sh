@@ -13,7 +13,7 @@ vflie_01
 NEW
 vflie_02
 -1.0
--1.0
+0.0
 
 NEW
 vflie_03

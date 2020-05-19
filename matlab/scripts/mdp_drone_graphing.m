@@ -8,6 +8,7 @@ classdef mdp_drone_graphing
         Y;
         Z;
         Time;
+        SeriesColor;
     end
     
     methods
@@ -49,6 +50,15 @@ classdef mdp_drone_graphing
         function id = get_ID(obj)
            id = obj.DroneID; 
         end
+        
+        function obj = set_Color(obj, color)
+           obj.SeriesColor = color;
+        end
+        
+        function color = get_Color(obj) 
+            color = obj.SeriesColor;
+        end
+        
     end
 end
 

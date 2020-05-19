@@ -44,8 +44,9 @@ clf;
 subplot(3,1,1);
 for i = 1 : length(DroneGraphing)
     lineName = strcat("drone ", num2str(DroneGraphing(i).get_ID().NumericId));
-    plot(DroneGraphing(i).get_Time(), DroneGraphing(i).get_X(),...
+    graph = plot(DroneGraphing(i).get_Time(), DroneGraphing(i).get_X(),...
         'DisplayName', lineName);
+    DroneGraphing(i) = DroneGraphing(i).set_Color(graph.Color);
     hold on;
 end
 title('X position');
@@ -57,8 +58,10 @@ hold off;
 subplot(3,1,2);
 for i = 1 : length(DroneGraphing)
     lineName = strcat("drone ", num2str(DroneGraphing(i).get_ID().NumericId));
-    plot(DroneGraphing(i).get_Time(), DroneGraphing(i).get_Y(),...
+    graph = plot(DroneGraphing(i).get_Time(), DroneGraphing(i).get_Y(),...
         'DisplayName', lineName);
+    graph.MarkerFaceColor = DroneGraphing(i).get_Color();
+    graph.Color = DroneGraphing(i).get_Color();
     hold on;
 end
 title('Y position');
@@ -71,8 +74,10 @@ subplot(3,1,3);
 
 for i = 1 : length(DroneGraphing)
     lineName = strcat("drone ", num2str(DroneGraphing(i).get_ID().NumericId));
-    plot(DroneGraphing(i).get_Time(), DroneGraphing(i).get_Z(),...
+    graph = plot(DroneGraphing(i).get_Time(), DroneGraphing(i).get_Z(),...
         'DisplayName', lineName);
+    graph.MarkerFaceColor = DroneGraphing(i).get_Color();
+    graph.Color = DroneGraphing(i).get_Color();
     hold on;
 end
 title('Z position');
@@ -89,24 +94,39 @@ for i = 1 : length(DroneGraphing)
     lineName = strcat("drone ", num2str(DroneGraphing(i).get_ID().NumericId));
     xArr = DroneGraphing(i).get_X();
     yArr = DroneGraphing(i).get_Y();
-    plot(xArr, yArr, 'DisplayName', lineName);
-    hold on;
+    graph = plot(xArr, yArr, 'DisplayName', lineName);
+    graph.MarkerFaceColor = DroneGraphing(i).get_Color();
+    graph.Color = DroneGraphing(i).get_Color();
+    hold on;    
     if length(xArr) > 1 && length(yArr) > 1
         startName = strcat(lineName, " Start");
         endName = strcat(lineName, " End");
         startPlot = plot(xArr(1), yArr(1),'linestyle','none','marker','^',...
             'MarkerSize', 8, 'DisplayName', startName);
-        startPlot.MarkerFaceColor = startPlot.Color;
+        startPlot.MarkerFaceColor = DroneGraphing(i).get_Color();
+        startPlot.Color = DroneGraphing(i).get_Color();
+        startPlot.Annotation.LegendInformation.IconDisplayStyle = 'off';
         hold on;
         endPlot = plot(xArr(length(xArr)), yArr(length(yArr)),'linestyle','none','marker','v',...
             'MarkerSize', 8, 'DisplayName', endName);
-        endPlot.MarkerFaceColor = endPlot.Color;
+        endPlot.MarkerFaceColor = DroneGraphing(i).get_Color();
+        endPlot.Color = DroneGraphing(i).get_Color();
+        endPlot.Annotation.LegendInformation.IconDisplayStyle = 'off';
         hold on;
     end
 end
+% added to show only one set of start and end markers
+plot(NaN, NaN, 'linestyle', 'none', 'marker', '^',...
+    'MarkerSize', 8, 'DisplayName', "Start", ...
+    'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black');
+hold on;
+plot(NaN, NaN, 'linestyle', 'none', 'marker', 'v',...
+    'MarkerSize', 8, 'DisplayName', "End", ...
+    'MarkerFaceColor', 'black', 'MarkerEdgeColor', 'black');
+hold on;
 title('XY position');
-xlabel('Position (m)');
-ylabel('Position (m)');
+xlabel('X Pos (m)');
+ylabel('Y Pos (m)');
 legend('Location', 'northeastoutside');
 hold off;
 saveas(gcf,strcat(SessionPath, 'XYGraph.png'));

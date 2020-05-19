@@ -20,8 +20,6 @@ bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies)
 //                if (!coord_equality(velLimited, d->desiredVelocity.linear)) {
 //                    d->set_desired_velocity(velLimited, 0.0, remainingDuration, true, true);
 //                }
-
-                break;
                 /* POSITION */
             case 1:
 //                this needs to be fixed, currently it is not producing the correct positions, need to rewrite
@@ -33,6 +31,7 @@ bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies)
 //                    d->set_desired_velocity(velLimited, 0.0, remainingDuration, true, true);
 //                }
                 netForce = add_vec3_or_point(replusive_forces(d, rigidbodies), attractive_forces(d));
+                d->log_coord(logger::DEBUG, "currentVelocity with netForce", netForce);
                 d->set_desired_velocity(netForce, 0.0, remainingDuration, true, true);
                 d->log_coord(logger::DEBUG, "Net influence", netForce);
                 break;
@@ -76,8 +75,8 @@ T potential_fields::add_vec3_or_point(T a, T b) {
 }
 geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vector<rigidbody *> &rigidbodies) {
     geometry_msgs::Vector3 replusiveForce;
-    double scaling = 1.5;
-    double minDist = 0.30;
+    double scaling = 1000.0;
+    double minDist = 0.20;
     for (auto rb : rigidbodies) {
         if (rb->get_id() != d->get_id()) {
             geometry_msgs::Point obPoint = rb->currentPose.position;
@@ -105,7 +104,7 @@ geometry_msgs::Vector3 potential_fields::attractive_forces(rigidbody *d) {
     double scaling = 1.0;
     auto diffVec = difference(d->currentPose.position, d->desiredPose.position);
     auto dist = distance_between(d->currentPose.position, d->desiredPose.position);
-    if (dist < 0.0001) {
+    if (dist < 0.01) {
         return attractiveForce;
     }
     double multiple = -scaling/dist;
