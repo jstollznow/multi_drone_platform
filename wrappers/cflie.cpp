@@ -93,10 +93,14 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
 
     public:
     void on_init(std::vector<std::string> args) final {
+        this->physical_limits.x = {{-2.0, 2.0}};
+        this->physical_limits.y = {{-2.0, 2.0}};
+        this->physical_limits.z = {{-2.0, 1.5}};
+        this->mass = 0.100;
+
         droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
         myUri = linkUri + "/0xE7E7E7E7" + droneAddress;
-
         crazyflie_driver::AddCrazyflie msg;
         msg.request.uri = myUri;
         msg.request.tf_prefix = this->get_tag();

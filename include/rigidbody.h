@@ -110,6 +110,7 @@ class rigidbody {
             std::array<double, 2> y;
             std::array<double, 2> z;
         } physical_limits;
+        double mass;
 
     /* FUNCTIONS */
     private:

@@ -58,7 +58,8 @@ classdef mdp_api
 
             obj.loop_rate_value = UpdateRate;
             obj.loop_rate = rosrate(UpdateRate);
-
+%             this is not necessary as MATLAB holds on the above commands until they are established
+%             the equivalent does not occur in the C++ api
 %             pause(1.0);
             getalldrones(obj);
             fprintf("Initialised Client API Connection\n");

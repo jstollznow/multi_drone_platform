@@ -144,7 +144,7 @@ target_link_libraries(follow_control ${catkin_LIBRARIES} MDP_API)
 add_executable(test_program scripts/test_program_19Oct2019.cpp)
 target_link_libraries(test_program ${catkin_LIBRARIES} MDP_API)
 
-add_executable(velocity_example scripts/testVelControl.cpp)
+add_executable(velocity_example scripts/test_vel_control.cpp)
 target_link_libraries(velocity_example ${catkin_LIBRARIES} MDP_API)
 
 add_executable(emergency_program src/user_api/emergency_program.cpp)
@@ -156,8 +156,11 @@ target_link_libraries(all_debug_windows ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBR
 add_executable(teleop_test src/teleop_control/teleop_test.cpp)
 target_link_libraries(teleop_test ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} MDP_API TELEOP LOGGER)
 
-add_executable(position_example scripts/testPosControl.cpp)
+add_executable(position_example scripts/test_pos_control.cpp)
 target_link_libraries(position_example ${catkin_LIBRARIES} MDP_API)
 
-add_executable(collision_example scripts/testCollisionAvoidance.cpp)
+add_executable(advanced_collision_example scripts/test_collision_avoidance.cpp)
+target_link_libraries(advanced_collision_example ${catkin_LIBRARIES} MDP_API)
+
+add_executable(collision_example scripts/simple_collision.cpp)
 target_link_libraries(collision_example ${catkin_LIBRARIES} MDP_API)

@@ -85,6 +85,7 @@ public:
         this->physical_limits.x = {{-3.0, 3.0}};
         this->physical_limits.y = {{-3.0, 3.0}};
         this->physical_limits.z = {{-3.0, 2.0}};
+        this->mass = 0.100;
 
         this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(this->get_tag()), 1);
         this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (desPoseTopic, 1);

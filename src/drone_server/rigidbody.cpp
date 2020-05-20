@@ -11,9 +11,11 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->lastRecievedApiUpdate.msgType = "";
 
 //    initialise physical velocity limits in m/s
+//    initialise mass in kg
     this->physical_limits.x = {{-10.0, 10.0}};
     this->physical_limits.y = {{-10.0, 10.0}};
     this->physical_limits.z = {{-10.0, 10.0}};
+    this->mass = 0.100;
 
     // look for drone under tag namespace then vrpn output
     std::string idStr = std::to_string(numericID);
