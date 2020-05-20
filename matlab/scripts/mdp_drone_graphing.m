@@ -20,6 +20,7 @@ classdef mdp_drone_graphing
             obj.Y = [];
             obj.Z = [];
             obj.Time = [];
+            obj.SeriesColor = 'black';
         end
         
         function obj = add_data(obj, pos)

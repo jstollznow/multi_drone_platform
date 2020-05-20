@@ -59,7 +59,7 @@ classdef mdp_api
             obj.loop_rate_value = UpdateRate;
             obj.loop_rate = rosrate(UpdateRate);
 
-            pause(1.0);
+%             pause(1.0);
             getalldrones(obj);
             fprintf("Initialised Client API Connection\n");
             % pause for 1 seconds to ensure the publisher has initialised
@@ -69,12 +69,12 @@ classdef mdp_api
             fprintf("Shutting Down Client API Connection\n");
             Drones = getalldrones(obj);
             for i = 1 : size(Drones)
-                if getState(Drones(i)) ~= mdp_flight_state.DELETED
+                if getstate(Drones(i)) ~= mdp_flight_state.DELETED
                     cmdland(obj, Drones(i), 4.0);
                 end
             end
             for i = 1 : size(Drones)
-                if getState(Drones(i)) ~= mdp_flight_state.DELETED
+                if getstate(Drones(i)) ~= mdp_flight_state.DELETED
                     sleepuntilidle(obj, Drones(i));
                 end
             end
