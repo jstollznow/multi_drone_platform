@@ -38,7 +38,7 @@ int main(int argc, char** argv)
         {
             scanf("%d", &a);
         }
-        mdp::position_data myData = mdp::get_body_position(drones[0]);
+        mdp::position_data myData = mdp::get_position(drones[0]);
         //mdp::set_drone_position(drones[0], myData.x + 2, myData.y, 1.45f, 5.0f);
         scanf("%d", &a);
         while(a!=9)

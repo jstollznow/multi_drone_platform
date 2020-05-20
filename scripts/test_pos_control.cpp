@@ -14,7 +14,7 @@ int main() {
         mdp::cmd_takeoff(drones[0], 0.5);
         mdp::sleep_until_idle(drones[0]);
         mdp::position_msg myMsg;
-        myMsg.duration = 2.0;
+        myMsg.duration = 0.5;
         myMsg.keepHeight = true;
         myMsg.relative = false;
         myMsg.position = {2.5, 2.5, 0};
@@ -27,10 +27,6 @@ int main() {
         }
         mdp::cmd_land(drones[0]);
         mdp::sleep_until_idle(drones[0]);
-        auto pos = mdp::get_position(drones[0]);
-        std::cout << "Difference between start and end: ["
-        << std::abs(2.5 + pos.x) << ", " <<
-        std::abs(2.5 + pos.y) << "]" << std::endl;
     }
     mdp::terminate();
 }
