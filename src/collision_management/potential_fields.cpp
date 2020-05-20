@@ -4,11 +4,10 @@
 
 #include "potential_fields.h"
 
-#define MIN_DIST 0.20;
-
 bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies) {
     double remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
     geometry_msgs::Vector3 netForce;
+    geometry_msgs::Vector3 velocity;
     geometry_msgs::Point posLimited;
     if (remainingDuration > 0.00) {
 //        d->log(logger::INFO, "Remaining dur: " + std::to_string(remainingDuration));
@@ -20,6 +19,7 @@ bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies)
 //                if (!coord_equality(velLimited, d->desiredVelocity.linear)) {
 //                    d->set_desired_velocity(velLimited, 0.0, remainingDuration, true, true);
 //                }
+            break;
                 /* POSITION */
             case 1:
 //                this needs to be fixed, currently it is not producing the correct positions, need to rewrite
@@ -30,36 +30,18 @@ bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies)
 //                if (!coord_equality(velLimited, d->currentVelocity.linear)) {
 //                    d->set_desired_velocity(velLimited, 0.0, remainingDuration, true, true);
 //                }
+                double t = 0.01;
                 netForce = add_vec3_or_point(replusive_forces(d, rigidbodies), attractive_forces(d));
-                d->log_coord(logger::DEBUG, "currentVelocity with netForce", netForce);
-                d->set_desired_velocity(netForce, 0.0, remainingDuration, true, true);
+                geometry_msgs::Vector3 accelOverTime = multiply_by_constant(multiply_by_constant(netForce, 1/(d->mass)), t);
+                geometry_msgs::Vector3 newVel;
+                geometry_msgs::Vector3 reqVel = calculate_req_velocity(d, remainingDuration);
+                newVel.x = reqVel.x + accelOverTime.x;
+                newVel.y = reqVel.y + accelOverTime.y;
+                newVel.z = reqVel.z + accelOverTime.z;
+
                 d->log_coord(logger::DEBUG, "Net influence", netForce);
-                break;
-                /* TAKEOFF */
-            case 2:
-
-                break;
-                /* LAND */
-            case 3:
-
-                break;
-                /* HOVER */
-            case 4:
-
-                break;
-                /* EMERGENCY */
-            case 5:
-
-                break;
-                /* SET_HOME */
-            case 6:
-
-                break;
-                /* GOTO_HOME */
-            case 8:
-
-                break;
-            default:
+                d->log_coord(logger::DEBUG, "New Vel: ", newVel);
+                d->set_desired_velocity(newVel, 0.0, remainingDuration, true, true);
 
                 break;
         }
@@ -75,7 +57,7 @@ T potential_fields::add_vec3_or_point(T a, T b) {
 }
 geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vector<rigidbody *> &rigidbodies) {
     geometry_msgs::Vector3 replusiveForce;
-    double scaling = 1000.0;
+    double scaling = 0.2;
     double minDist = 0.20;
     for (auto rb : rigidbodies) {
         if (rb->get_id() != d->get_id()) {
@@ -86,16 +68,17 @@ geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vec
             if (dist <= minDist) {
                 double multiple = (scaling * std::pow((1.0 / dist) - (1.0 / minDist), 2.0)) / std::pow(dist, 3.0);
                 auto diffVec = difference(dPoint, obPoint);
-                d->log(logger::DEBUG, "multiple: " + std::to_string(multiple));
+//                d->log(logger::DEBUG, "multiple: " + std::to_string(multiple));
                 replusiveForce.x = multiple * diffVec.x;
                 replusiveForce.y = multiple * diffVec.y;
                 replusiveForce.z = multiple * diffVec.z;
+
 //                d->log_coord(logger::DEBUG, "Repulsive Forces from drone_" + std::to_string(rb->get_id()) + " @ dist: " + std::to_string(dist), replusiveForce);
             }
 
         }
     }
-    d->log_coord(logger::DEBUG, "Repulsive Forces Total", replusiveForce);
+//    d->log_coord(logger::DEBUG, "Repulsive Forces Total", replusiveForce);
     return replusiveForce;
 }
 
@@ -111,7 +94,7 @@ geometry_msgs::Vector3 potential_fields::attractive_forces(rigidbody *d) {
     attractiveForce.x = multiple * diffVec.x;
     attractiveForce.y = multiple * diffVec.y;
     attractiveForce.z = multiple * diffVec.z;
-    d->log_coord(logger::DEBUG, "Attractive Force @ dist: " + std::to_string(dist), attractiveForce);
+//    d->log_coord(logger::DEBUG, "Attractive Force @ dist: " + std::to_string(dist), attractiveForce);
     return attractiveForce;
 }
 
@@ -130,4 +113,22 @@ T potential_fields::difference(T a, T b) {
     ret.y = a.y - b.y;
     ret.z = a.z - b.z;
     return ret;
+}
+
+template<class T>
+T potential_fields::multiply_by_constant(T a, double multiple) {
+    T ret;
+    ret.x = a.x * multiple;
+    ret.y = a.y * multiple;
+    ret.z = a.z * multiple;
+    return ret;
+}
+
+geometry_msgs::Vector3 potential_fields::calculate_req_velocity(rigidbody *d, double remainingDuration) {
+    geometry_msgs::Vector3 reqVel;
+    reqVel.x = (d->desiredPose.position.x - d->currentPose.position.x) / remainingDuration;
+    reqVel.y = (d->desiredPose.position.y - d->currentPose.position.y) / remainingDuration;
+    reqVel.z = (d->desiredPose.position.z - d->currentPose.position.z) / remainingDuration;
+
+    return reqVel;
 }
