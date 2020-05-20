@@ -1,13 +1,12 @@
+
+#include "debug_window.h"
+
 #include <string>
 #include <iostream>
 #include <vector>
 #include <array>
 
-#include "user_api.h"
-#include "debug_window.h"
-
 #define NODE_NAME "debug_application"
-#define NUM_WINDOWS 20
 #define EXPANDED false
 
 class debug_app: public Gtk::Application {

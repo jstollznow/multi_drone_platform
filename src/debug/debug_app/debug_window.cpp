@@ -27,8 +27,9 @@ Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatch
 }
 
 void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, bool expanded) {
-
+    maxMag = 0.0f;
     myDrone = droneName;
+
     logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
     firstTimeStamp = ros::Time().now();
     logTextBuffer->set_text(
@@ -120,6 +121,10 @@ void debug_window::update_ui_labels() {
     desPosY->set_text(round_to_string(desPositionMsg.pose.position.y, decimals));
     desPosZ->set_text(round_to_string(desPositionMsg.pose.position.z, decimals));
     // currYaw->set_text(round_to_string(currPositionMsg.orient.angular.z, 5));
+    maxMag = std::max(maxMag, std::abs(currVelocityMsg.twist.linear.x));
+    maxMag = std::max(maxMag, std::abs(currVelocityMsg.twist.linear.y));
+    maxMag = std::max(maxMag, std::abs(currVelocityMsg.twist.linear.z));
+    currYaw->set_text(round_to_string(maxMag, decimals));
 
     stateInput->set_text(currState);
 }
