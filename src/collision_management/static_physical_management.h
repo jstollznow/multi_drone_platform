@@ -39,13 +39,15 @@ private:
     static geometry_msgs::Point pos_static_limits(rigidbody* d, geometry_msgs::Point requestedPos, double dur);
     static geometry_msgs::Vector3 check_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
     static geometry_msgs::Vector3 check_physical_limits(geometry_msgs::Vector3 requestedPosition);
-    template <class T>
-    static bool coord_equality(T vec1, T vec2);
     static geometry_msgs::Vector3 point_to_vec3 (geometry_msgs::Point input);
 public:
     static static_limits staticBoundary;
     static double adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3& requestedPosition, double dur);
     static geometry_msgs::Vector3 adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
+    static void adjust_command(rigidbody *d, multi_drone_platform::api_update& msg);
+    static void check_land(rigidbody* d, multi_drone_platform::api_update& msg);
+    static void make_absolute_velocity(rigidbody *d, multi_drone_platform::api_update &msg);
+    static void make_absolute_position(rigidbody *d, multi_drone_platform::api_update &msg);
 };
 
 

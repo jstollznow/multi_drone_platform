@@ -3,9 +3,15 @@
 //
 
 #include "potential_fields.h"
+#include "utility_functions.cpp"
+
+#define MIN_DIST 0.2f
+#define GRAV_GAIN 1.0f
+#define REPLUSIVE_GAIN 1.0f
+#define COORD_GAIN 1.0f
 
 bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies) {
-    double remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
+    auto remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
     geometry_msgs::Vector3 netForce;
     geometry_msgs::Vector3 velocity;
     geometry_msgs::Point posLimited;
@@ -30,98 +36,72 @@ bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies)
 //                if (!coord_equality(velLimited, d->currentVelocity.linear)) {
 //                    d->set_desired_velocity(velLimited, 0.0, remainingDuration, true, true);
 //                }
+                maxVel.x = std::max(maxVel.x, d->currentVelocity.linear.x);
+                maxVel.y = std::max(maxVel.y, d->currentVelocity.linear.y);
+                maxVel.z = std::max(maxVel.z, d->currentVelocity.linear.z);
+
                 double t = 0.01;
-                netForce = add_vec3_or_point(replusive_forces(d, rigidbodies), attractive_forces(d));
-                geometry_msgs::Vector3 accelOverTime = multiply_by_constant(multiply_by_constant(netForce, 1/(d->mass)), t);
+                netForce = utility_functions::add_vec3_or_point(replusive_forces(d, rigidbodies), attractive_forces(d));
+//                netForce = add_vec3_or_point(netForce, coordination_force(d));
+                geometry_msgs::Vector3 accelOverTime = utility_functions::multiply_by_constant(
+                        utility_functions::multiply_by_constant(netForce, 1/(d->mass)),
+                        t);
                 geometry_msgs::Vector3 newVel;
                 geometry_msgs::Vector3 reqVel = calculate_req_velocity(d, remainingDuration);
                 newVel.x = reqVel.x + accelOverTime.x;
                 newVel.y = reqVel.y + accelOverTime.y;
                 newVel.z = reqVel.z + accelOverTime.z;
 
-                d->log_coord(logger::DEBUG, "Net influence", netForce);
-                d->log_coord(logger::DEBUG, "New Vel: ", newVel);
+                d->log_coord(logger::DEBUG, "Max Vel", maxVel);
+                d->log_coord(logger::DEBUG, "New Vel", newVel);
                 d->set_desired_velocity(newVel, 0.0, remainingDuration, true, true);
-
                 break;
         }
     }
 }
-template<class T>
-T potential_fields::add_vec3_or_point(T a, T b) {
-    T ret;
-    ret.x = a.x + b.x;
-    ret.y = a.y + b.y;
-    ret.z = a.z + b.z;
-    return ret;
-}
+
 geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vector<rigidbody *> &rigidbodies) {
     geometry_msgs::Vector3 replusiveForce;
-    double scaling = 0.2;
-    double minDist = 0.20;
     for (auto rb : rigidbodies) {
         if (rb->get_id() != d->get_id()) {
             geometry_msgs::Point obPoint = rb->currentPose.position;
             geometry_msgs::Point dPoint = d->currentPose.position;
-            double dist = distance_between(dPoint, obPoint);
+            double dist = utility_functions::distance_between(dPoint, obPoint);
 
-            if (dist <= minDist) {
-                double multiple = (scaling * std::pow((1.0 / dist) - (1.0 / minDist), 2.0)) / std::pow(dist, 3.0);
-                auto diffVec = difference(dPoint, obPoint);
+            if (dist <= MIN_DIST) {
+                double multiple = (REPLUSIVE_GAIN * std::pow((1.0 / dist) - (1.0 / MIN_DIST), 2.0)) / std::pow(dist, 3.0);
+                double L = std::pow(utility_functions::distance_between(d->currentPose.position, d->desiredPose.position), 2.0);
+                auto diffVec = utility_functions::difference(dPoint, obPoint);
+//                multiple *= L;
 //                d->log(logger::DEBUG, "multiple: " + std::to_string(multiple));
                 replusiveForce.x = multiple * diffVec.x;
                 replusiveForce.y = multiple * diffVec.y;
                 replusiveForce.z = multiple * diffVec.z;
-
-//                d->log_coord(logger::DEBUG, "Repulsive Forces from drone_" + std::to_string(rb->get_id()) + " @ dist: " + std::to_string(dist), replusiveForce);
             }
 
         }
     }
-//    d->log_coord(logger::DEBUG, "Repulsive Forces Total", replusiveForce);
     return replusiveForce;
+}
+geometry_msgs::Vector3 potential_fields::coordination_force(rigidbody* d) {
+    geometry_msgs::Vector3 coordForce;
+    auto distToTarget = utility_functions::distance_between(d->currentPose.position, d->desiredPose.position);
+    if (distToTarget < 0.01) return coordForce;
+    double multiple = COORD_GAIN * distToTarget * std::pow((1.0 / distToTarget) - (1.0 / MIN_DIST), 2.0);
+    coordForce.x = coordForce.y = coordForce.z = multiple;
+    return coordForce;
 }
 
 geometry_msgs::Vector3 potential_fields::attractive_forces(rigidbody *d) {
     geometry_msgs::Vector3 attractiveForce;
-    double scaling = 1.0;
-    auto diffVec = difference(d->currentPose.position, d->desiredPose.position);
-    auto dist = distance_between(d->currentPose.position, d->desiredPose.position);
-    if (dist < 0.01) {
-        return attractiveForce;
-    }
-    double multiple = -scaling/dist;
+    auto diffVec = utility_functions::difference(d->currentPose.position, d->desiredPose.position);
+    auto distToTarget = utility_functions::distance_between(d->currentPose.position, d->desiredPose.position);
+    if (distToTarget < 0.01) return attractiveForce;
+    double multiple = -GRAV_GAIN / distToTarget;
     attractiveForce.x = multiple * diffVec.x;
     attractiveForce.y = multiple * diffVec.y;
     attractiveForce.z = multiple * diffVec.z;
-//    d->log_coord(logger::DEBUG, "Attractive Force @ dist: " + std::to_string(dist), attractiveForce);
     return attractiveForce;
-}
-
-double potential_fields::distance_between(geometry_msgs::Point a, geometry_msgs::Point b) {
-    double dist = 0.0f;
-    dist += (a.x - b.x) * (a.x - b.x);
-    dist += (a.y - b.y) * (a.y - b.y);
-    dist += (a.z - b.z) * (a.z - b.z);
-    return std::sqrt(dist);
-}
-
-template<class T>
-T potential_fields::difference(T a, T b) {
-    T ret;
-    ret.x = a.x - b.x;
-    ret.y = a.y - b.y;
-    ret.z = a.z - b.z;
-    return ret;
-}
-
-template<class T>
-T potential_fields::multiply_by_constant(T a, double multiple) {
-    T ret;
-    ret.x = a.x * multiple;
-    ret.y = a.y * multiple;
-    ret.z = a.z * multiple;
-    return ret;
 }
 
 geometry_msgs::Vector3 potential_fields::calculate_req_velocity(rigidbody *d, double remainingDuration) {
@@ -129,6 +109,5 @@ geometry_msgs::Vector3 potential_fields::calculate_req_velocity(rigidbody *d, do
     reqVel.x = (d->desiredPose.position.x - d->currentPose.position.x) / remainingDuration;
     reqVel.y = (d->desiredPose.position.y - d->currentPose.position.y) / remainingDuration;
     reqVel.z = (d->desiredPose.position.z - d->currentPose.position.z) / remainingDuration;
-
     return reqVel;
 }
