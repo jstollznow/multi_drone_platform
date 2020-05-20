@@ -65,7 +65,7 @@ void initialise(double pUpdateRate, std::string nodeName) {
     nodeData->node = new ros::NodeHandle();
     nodeData->loopRate = new ros::Rate(pUpdateRate);
 
-    nodeData->publisher = nodeData->node->advertise<geometry_msgs::TransformStamped> ("mdp", 2);
+    nodeData->publisher = nodeData->node->advertise<geometry_msgs::TransformStamped> ("mdp", 100);
     nodeData->dataClient = nodeData->node->serviceClient<nav_msgs::GetPlan> ("mdp_data_srv");
     nodeData->listClient = nodeData->node->serviceClient<tf2_msgs::FrameGraph> ("mdp_list_srv");
 
