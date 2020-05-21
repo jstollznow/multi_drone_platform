@@ -9,20 +9,20 @@ class DRONE_WRAPPER(object)
 
     public:
     void on_init(std::vector<std::string> args) final {
-        this->physical_limits.x = {{0.0, 0.0}};
-        this->physical_limits.y = {{0.0, 0.0}};
-        this->physical_limits.z = {{0.0, 0.0}};
+        this->velocity_limits.x = {{0.0, 0.0}};
+        this->velocity_limits.y = {{0.0, 0.0}};
+        this->velocity_limits.z = {{0.0, 0.0}};
     };
 
     void on_deinit() final {
 
     }
 
-    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) final {
+    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration) final {
 
     }
 
-    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) final {
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) final {
 
     }
 

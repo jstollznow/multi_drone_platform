@@ -82,9 +82,9 @@ public:
     void on_init(std::vector<std::string> args) final {
         std::string desPoseTopic = "mdp/drone_" + std::to_string(this->get_id()) + "/des_pose";
 
-        this->physical_limits.x = {{-3.0, 3.0}};
-        this->physical_limits.y = {{-3.0, 3.0}};
-        this->physical_limits.z = {{-3.0, 2.0}};
+        this->velocity_limits.x = {{-3.0, 3.0}};
+        this->velocity_limits.y = {{-3.0, 3.0}};
+        this->velocity_limits.z = {{-3.0, 2.0}};
         this->mass = 0.100;
 
         this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(this->get_tag()), 1);
@@ -103,16 +103,9 @@ public:
 
     void on_set_position(geometry_msgs::Vector3 pos, 
                         float yaw,
-                        float duration, 
-                        bool isRelative) override {
+                        float duration) override {
 
         this->moveType = move_type::POSITION;
-
-        if (isRelative) {
-            pos.x = pos.x + positionArray[0];
-            pos.y = pos.y + positionArray[1];
-            pos.z = pos.z + positionArray[2];
-        }
 
         this->desiredPositionArray[0] = pos.x;
         this->desiredPositionArray[1] = pos.y;
@@ -121,7 +114,7 @@ public:
         this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
-    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) override {
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) override {
         //@TODO: add relative height
         this->moveType = move_type::VELOCITY;
         this->endOfCommand = ros::Time::now().toSec() + duration;
@@ -195,7 +188,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = height;
 
-        on_set_position(pos, this->currentYaw, duration, false);
+        on_set_position(pos, this->currentYaw, duration);
     }
 
     void on_land(float duration) override {
@@ -204,7 +197,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        on_set_position(pos, this->currentYaw, duration, false);
+        on_set_position(pos, this->currentYaw, duration);
     }
 
     void on_emergency() override {
@@ -213,7 +206,7 @@ public:
         pos.y = this->currentPose.position.y;
         pos.z = 0.0;
 
-        on_set_position(pos, this->currentYaw, 0.5, false);
+        on_set_position(pos, this->currentYaw, 0.5);
     }
 };
 

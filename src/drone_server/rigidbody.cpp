@@ -11,10 +11,10 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->lastRecievedApiUpdate.msgType = "";
 
 //    initialise physical velocity limits in m/s
-//    initialise mass in kg
-    this->physical_limits.x = {{-10.0, 10.0}};
-    this->physical_limits.y = {{-10.0, 10.0}};
-    this->physical_limits.z = {{-10.0, 10.0}};
+    this->velocity_limits.x = {{-10.0, 10.0}};
+    this->velocity_limits.y = {{-10.0, 10.0}};
+    this->velocity_limits.z = {{-10.0, 10.0}};
+//    initialise approx. mass in kg
     this->mass = 0.100;
 
     // look for drone under tag namespace then vrpn output
@@ -90,22 +90,14 @@ double rigidbody::vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3
     return dist;
 }
 
-void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw,
-float duration, bool relativeXY, bool relativeZ) {
+void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, float duration) {
     if (this->get_state() == flight_state::LANDED) {
         this->log(logger::WARN, "Go to position called on landed drone, ignoring");
         return;
     }
 
-    /* get z values in same form as of x,y values (synchronise relativity) */
-    if (relativeXY) {
-        pos.x += this->currentPose.position.x;
-        pos.y += this->currentPose.position.y;
-    }
-    if (relativeZ) pos.z += this->currentPose.position.z;
-
     // limits are processed in absolute form
-    duration = static_physical_management::adjust_for_physical_limits(this, pos, duration);
+//    duration = static_physical_management::adjust_for_physical_limits(this, pos, duration);
     this->desiredPose.position.x = pos.x;
     this->desiredPose.position.y = pos.y;
     this->desiredPose.position.z = pos.z;
@@ -118,14 +110,14 @@ float duration, bool relativeXY, bool relativeZ) {
     desiredPosePublisher.publish(desPoseMsg);
 
     /* declare flight state to moving if this is not a hover message */
-    if (!(pos.x == 0.0f && pos.y == 0.0f && pos.z == 0.0f && relativeXY && relativeZ)) {
+    if (!(pos.x == 0.0f && pos.y == 0.0f && pos.z == 0.0f)) {
         this->declare_expected_state(flight_state::MOVING);
     }
 
-    this->on_set_position(pos, yaw, duration, false);
+    this->on_set_position(pos, yaw, duration);
 }
 
-void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeZ) {
+void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration) {
     if (this->get_state() == flight_state::LANDED) {
         this->log(logger::WARN, "set velocity called on landed drone, ignoring");
         return;
@@ -144,7 +136,7 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
     desiredTwistPublisher.publish(desTwistMsg);
 
     this->declare_expected_state(flight_state::MOVING);
-    this->on_set_velocity(vel, yawRate, duration, relativeXY);
+    this->on_set_velocity(vel, yawRate, duration);
 }
 
 bool rigidbody::is_msg_different(multi_drone_platform::api_update msg) {
@@ -165,16 +157,10 @@ geometry_msgs::Vector3 rigidbody::get_home_coordinates() {
     return homePosition;
 }   
 
-void rigidbody::set_home_coordiates(geometry_msgs::Vector3 pos, bool relative) {
+void rigidbody::set_home_coordiates(geometry_msgs::Vector3 pos) {
     // z coord does not matter for home position, will be set in each case
-    if (relative) {
-        homePosition.x = currentPose.position.x + pos.x;
-        homePosition.y = currentPose.position.y + pos.y;
-    }
-    else {
-        homePosition.x = pos.x;
-        homePosition.y = pos.y;
-    }
+    homePosition.x = pos.x;
+    homePosition.y = pos.y;
     homePosition.z = 0.0f;
 }
 
@@ -258,9 +244,9 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
             this->do_stage_1_timeout();
         }
     }
-    else if (this->get_state() == MOVING || this->get_state() == HOVERING){
-        potential_fields::check(this, rigidbodies);
-    }
+//    else if (this->get_state() == MOVING || this->get_state() == HOVERING){
+//        potential_fields::check(this, rigidbodies);
+//    }
 
     this->on_update();
 }
@@ -273,7 +259,8 @@ void rigidbody::api_callback(const multi_drone_platform::api_update& msg) {
             // std::string commandInfo = "Recieved msg " + msg.msg_type;
             // this->postLog(0, commandInfo);  
             this->commandQueue.clear();
-            this->commandQueue.push_back(msg);
+            auto modMsg = static_physical_management::adjust_command(this, msg);
+            this->commandQueue.push_back(modMsg);
             handle_command();
         } else {
             this->log(logger::ERROR, "Battery Timeout");
@@ -302,12 +289,14 @@ void rigidbody::handle_command() {
                 /* VELOCITY */
                 case 0:
                     ROS_INFO("V: [%.2f, %.2f, %.2f] rel_Xy: %d, rel_z: %d, dur: %.1f", msg.posVel.x, msg.posVel.y, msg.posVel.z, msg.relativeXY, msg.relativeZ, msg.duration);
-                    set_desired_velocity(msg.posVel, msg.yawVal, msg.duration, msg.relativeXY, msg.relativeZ);
+                    if (msg.relativeXY && msg.relativeZ) this->log(logger::ERROR, "This should have already been preprocessed");
+                    set_desired_velocity(msg.posVel, msg.yawVal, msg.duration);
                     break;
                 /* POSITION */
                 case 1:
                     ROS_INFO("P: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posVel.x, msg.posVel.y, msg.posVel.z, msg.relativeXY, msg.relativeZ);
-                    set_desired_position(msg.posVel, msg.yawVal, msg.duration, msg.relativeXY, msg.relativeZ);
+                    if (msg.relativeXY && msg.relativeZ) this->log(logger::ERROR, "This should have already been preprocessed");
+                    set_desired_position(msg.posVel, msg.yawVal, msg.duration);
                     break;
                 /* TAKEOFF */
                 case 2:
@@ -317,14 +306,10 @@ void rigidbody::handle_command() {
                     break;
                 /* LAND */
                 case 3:
-                    if (msg.duration > 0.0f){ land(msg.duration); }
-                    else { land(); }
+                    land(msg.duration);
                     break;
                 /* HOVER */
                 case 4:
-                    ROS_INFO("message duration on hover %f", msg.duration);
-                    if (msg.duration == 0.0f) msg.duration = 2.0f;
-
                     this->hover(msg.duration);
                     this->hoverTimer.reset_timer(msg.duration - 0.05f);
                     break;
@@ -334,7 +319,8 @@ void rigidbody::handle_command() {
                     break;
                 /* SET_HOME */
                 case 6:
-                    set_home_coordiates(msg.posVel, msg.relativeXY);
+                    if (!msg.relativeXY) this->log(logger::ERROR, "This should have already been preprocessed");
+                    set_home_coordiates(msg.posVel);
                     break;
                 /* GOTO_HOME */
                 case 8:
@@ -399,15 +385,8 @@ void rigidbody::hover(float duration) {
         this->log(logger::WARN, "hover called on landed drone, ignoring");
         return;
     }
-
-    // set the hover point based on current velocity
-    // auto pos = this->CurrentPose.position;
-    geometry_msgs::Vector3 pos{};
-    // pos.x += CurrentVelocity.linear.x * 0.3;
-    // pos.y += CurrentVelocity.linear.y * 0.3;
-    // pos.z += CurrentVelocity.linear.z * 0.3;
     this->log_coord<geometry_msgs::Point>(logger::DEBUG, "Position at hover request: ", currentPose.position);
-    set_desired_position(pos, 0.0f, duration, true, true);
+    set_desired_position(mdp_conversions::point_to_vector3(currentPose.position), 0.0f, duration);
     this->declare_expected_state(flight_state::HOVERING);
 }
 

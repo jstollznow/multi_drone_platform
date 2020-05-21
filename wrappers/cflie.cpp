@@ -93,9 +93,9 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
 
     public:
     void on_init(std::vector<std::string> args) final {
-        this->physical_limits.x = {{-2.0, 2.0}};
-        this->physical_limits.y = {{-2.0, 2.0}};
-        this->physical_limits.z = {{-2.0, 1.5}};
+        this->velocity_limits.x = {{-2.0, 2.0}};
+        this->velocity_limits.y = {{-2.0, 2.0}};
+        this->velocity_limits.z = {{-2.0, 1.5}};
         this->mass = 0.100;
 
         droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
@@ -179,16 +179,17 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         }
     }
 
-    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) override {
-        go_to(pos, yaw, duration, isRelative);
+    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration) override {
+        go_to(pos, yaw, duration, false);
     }
 
-    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) override {
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) override {
         geometry_msgs::Vector3 positionGoal;
         positionGoal.x = (vel.x * duration);
         positionGoal.y = (vel.y * duration);
         positionGoal.z = (vel.z * duration);
 
+        // as it calculates a relative positon
         go_to(positionGoal, yawrate , duration, true);
     }
 

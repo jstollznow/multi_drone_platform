@@ -109,7 +109,14 @@ class rigidbody {
             std::array<double, 2> x;
             std::array<double, 2> y;
             std::array<double, 2> z;
-        } physical_limits;
+        } velocity_limits;
+
+    struct {
+        std::array<double, 2> x;
+        std::array<double, 2> y;
+        std::array<double, 2> z;
+        } accel_limits;
+
         double mass;
 
     /* FUNCTIONS */
@@ -133,8 +140,8 @@ class rigidbody {
         void do_stage_1_timeout();
         bool is_msg_different(multi_drone_platform::api_update msg);
 
-        void set_desired_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool relativeXY, bool relativeZ);
-        void set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeHeight);
+        void set_desired_position(geometry_msgs::Vector3 pos, float yaw, float duration);
+        void set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration);
 
         void add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg);
         geometry_msgs::PoseStamped get_motion_capture();
@@ -143,14 +150,14 @@ class rigidbody {
         void api_callback(const multi_drone_platform::api_update& msg);
 
         void emergency();
-        void land(float duration = 5.0f);
-        void takeoff(float height = 0.25f, float duration = 3.0f);
+        void land(float duration);
+        void takeoff(float height, float duration);
         void hover(float duration);
-        void go_home(float yaw = 0.0f, float duration = 4.0f, float height = 0.0f);
+        void go_home(float yaw, float duration, float height);
         void shutdown();
 
         geometry_msgs::Vector3 get_home_coordinates();
-        void set_home_coordiates(geometry_msgs::Vector3 pos, bool relative);
+        void set_home_coordiates(geometry_msgs::Vector3 pos);
 
     protected:
         /**
@@ -221,11 +228,9 @@ class rigidbody {
          * @param pos the desired position for the drone to move to (modified by value of isRelative).
          * @param yaw the desired yaw of the drone upon reaching the desired position (degrees).
          * @param duration the time it should take for the drone to reach this position (seconds).
-         * @param isRelative If true, pos refers to a position relative to the drones current position. If false, pos
-         * refers to an absolute position.
          * @see set_drone_position
          */
-        virtual void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) = 0;
+        virtual void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration) = 0;
 
         /**
          * on_set_velocity is called whenever the drone should move with a desired velocity. This corresponds to a call to
@@ -233,9 +238,8 @@ class rigidbody {
          * @param vel the desired velocity for the drone (xyz meters per second)
          * @param yawrate the desired yawrate for the drone (degrees per second)
          * @param duration TODO: what is duration in this case?
-         * @param relativeHeight TODO: how does the relative height thing even work, its a velocity not an abs height in meters
          */
-        virtual void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) = 0;
+        virtual void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) = 0;
 
     public:
         /**
