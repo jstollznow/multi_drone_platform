@@ -44,10 +44,14 @@ public:
     static static_limits staticBoundary;
     static double adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3& requestedPosition, double dur);
     static geometry_msgs::Vector3 adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
-    static void adjust_command(rigidbody *d, multi_drone_platform::api_update& msg);
+    static multi_drone_platform::api_update adjust_command(rigidbody *d, const multi_drone_platform::api_update msg);
     static void check_land(rigidbody* d, multi_drone_platform::api_update& msg);
+    static void check_go_home(rigidbody *d, multi_drone_platform::api_update &msg);
     static void make_absolute_velocity(rigidbody *d, multi_drone_platform::api_update &msg);
     static void make_absolute_position(rigidbody *d, multi_drone_platform::api_update &msg);
+
+
+
 };
 
 

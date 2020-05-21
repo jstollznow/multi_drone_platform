@@ -54,7 +54,7 @@ bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies)
 
                 d->log_coord(logger::DEBUG, "Max Vel", maxVel);
                 d->log_coord(logger::DEBUG, "New Vel", newVel);
-                d->set_desired_velocity(newVel, 0.0, remainingDuration, true, true);
+                d->set_desired_velocity(newVel, 0.0, remainingDuration);
                 break;
         }
     }

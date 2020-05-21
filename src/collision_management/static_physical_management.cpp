@@ -4,6 +4,8 @@
 #include "../drone_server/element_conversions.cpp"
 #include "static_physical_management.h"
 
+#define NAIVE_ACCEL_BUFFER 1.3
+
 static_limits static_physical_management::staticBoundary(
     {{-3.00, 3.00}},
     {{-3.00, 3.00}},
@@ -98,9 +100,9 @@ geometry_msgs::Vector3 static_physical_management::check_physical_limits(geometr
 
 geometry_msgs::Vector3 static_physical_management::check_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity) {
     geometry_msgs::Vector3 limited;
-    limited.x = std::min(std::max(requestedVelocity.x, d->physical_limits.x[0]), d->physical_limits.x[1]);
-    limited.y = std::min(std::max(requestedVelocity.y, d->physical_limits.y[0]), d->physical_limits.y[1]);
-    limited.z = std::min(std::max(requestedVelocity.z, d->physical_limits.z[0]), d->physical_limits.z[1]);
+    limited.x = std::min(std::max(requestedVelocity.x, d->velocity_limits.x[0]), d->velocity_limits.x[1]);
+    limited.y = std::min(std::max(requestedVelocity.y, d->velocity_limits.y[0]), d->velocity_limits.y[1]);
+    limited.z = std::min(std::max(requestedVelocity.z, d->velocity_limits.z[0]), d->velocity_limits.z[1]);
     return limited;
 }
 
@@ -125,6 +127,7 @@ double static_physical_management::adjust_for_physical_limits(rigidbody* d, geom
     double requiredDuration = (vel_limits.x != 0) ? distToTravel.x / vel_limits.x : 0.0;
     requiredDuration = std::max((vel_limits.y != 0) ? distToTravel.y / vel_limits.y : 0.0, requiredDuration);
     requiredDuration = std::max((vel_limits.z != 0) ? distToTravel.z / vel_limits.z : 0.0, requiredDuration);
+    requiredDuration *= NAIVE_ACCEL_BUFFER;
     d->log(logger::DEBUG, "Set duration " + std::to_string(dur) + " Required: " + std::to_string(requiredDuration));
     d->log_coord(logger::DEBUG, "Position within bounds", pos_within_bounds);
     requestedPosition.x = pos_within_bounds.x;
@@ -167,40 +170,49 @@ void static_physical_management::make_absolute_velocity(rigidbody *d, multi_dron
 
 void static_physical_management::check_land(rigidbody *d, multi_drone_platform::api_update &msg) {
     double velZ = d->currentPose.position.z / msg.duration;
-    velZ = std::min(d->physical_limits.z[1], std::max(velZ, d->physical_limits.z[0]));
-    msg.duration = std::max(msg.duration, (float)(d->currentPose.position.z / velZ));
+    velZ = std::min(d->velocity_limits.z[1], std::max(velZ, d->velocity_limits.z[0]));
+    msg.duration = std::max(msg.duration, (float)((d->currentPose.position.z / velZ) * NAIVE_ACCEL_BUFFER));
 }
 
-void static_physical_management::adjust_command(rigidbody* d, multi_drone_platform::api_update& msg) {
+void static_physical_management::check_go_home(rigidbody* d, multi_drone_platform::api_update &msg) {
+    double velY = d->homePosition.y / msg.duration;
+    velY = std::min(d->velocity_limits.y[1], std::max(velY, d->velocity_limits.y[0]));
+    msg.duration = std::max(msg.duration, (float)((d->homePosition.y / velY) * NAIVE_ACCEL_BUFFER));
 
-    switch(apiMap[msg.msgType]) {
+    double velX = d->homePosition.x / msg.duration;
+    velX = std::min(d->velocity_limits.x[1], std::max(velX, d->velocity_limits.x[0]));
+    msg.duration = std::max(msg.duration, (float)((d->homePosition.x / velX) * NAIVE_ACCEL_BUFFER));
+}
+
+multi_drone_platform::api_update static_physical_management::adjust_command(rigidbody* d, const multi_drone_platform::api_update msg) {
+    auto modifiedMsg = msg;
+//    if duration is less than or equal to 0, opt for default duration
+    if (modifiedMsg.duration <= 0.0) modifiedMsg.duration = 4.0f;
+    switch(apiMap[modifiedMsg.msgType]) {
         /* VELOCITY */
         case 0:
-            make_absolute_velocity(d, msg);
-            msg.posVel = adjust_for_physical_limits(d, msg.posVel);
+            make_absolute_velocity(d, modifiedMsg);
+            modifiedMsg.posVel = adjust_for_physical_limits(d, modifiedMsg.posVel);
             break;
             /* POSITION */
         case 1:
-            make_absolute_position(d, msg);
-            msg.duration = adjust_for_physical_limits(d, msg.posVel, msg.duration);
+            make_absolute_position(d, modifiedMsg);
+            modifiedMsg.duration = adjust_for_physical_limits(d, modifiedMsg.posVel, modifiedMsg.duration);
             break;
             /* TAKEOFF */
         case 2:
             // already in absolute form, no need to convert.
             // simply check enough time has been allowed, and the height is not out of bounds
-            if (msg.duration == 0.0f) msg.duration = 3.0f;
-            if (msg.posVel.z <= 0.0f) msg.posVel.z = 0.25f;
-            msg.duration = adjust_for_physical_limits(d, msg.posVel, msg.duration);
+            if (modifiedMsg.posVel.z <= 0.0f) modifiedMsg.posVel.z = 0.25f;
+            modifiedMsg.duration = adjust_for_physical_limits(d, modifiedMsg.posVel, modifiedMsg.duration);
             break;
             /* LAND */
         case 3:
             // checks enough duration has been added.
-            if (msg.duration <= 0.0) msg.duration = 5.0f;
-            check_land(d, msg);
+            check_land(d, modifiedMsg);
             break;
             /* HOVER */
         case 4:
-            if (msg.duration == 0.0f) msg.duration = 2.0f;
             break;
             /* EMERGENCY */
         case 5:
@@ -208,14 +220,16 @@ void static_physical_management::adjust_command(rigidbody* d, multi_drone_platfo
             break;
             /* SET_HOME */
         case 6:
-            make_absolute_position(d, msg);
+            make_absolute_position(d, modifiedMsg);
             break;
             /* GOTO_HOME */
         case 8:
-            // should manage default values here too
+            check_go_home(d, modifiedMsg);
+            // don't need to check land as 4.0f is allowed on rigidbody which is plenty of time
             break;
         default:
-            d->log(logger::WARN, "The API command, " + msg.msgType + ", is not valid");
+            d->log(logger::WARN, "The API command, " + modifiedMsg.msgType + ", is not valid");
             break;
     }
+    return modifiedMsg;
 }
