@@ -12,7 +12,7 @@ int main(int argc, char** argv)
     scanf("Enter a number to continue: %d", &a);
 
     auto drones = mdp::get_all_rigidbodies();
-    printf("drones:\n", drones.size());
+    printf("drones: %zu\n", drones.size());
     for (mdp::id& id : drones) {
         printf("\t%d\t:\t%s\n", id.numericID, id.name.c_str());
     }

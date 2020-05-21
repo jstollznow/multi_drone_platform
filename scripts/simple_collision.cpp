@@ -10,7 +10,7 @@ int main() {
     mdp::initialise(10, "pos");
 
     auto drones = mdp::get_all_rigidbodies();
-    if (drones.size() > 2) {
+    if (drones.size() > 1) {
         mdp::cmd_takeoff(drones[0]);
         mdp::cmd_takeoff(drones[1]);
 
