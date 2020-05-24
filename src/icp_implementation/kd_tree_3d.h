@@ -2,6 +2,7 @@
 #define SRC_KD_TREE_3D_H
 #include "geometry_msgs/Point.h"
 #include <array>
+#include <Eigen/Dense>
 
 struct kd_tree_node {
     std::array<double, 3> data{};
@@ -26,7 +27,7 @@ public:
     void insert(const geometry_msgs::Point& point);
 
     /* finds and returns the nearest node in the tree to point and the euclidean distance between the two */
-    std::pair<geometry_msgs::Point, double> find_nearest_neighbor(const geometry_msgs::Point &point);
+    std::pair<Eigen::Vector3d, double> find_nearest_neighbor(const Eigen::Vector3d &point) const;
 };
 
 /* built from https://www.cs.cmu.edu/~ckingsf/bioinfo-lectures/kdtrees.pdf */

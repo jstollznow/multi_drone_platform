@@ -16,7 +16,7 @@ private:
 
     void marker_cloud_callback(const visualization_msgs::Marker::ConstPtr& msg);
 
-    geometry_msgs::Pose perform_icp(std::vector<geometry_msgs::Point> markerTemplate, const geometry_msgs::Pose& initialEstimate, const kd_tree_3d& pointCloudTree);
+    static geometry_msgs::Pose perform_icp(const std::vector<geometry_msgs::Point>& markerTemplate, geometry_msgs::Pose initialEstimate, const kd_tree_3d& pointCloudTree);
 };
 
 
