@@ -1,18 +1,20 @@
 //
 // Created by jacob on 18/5/20.
 //
-
 #include "potential_fields.h"
 #include "utility_functions.cpp"
+#define MIN_DIST 0.30f
+#define GRAV_GAIN 0.8f
+#define REPLUSIVE_GAIN 100.00f
+#define COORD_GAIN 10.0f
+#define FORWARD_STEPS 10
 
-#define MIN_DIST 0.2f
-#define GRAV_GAIN 1.0f
-#define REPLUSIVE_GAIN 1.0f
-#define COORD_GAIN 1.0f
-
+double closest = 1000.0f;
+double closestThisRound = 1000.0f;
+double lastClosestRound = 1000.0f;
 bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies) {
     auto remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
-    geometry_msgs::Vector3 netForce;
+
     geometry_msgs::Vector3 velocity;
     geometry_msgs::Point posLimited;
     if (remainingDuration > 0.00) {
@@ -36,42 +38,93 @@ bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies)
 //                if (!coord_equality(velLimited, d->currentVelocity.linear)) {
 //                    d->set_desired_velocity(velLimited, 0.0, remainingDuration, true, true);
 //                }
-                maxVel.x = std::max(maxVel.x, d->currentVelocity.linear.x);
-                maxVel.y = std::max(maxVel.y, d->currentVelocity.linear.y);
-                maxVel.z = std::max(maxVel.z, d->currentVelocity.linear.z);
+                position_based_pf(d, rigidbodies);
 
-                double t = 0.01;
-                netForce = utility_functions::add_vec3_or_point(replusive_forces(d, rigidbodies), attractive_forces(d));
-//                netForce = add_vec3_or_point(netForce, coordination_force(d));
-                geometry_msgs::Vector3 accelOverTime = utility_functions::multiply_by_constant(
-                        utility_functions::multiply_by_constant(netForce, 1/(d->mass)),
-                        t);
-                geometry_msgs::Vector3 newVel;
-                geometry_msgs::Vector3 reqVel = calculate_req_velocity(d, remainingDuration);
-                newVel.x = reqVel.x + accelOverTime.x;
-                newVel.y = reqVel.y + accelOverTime.y;
-                newVel.z = reqVel.z + accelOverTime.z;
-
-                d->log_coord(logger::DEBUG, "Max Vel", maxVel);
-                d->log_coord(logger::DEBUG, "New Vel", newVel);
-                d->set_desired_velocity(newVel, 0.0, remainingDuration);
                 break;
         }
     }
 }
+bool potential_fields::check_influence_mag(geometry_msgs::Vector3 replusiveForces) {
+    return std::abs(replusiveForces.x) <= 0.1 &&
+           std::abs(replusiveForces.y) <= 0.1 &&
+           std::abs(replusiveForces.z) <= 0.1;
+}
+
+geometry_msgs::Vector3 predict_position(ros::Time lastUpdate, geometry_msgs::Twist currVel, geometry_msgs::Pose currPos, int timeSteps) {
+    double timeSinceMoCapUpdate = ros::Time::now().toSec() - lastUpdate.toSec();
+    if (timeSinceMoCapUpdate < 0.0) {
+        ROS_WARN("time since update returning less than 0");
+        timeSinceMoCapUpdate = 0.0;
+    }
+
+    geometry_msgs::Vector3 pos = utility_functions::point_to_vec3(currPos.position);
+    pos.x += (currVel.linear.x * timeSinceMoCapUpdate * (double)timeSteps);
+    pos.y += (currVel.linear.y * timeSinceMoCapUpdate * (double)timeSteps);
+    pos.z += (currVel.linear.z * timeSinceMoCapUpdate * (double)timeSteps);
+
+    return pos;
+}
+
+void potential_fields::position_based_pf(rigidbody *d, std::vector<rigidbody *> &rigidbodies) {
+    geometry_msgs::Vector3 netForce;
+    auto remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
+    double t = 0.1;
+    auto replusiveForces = replusive_forces(d, rigidbodies);
+    netForce = utility_functions::add_vec3_or_point(replusiveForces, attractive_forces(d));
+//    netForce = utility_functions::add_vec3_or_point(netForce, coordination_force(d));
+    geometry_msgs::Vector3 externalVelocityInfluence =
+            utility_functions::multiply_by_constant(netForce, remainingDuration / (d->mass));
+    geometry_msgs::Vector3 reqVel = calculate_req_velocity(d, remainingDuration);
+    externalVelocityInfluence = utility_functions::multiply_by_constant(externalVelocityInfluence, utility_functions::magnitude(reqVel) / utility_functions::magnitude(externalVelocityInfluence));
+    geometry_msgs::Vector3 nextPos;
+    nextPos.x = externalVelocityInfluence.x * remainingDuration;
+    nextPos.y = externalVelocityInfluence.y * remainingDuration;
+    nextPos.z = externalVelocityInfluence.z * remainingDuration;
+
+    closest = std::min(closest, closestThisRound);
+
+    d->log(logger::DEBUG, "Distance to closest " + std::to_string(closestThisRound));
+    d->log_coord(logger::DEBUG, "Replusive Forces", replusiveForces);
+    d->log_coord(logger::DEBUG, "External Velocity", externalVelocityInfluence);
+    d->log_coord(logger::DEBUG, "NetForces", netForce);
+
+//    if (check_influence_mag(replusiveForces)) {
+//        d->log(logger::DEBUG, "Going to goal pos in straight line");
+//        if (d->isUnderInfluence) {
+//            d->isUnderInfluence = false;
+//            d->set_desired_position(d->lastRecievedApiUpdate.posVel, 0.0, remainingDuration);
+//        }
+//    }
+//    else {
+//        d->isUnderInfluence = true;
+//        d->set_desired_velocity(externalVelocityInfluence, 0.0, remainingDuration);
+//    }
+    d->set_desired_velocity(externalVelocityInfluence, 0.0, remainingDuration);
+    d->log(logger::INFO, "Closest dist: " + std::to_string(closest));
+    lastClosestRound = closestThisRound;
+    closestThisRound = 1000.0f;
+}
 
 geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vector<rigidbody *> &rigidbodies) {
     geometry_msgs::Vector3 replusiveForce;
+
     for (auto rb : rigidbodies) {
         if (rb->get_id() != d->get_id()) {
-            geometry_msgs::Point obPoint = rb->currentPose.position;
-            geometry_msgs::Point dPoint = d->currentPose.position;
-            double dist = utility_functions::distance_between(dPoint, obPoint);
-
+            double timeSteps =
+                    utility_functions::magnitude(
+                            utility_functions::difference(
+                                    rb->currentVelocity.linear,
+                                    rb->currentVelocity.linear))
+                    * FORWARD_STEPS;
+            auto obPoint = utility_functions::point_to_vec3(rb->currentPose.position);
+            auto obFuturePoint = predict_position(rb->lastUpdate, rb->currentVelocity, rb->currentPose, timeSteps);
+            auto dPoint = utility_functions::point_to_vec3(d->currentPose.position);
+            double dist = utility_functions::distance_between(dPoint, obFuturePoint);
+            closestThisRound = std::min(closestThisRound, utility_functions::distance_between(dPoint, obPoint));
             if (dist <= MIN_DIST) {
                 double multiple = (REPLUSIVE_GAIN * std::pow((1.0 / dist) - (1.0 / MIN_DIST), 2.0)) / std::pow(dist, 3.0);
-                double L = std::pow(utility_functions::distance_between(d->currentPose.position, d->desiredPose.position), 2.0);
-                auto diffVec = utility_functions::difference(dPoint, obPoint);
+                double L = std::pow(utility_functions::distance_between(utility_functions::point_to_vec3(d->currentPose.position), d->lastRecievedApiUpdate.posVel), 2.0);
+                auto diffVec = utility_functions::difference(dPoint, obFuturePoint);
 //                multiple *= L;
 //                d->log(logger::DEBUG, "multiple: " + std::to_string(multiple));
                 replusiveForce.x = multiple * diffVec.x;
@@ -85,7 +138,7 @@ geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vec
 }
 geometry_msgs::Vector3 potential_fields::coordination_force(rigidbody* d) {
     geometry_msgs::Vector3 coordForce;
-    auto distToTarget = utility_functions::distance_between(d->currentPose.position, d->desiredPose.position);
+    auto distToTarget = utility_functions::distance_between(utility_functions::point_to_vec3(d->currentPose.position), d->lastRecievedApiUpdate.posVel);
     if (distToTarget < 0.01) return coordForce;
     double multiple = COORD_GAIN * distToTarget * std::pow((1.0 / distToTarget) - (1.0 / MIN_DIST), 2.0);
     coordForce.x = coordForce.y = coordForce.z = multiple;
@@ -94,10 +147,10 @@ geometry_msgs::Vector3 potential_fields::coordination_force(rigidbody* d) {
 
 geometry_msgs::Vector3 potential_fields::attractive_forces(rigidbody *d) {
     geometry_msgs::Vector3 attractiveForce;
-    auto diffVec = utility_functions::difference(d->currentPose.position, d->desiredPose.position);
-    auto distToTarget = utility_functions::distance_between(d->currentPose.position, d->desiredPose.position);
-    if (distToTarget < 0.01) return attractiveForce;
-    double multiple = -GRAV_GAIN / distToTarget;
+    auto diffVec = utility_functions::difference(utility_functions::point_to_vec3(d->currentPose.position), d->lastRecievedApiUpdate.posVel);
+    auto distToTarget = utility_functions::distance_between(utility_functions::point_to_vec3(d->currentPose.position), d->lastRecievedApiUpdate.posVel);
+
+    double multiple = -GRAV_GAIN;
     attractiveForce.x = multiple * diffVec.x;
     attractiveForce.y = multiple * diffVec.y;
     attractiveForce.z = multiple * diffVec.z;
@@ -106,8 +159,10 @@ geometry_msgs::Vector3 potential_fields::attractive_forces(rigidbody *d) {
 
 geometry_msgs::Vector3 potential_fields::calculate_req_velocity(rigidbody *d, double remainingDuration) {
     geometry_msgs::Vector3 reqVel;
-    reqVel.x = (d->desiredPose.position.x - d->currentPose.position.x) / remainingDuration;
-    reqVel.y = (d->desiredPose.position.y - d->currentPose.position.y) / remainingDuration;
-    reqVel.z = (d->desiredPose.position.z - d->currentPose.position.z) / remainingDuration;
+    reqVel.x = (d->lastRecievedApiUpdate.posVel.x - d->currentPose.position.x) / remainingDuration;
+    reqVel.y = (d->lastRecievedApiUpdate.posVel.y - d->currentPose.position.y) / remainingDuration;
+    reqVel.z = (d->lastRecievedApiUpdate.posVel.z - d->currentPose.position.z) / remainingDuration;
     return reqVel;
 }
+
+

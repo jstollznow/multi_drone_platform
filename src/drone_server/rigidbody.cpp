@@ -1,4 +1,5 @@
 #include <queue>
+#include <rigidbody.h>
 #include "rigidbody.h"
 #include "element_conversions.cpp"
 #include "../collision_management/static_physical_management.h"
@@ -14,6 +15,8 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->velocity_limits.x = {{-10.0, 10.0}};
     this->velocity_limits.y = {{-10.0, 10.0}};
     this->velocity_limits.z = {{-10.0, 10.0}};
+    this->maxVel = -1.0;
+    this->isUnderInfluence = false;
 //    initialise approx. mass in kg
     this->mass = 0.100;
 
@@ -81,6 +84,14 @@ std::string rigidbody::get_name() {
     return this->tag;
 }
 
+void rigidbody::set_max_vel() {
+    this->maxVel = std::max(std::abs(velocity_limits.x[0]), std::abs(velocity_limits.x[1]));
+    this->maxVel = std::max(maxVel, std::abs(velocity_limits.y[0]));
+    this->maxVel = std::max(maxVel, std::abs(velocity_limits.y[1]));
+    this->maxVel = std::max(maxVel, std::abs(velocity_limits.z[0]));
+    this->maxVel = std::max(maxVel, std::abs(velocity_limits.z[1]));
+}
+
 double rigidbody::vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b)
 {
     double dist = 0.0;
@@ -95,9 +106,8 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
         this->log(logger::WARN, "Go to position called on landed drone, ignoring");
         return;
     }
-
     // limits are processed in absolute form
-//    duration = static_physical_management::adjust_for_physical_limits(this, pos, duration);
+    duration = static_physical_management::adjust_for_physical_limits(this, pos, duration);
     this->desiredPose.position.x = pos.x;
     this->desiredPose.position.y = pos.y;
     this->desiredPose.position.z = pos.z;
@@ -244,9 +254,9 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
             this->do_stage_1_timeout();
         }
     }
-//    else if (this->get_state() == MOVING || this->get_state() == HOVERING){
-//        potential_fields::check(this, rigidbodies);
-//    }
+    else if (this->get_state() == MOVING || this->get_state() == HOVERING){
+        potential_fields::check(this, rigidbodies);
+    }
 
     this->on_update();
 }
@@ -395,11 +405,9 @@ void rigidbody::go_home(float yaw, float duration, float height) {
     multi_drone_platform::api_update goMsg;
     goMsg.msgType = "POSITION";
     goMsg.duration = duration;
-    goMsg.relativeXY = false;
-    goMsg.relativeZ = true;
     goMsg.yawVal = yaw;
     goMsg.posVel = homePosition;
-    goMsg.posVel.z = 0.0;
+    goMsg.posVel.z = currentPose.position.z;
     enqueue_command(goMsg);
 
     /* enqueue land msg if necessary */

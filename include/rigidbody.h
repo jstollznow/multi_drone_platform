@@ -110,18 +110,14 @@ class rigidbody {
             std::array<double, 2> y;
             std::array<double, 2> z;
         } velocity_limits;
-
-    struct {
-        std::array<double, 2> x;
-        std::array<double, 2> y;
-        std::array<double, 2> z;
-        } accel_limits;
-
+        double maxVel;
+        bool isUnderInfluence;
         double mass;
 
     /* FUNCTIONS */
     private:
         void calculate_velocity();
+        void set_max_vel();
         static double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
 
         /* this function declares that we are expecting the drone to enter this state very soon. This expected overrides the physical state for the next 100ms or so.

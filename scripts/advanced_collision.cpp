@@ -62,7 +62,7 @@ int main() {
         mdp::sleep_until_idle(drones[0]);
         mdp::set_drone_position(drones[0], posMsg);
         mdp::sleep_until_idle(drones[0]);
-        mdp::go_to_home(drones[0]);
+        mdp::go_to_home(drones[0], 0.20, -1.0);
         mdp::sleep_until_idle(drones[0]);
 
     }

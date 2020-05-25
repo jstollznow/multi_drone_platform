@@ -1,10 +1,27 @@
 //
 // Created by jacob on 29/4/20.
 //
+
 #include "../drone_server/element_conversions.cpp"
 #include "static_physical_management.h"
 
-#define NAIVE_ACCEL_BUFFER 1.3
+#define NAIVE_ACCEL_BUFFER 1.2
+// @TODO: Use these two methods from utility functions rather than creating copies
+template<class T>
+T multiply_by_constant(T a, double multiple) {
+    T ret;
+    ret.x = a.x * multiple;
+    ret.y = a.y * multiple;
+    ret.z = a.z * multiple;
+    return ret;
+}
+template<class T>
+double magnitude(T a) {
+    double sum = a.x * a.x;
+    sum += a.y * a.y;
+    sum += a.z * a.z;
+    return std::sqrt(sum);
+}
 
 static_limits static_physical_management::staticBoundary(
     {{-3.00, 3.00}},
@@ -123,25 +140,18 @@ double static_physical_management::adjust_for_physical_limits(rigidbody* d, geom
     velocity.z = distToTravel.z / dur;
 
     auto vel_limits = check_physical_limits(d, velocity);
-
-    double requiredDuration = (vel_limits.x != 0) ? distToTravel.x / vel_limits.x : 0.0;
-    requiredDuration = std::max((vel_limits.y != 0) ? distToTravel.y / vel_limits.y : 0.0, requiredDuration);
-    requiredDuration = std::max((vel_limits.z != 0) ? distToTravel.z / vel_limits.z : 0.0, requiredDuration);
+    if (magnitude(vel_limits) > d->maxVel) {
+        vel_limits = multiply_by_constant(vel_limits, d->maxVel/magnitude(vel_limits));
+    }
+    double requiredDuration = magnitude(distToTravel)/magnitude(vel_limits);
     requiredDuration *= NAIVE_ACCEL_BUFFER;
     d->log(logger::DEBUG, "Set duration " + std::to_string(dur) + " Required: " + std::to_string(requiredDuration));
     d->log_coord(logger::DEBUG, "Position within bounds", pos_within_bounds);
     requestedPosition.x = pos_within_bounds.x;
     requestedPosition.y = pos_within_bounds.y;
     requestedPosition.z = pos_within_bounds.z;
+    if (std::isnan(requiredDuration)) return dur;
     return std::max(requiredDuration, dur);
-}
-
-geometry_msgs::Vector3 static_physical_management::point_to_vec3(geometry_msgs::Point input) {
-    geometry_msgs::Vector3 ret;
-    ret.x = input.x;
-    ret.y = input.y;
-    ret.z = input.z;
-    return ret;
 }
 
 void static_physical_management::make_absolute_position(rigidbody *d, multi_drone_platform::api_update &msg) {
@@ -175,17 +185,27 @@ void static_physical_management::check_land(rigidbody *d, multi_drone_platform::
 }
 
 void static_physical_management::check_go_home(rigidbody* d, multi_drone_platform::api_update &msg) {
-    double velY = d->homePosition.y / msg.duration;
-    velY = std::min(d->velocity_limits.y[1], std::max(velY, d->velocity_limits.y[0]));
-    msg.duration = std::max(msg.duration, (float)((d->homePosition.y / velY) * NAIVE_ACCEL_BUFFER));
+    geometry_msgs::Vector3 vel;
+    geometry_msgs::Vector3 distToTravel;
+    distToTravel.x = d->homePosition.x - d->currentPose.position.x;
+    distToTravel.y = d->homePosition.y - d->currentPose.position.y;
+    vel.y = d->homePosition.y / msg.duration;
+    vel.y = std::min(d->velocity_limits.y[1], std::max(vel.y, d->velocity_limits.y[0]));
 
-    double velX = d->homePosition.x / msg.duration;
-    velX = std::min(d->velocity_limits.x[1], std::max(velX, d->velocity_limits.x[0]));
-    msg.duration = std::max(msg.duration, (float)((d->homePosition.x / velX) * NAIVE_ACCEL_BUFFER));
+    vel.x = d->homePosition.x / msg.duration;
+    vel.x = std::min(d->velocity_limits.x[1], std::max(vel.x, d->velocity_limits.x[0]));
+
+    vel.z = 0.0f;
+
+    if (magnitude(vel) > d->maxVel) {
+        vel = multiply_by_constant(vel, d->maxVel/magnitude(vel));
+    }
+    msg.duration = std::max((float)(magnitude(distToTravel)/magnitude(vel)), msg.duration);
 }
 
 multi_drone_platform::api_update static_physical_management::adjust_command(rigidbody* d, const multi_drone_platform::api_update msg) {
     auto modifiedMsg = msg;
+    if (d->maxVel == -1.0) d->set_max_vel();
 //    if duration is less than or equal to 0, opt for default duration
     if (modifiedMsg.duration <= 0.0) modifiedMsg.duration = 4.0f;
     switch(apiMap[modifiedMsg.msgType]) {

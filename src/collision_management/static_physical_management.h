@@ -39,7 +39,6 @@ private:
     static geometry_msgs::Point pos_static_limits(rigidbody* d, geometry_msgs::Point requestedPos, double dur);
     static geometry_msgs::Vector3 check_physical_limits(rigidbody* d, geometry_msgs::Vector3 requestedVelocity);
     static geometry_msgs::Vector3 check_physical_limits(geometry_msgs::Vector3 requestedPosition);
-    static geometry_msgs::Vector3 point_to_vec3 (geometry_msgs::Point input);
 public:
     static static_limits staticBoundary;
     static double adjust_for_physical_limits(rigidbody* d, geometry_msgs::Vector3& requestedPosition, double dur);
