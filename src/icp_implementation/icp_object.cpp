@@ -3,6 +3,24 @@
 icp_object::icp_object(const std::string& rigidbody_name, ros::NodeHandle handle) {
     this->initSubscriber = handle.subscribe("/mocap/rigid_bodies/" + rigidbody_name + "/markers", 1, &icp_object::init_marker_callback, this);
     this->posePublisher = handle.advertise<geometry_msgs::PoseStamped>("/icp_impl/" + rigidbody_name + "/pose", 1);
+
+    // @TODO: REMOVE THIS WHEN FINISHED TESTING
+    this->markerTemplateLocations.resize(4);
+    this->markerTemplateLocations[0].x = 0.04;
+    this->markerTemplateLocations[0].y = 0.0;
+    this->markerTemplateLocations[0].z = 0.0;
+
+    this->markerTemplateLocations[1].x = 0.0;
+    this->markerTemplateLocations[1].y = 0.04;
+    this->markerTemplateLocations[1].z = 0.0;
+
+    this->markerTemplateLocations[2].x = 0.0;
+    this->markerTemplateLocations[2].y = -0.04;
+    this->markerTemplateLocations[2].z = 0.0;
+
+    this->markerTemplateLocations[3].x = -0.04;
+    this->markerTemplateLocations[3].y = 0.0;
+    this->markerTemplateLocations[3].z = 0.04;
 }
 
 icp_object::~icp_object() = default;

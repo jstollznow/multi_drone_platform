@@ -1,9 +1,10 @@
 #include "icp_impl.h"
 #include <Eigen/Dense>
+#include <Eigen/Eigenvalues>
 
 icp_impl::icp_impl(const std::vector<rigidbody *> *rigidbodyListPtr, ros::NodeHandle& nodeHandle) {
     this->rigidbodyList = rigidbodyListPtr;
-    this->markerCloudSubscriber = nodeHandle.subscribe("~/markers/vis", 1, &icp_impl::marker_cloud_callback, this);
+    this->markerCloudSubscriber = nodeHandle.subscribe("/markers/vis", 1, &icp_impl::marker_cloud_callback, this);
 }
 
 icp_impl::~icp_impl() = default;
@@ -23,13 +24,29 @@ void icp_impl::marker_cloud_callback(const visualization_msgs::Marker::ConstPtr&
             continue;
         }
 
+        // ignore vflies (special case, vflies produce their own poses)
+        // @TODO: comment this out to test ICP using a vflie
+//        if (rigidbody->isVflie) {
+//            continue;
+//        }
+
         // if the icp object has not been initialised, ignore it
         if (!rigidbody->icpObject.has_initialised()) {
             continue;
         }
 
         // do icp implementation to get the new pose
-        auto newPose = icp_impl::perform_icp(rigidbody->icpObject.get_marker_template(), rigidbody->get_current_pose(), pointCloudTree);
+        Eigen::Quaterniond q;
+        q.setIdentity();
+        geometry_msgs::Pose p;
+        p.orientation.w = q.w();p.orientation.x = q.x();p.orientation.y = q.y();p.orientation.z = q.z();
+        auto newPose = icp_impl::perform_icp(rigidbody->icpObject.get_marker_template(), p, pointCloudTree);
+
+        // @TODO: REMOVE THIS WHEN FINISHED TESTING
+        std::cout << "diff" << std::endl;
+        std::cout << "pos x" << rigidbody->get_current_pose().position.x - newPose.position.x << std::endl;
+        std::cout << "pos y" << rigidbody->get_current_pose().position.y - newPose.position.y << std::endl;
+        std::cout << "pos z" << rigidbody->get_current_pose().position.z - newPose.position.z << std::endl;
 
         // create a PoseStamped from generated pose and timeNow
         geometry_msgs::PoseStamped poseStamped;
@@ -45,14 +62,14 @@ inline Eigen::Matrix3d construct_rotation_matrix(double a, double b, double y) {
     double cosA = cos(a), cosB = cos(b), cosY = cos(y);
     double sinA = sin(a), sinB = sin(b), sinY = sin(y);
     Eigen::Matrix3d r;
-    r <<    cosY*cosB, -sinY*cosA + cosY*sinB*sinA, sinY*sinA + cosY*sinB*cosA,
-            sinY*cosB, -cosY*cosA + sinY*sinB*sinA, -cosY*sinA + sinY*sinB*cosA,
-            -sinB, cosB*sinA, cosB*cosA;
-    return r;
+    r <<    cosY*cosB,  -sinY*cosA + cosY*sinB*sinA,    sinY*sinA + cosY*sinB*cosA,
+            sinY*cosB,  cosY*cosA + sinY*sinB*sinA,    -cosY*sinA + sinY*sinB*cosA,
+            -sinB,      cosB*sinA,                      cosB*cosA;
+    return r.transpose();
 }
 
 #define ICP_MAX_ITERATIONS 10
-#define ICP_ERROR_THRESHOLD 0.1
+#define ICP_ERROR_THRESHOLD 0.0001
 geometry_msgs::Pose icp_impl::perform_icp(const std::vector<geometry_msgs::Point>& markerTemplate, geometry_msgs::Pose poseEstimate, const kd_tree_3d& pointCloudTree)
 {
     // @TODO... test
@@ -85,7 +102,7 @@ geometry_msgs::Pose icp_impl::perform_icp(const std::vector<geometry_msgs::Point
         /* convert marker template to eigen vectors */
         std::vector<Eigen::Vector3d> poseMarkers;
         std::vector<Eigen::Vector3d> normals;
-        for (const geometry_msgs::Point& p : markerTemplate) {
+        for (const geometry_msgs::Point p : markerTemplate) {
             Eigen::Vector3d point(p.x, p.y, p.z);
             poseMarkers.emplace_back(point);
             normals.emplace_back(point.normalized());
@@ -95,50 +112,78 @@ geometry_msgs::Pose icp_impl::perform_icp(const std::vector<geometry_msgs::Point
         for (Eigen::Vector3d& point : poseMarkers) {
             /* rotate about estimate rotation */
             point = estimateQuat * point;
-
-            /* then translate */
-            point += estimateTranslation;
+            point = point + estimateTranslation;
         }
 
-        /* compute closest points, centroids, and average distance between point pairs (squared) */
-        Eigen::MatrixXd matA;
-        matA.resize(poseMarkers.size(), 6);
-        Eigen::VectorXd vecB;
-        vecB.resize(poseMarkers.size());
+
         double averageDistanceSq = 0.0;
+        std::vector<Eigen::Vector3d> dstPoints; dstPoints.reserve(poseMarkers.size());
+        Eigen::Vector3d dstCentroid(0.0, 0.0, 0.0);
+        Eigen::Vector3d srcCentroid(0.0, 0.0, 0.0);
         for (int i = 0; i < poseMarkers.size(); i++) {
             auto closestPoint = pointCloudTree.find_nearest_neighbor(poseMarkers[i]);
-
-            /* add row to matA */
-            std::array<double, 3> a{};
-            a[0] = normals[i].z() * closestPoint.first.y() - normals[i].y() * closestPoint.first.z();
-            a[1] = normals[i].x() * closestPoint.first.z() - normals[i].z() * closestPoint.first.x();
-            a[2] = normals[i].y() * closestPoint.first.x() - normals[i].x() * closestPoint.first.y();
-            matA.row(i) << a[0], a[1], a[2], normals[i].x(), normals[i].y(), normals[i].z();
-
-            /* add row to vecB */
-            vecB[i] = normals[i].dot(poseMarkers[i]) - normals[i].dot(closestPoint.first);
+            dstPoints.emplace_back(closestPoint.first);
+            dstCentroid += closestPoint.first;
+            srcCentroid += poseMarkers[i];
 
             /* add to running average */
             averageDistanceSq += closestPoint.second;
         }
+
         /* finalise average distance squared */
+        dstCentroid /= poseMarkers.size();
+        srcCentroid /= poseMarkers.size();
         averageDistanceSq /= poseMarkers.size();
 
-        /* perform SVD using matA and vecB (MatA * x - vecB) */
-        Eigen::VectorXd svdResults = matA.bdcSvd().solve(vecB);
+        /* bring destination points to origin */
+        for (int i = 0; i < poseMarkers.size(); i++) {
+            dstPoints[i] -= dstCentroid;
+            poseMarkers[i] -= srcCentroid;
+        }
 
-        /* construct rotation matrix from svd results */
-        auto R = construct_rotation_matrix(svdResults[0], svdResults[1], svdResults[2]);
+        double Sxx = 0.0, Sxy = 0.0, Sxz = 0.0, Syx = 0.0, Syy = 0.0, Syz = 0.0, Szx = 0.0, Szy = 0.0, Szz = 0.0;
+        for (size_t i = 0; i < dstPoints.size(); i++) {
+            Sxx += (poseMarkers[i].x() * dstPoints[i].x());
+            Sxy += (poseMarkers[i].x() * dstPoints[i].y());
+            Sxz += (poseMarkers[i].x() * dstPoints[i].z());
 
-        /* combine with current rotation estimate using quaternions */
-        Eigen::Quaterniond Rq(R);
-        estimateQuat *= Rq;
+            Syx += (poseMarkers[i].y() * dstPoints[i].x());
+            Syy += (poseMarkers[i].y() * dstPoints[i].y());
+            Syz += (poseMarkers[i].y() * dstPoints[i].z());
 
-        /* apply translation to estimate */
-        estimateTranslation.x() += svdResults[3];
-        estimateTranslation.y() += svdResults[4];
-        estimateTranslation.z() += svdResults[5];
+            Szx += (poseMarkers[i].z() * dstPoints[i].x());
+            Szy += (poseMarkers[i].z() * dstPoints[i].y());
+            Szz += (poseMarkers[i].z() * dstPoints[i].z());
+        }
+
+        Eigen::Matrix4d Nmat;
+        Nmat << (Sxx + Syy + Szz),          (Syz - Szy),            (Szx - Sxz),                (Sxy - Syx),
+                (Syz - Szy),                (Sxx - Syy - Szz),      (Sxy + Syx),                (Szx + Sxz),
+                (Szx - Sxz),                (Sxy + Syx),            (-Sxx + Syy - Szz),         (Syz + Szy),
+                (Sxy - Syx),                (Szx + Sxz),            (Syz + Szy),                (-Sxx - Syy + Szz);
+
+        Eigen::EigenSolver<Eigen::Matrix4d> es;
+        es.compute(Nmat, true);
+
+
+        int max_index = 0;
+        double max_num = 0.0;
+        for (int i = 0; i < es.eigenvalues().size(); i++) {
+            if (es.eigenvalues()[i].real() > max_num) {
+                max_index = i;
+                max_num = es.eigenvalues()[i].real();
+            }
+        }
+
+        auto maxEigenVector = es.eigenvectors().col(max_index);
+        Eigen::Quaterniond q;
+        q.w() = maxEigenVector[0].real();
+        q.x() = maxEigenVector[1].real();
+        q.y() = maxEigenVector[2].real();
+        q.z() = maxEigenVector[3].real();
+        estimateQuat = q * estimateQuat;
+
+        estimateTranslation += (dstCentroid - srcCentroid);
 
         /* apply error metric and increment iteration */
         error_value = averageDistanceSq;
@@ -152,7 +197,7 @@ geometry_msgs::Pose icp_impl::perform_icp(const std::vector<geometry_msgs::Point
     }
 
     /* fill poseEstimate with new data and return */
-    poseEstimate.orientation.z = estimateQuat.z();
+    poseEstimate.orientation.w = estimateQuat.w();
     poseEstimate.orientation.x = estimateQuat.x();
     poseEstimate.orientation.y = estimateQuat.y();
     poseEstimate.orientation.z = estimateQuat.z();

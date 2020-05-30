@@ -66,6 +66,7 @@ class rigidbody {
     };
 
     friend class drone_server;
+    friend class icp_impl;
 /* DATA */
     private:
         uint32_t numericID;
@@ -87,6 +88,7 @@ class rigidbody {
         mdp_timer hoverTimer;
         double declaredStateEndTime = 0.0;
         std::vector<multi_drone_platform::api_update> commandQueue;
+        bool isVflie = false;
 
     protected:
         bool batteryDying = false; // @TODO: formalise wrapper drone use of this variable (and cflie)
