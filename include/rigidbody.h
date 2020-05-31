@@ -7,6 +7,8 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
+#include "geometry_msgs/PoseArray.h"
+#include <std_msgs/Float64.h>
 #include "std_msgs/Float32MultiArray.h"
 #include "std_msgs/String.h"
 #include "geometry_msgs/Vector3.h"
@@ -76,6 +78,8 @@ class rigidbody {
         ros::Publisher currentTwistPublisher;
         ros::Publisher desiredPosePublisher;
         ros::Publisher desiredTwistPublisher;
+        ros::Publisher obstaclesPublisher;
+        ros::Publisher closestObstaclePublisher;
         ros::Time commandEnd;
 
         bool shutdownHasBeenCalled = false;

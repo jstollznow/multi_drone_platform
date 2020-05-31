@@ -7,8 +7,10 @@ classdef mdp_drone_graphing
         X;
         Y;
         Z;
+        Dist;
         Time;
         SeriesColor;
+        ClosestObstacleSub;
     end
     
     methods
@@ -19,8 +21,11 @@ classdef mdp_drone_graphing
             obj.X = [];
             obj.Y = [];
             obj.Z = [];
+            obj.Dist = [];
             obj.Time = [];
             obj.SeriesColor = 'black';
+            obstacleTopic = strcat(strcat("/mdp/drone_", num2str(id.NumericId)), "/closest_obstacle");
+            obj.ClosestObstacleSub = rossubscriber(obstacleTopic, 'std_msgs/Float64');
         end
         
         function obj = add_data(obj, pos)
@@ -29,6 +34,12 @@ classdef mdp_drone_graphing
             obj.X = [obj.X, pos.X];
             obj.Y = [obj.Y, pos.Y];
             obj.Z = [obj.Z, pos.Z];
+            if ~isempty(obj.ClosestObstacleSub.LatestMessage)
+                obj.Dist = [obj.Dist obj.ClosestObstacleSub.LatestMessage.Data];
+            else
+                obj.Dist = [obj.Dist 4.0];
+            end
+            
             obj.Time = [obj.Time, pos.TimeStampSec];
         end
         
@@ -58,6 +69,10 @@ classdef mdp_drone_graphing
         
         function color = get_Color(obj) 
             color = obj.SeriesColor;
+        end
+        
+        function dist = get_Dist(obj)
+           dist = obj.Dist; 
         end
         
     end

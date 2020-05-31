@@ -98,6 +98,13 @@ std::string debug_window::round_to_string(double val, int n) {
     return streamObj.str();
 }
 
+
+void debug_window::draw_obstacles() {
+    Cairo::RefPtr<Cairo::Context> myContext = topViewBotLeft->get_window()->create_cairo_context();
+    myContext->set_source_rgb(1.0, 0.0, 0.0);
+    myContext->set_line_width(2.0);
+}
+
 void debug_window::update_ui_labels() {
     int decimals = 3;
 
@@ -121,9 +128,12 @@ void debug_window::update_ui_labels() {
     desPosY->set_text(round_to_string(desPositionMsg.pose.position.y, decimals));
     desPosZ->set_text(round_to_string(desPositionMsg.pose.position.z, decimals));
     // currYaw->set_text(round_to_string(currPositionMsg.orient.angular.z, 5));
-    maxMag = std::max(maxMag, std::abs(currVelocityMsg.twist.linear.x));
-    maxMag = std::max(maxMag, std::abs(currVelocityMsg.twist.linear.y));
-    maxMag = std::max(maxMag, std::abs(currVelocityMsg.twist.linear.z));
+    double vel = std::sqrt(
+            currVelocityMsg.twist.linear.x * currVelocityMsg.twist.linear.x +
+            currVelocityMsg.twist.linear.y * currVelocityMsg.twist.linear.y +
+            currVelocityMsg.twist.linear.z + currVelocityMsg.twist.linear.z
+            );
+    maxMag = std::max(maxMag, vel);
     currYaw->set_text(round_to_string(maxMag, decimals));
 
     stateInput->set_text(currState);

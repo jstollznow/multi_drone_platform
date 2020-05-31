@@ -9,6 +9,7 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Float32MultiArray.h>
 #include <ros/callback_queue.h>
+#include <geometry_msgs/PoseArray.h>
 #include "multi_drone_platform/log.h"
 #include "gtk_ref.h"
 #include "user_api.h"
@@ -36,7 +37,9 @@ private:
     void on_speedScale_value_changed();
     void on_expandButton_clicked();
     void write_to_file();
+    void draw_obstacles();
     bool on_close(GdkEventAny* event);
+    void obstacle_callback(const geometry_msgs::PoseArray::ConstPtr& msg);
     void log_callback(const multi_drone_platform::log::ConstPtr& msg);
     void curr_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void des_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
@@ -55,12 +58,15 @@ private:
     ros::Subscriber currPoseSubscriber;
     ros::Subscriber desPoseSubscriber;
     ros::Subscriber desTwistSubscriber;
+    ros::Subscriber obstacleSubscriber;
 
     geometry_msgs::PoseStamped currPositionMsg;
     geometry_msgs::PoseStamped desPositionMsg;
 
     geometry_msgs::TwistStamped currVelocityMsg;
     geometry_msgs::TwistStamped desVelocityMsg;
+
+    geometry_msgs::PoseArray obstacles;
 
     // internal variables
     std::string toAddToLog;

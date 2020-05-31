@@ -19,7 +19,7 @@ int main() {
         mdp::position_msg posMsg;
         posMsg.keepHeight = true;
         posMsg.relative = false;
-        posMsg.duration = 1.5;
+        posMsg.duration = 4.5;
 
         posMsg.position = {1.0, -1.0, 0.0};
         mdp::sleep_until_idle(drones[0]);
@@ -57,13 +57,6 @@ int main() {
         mdp::sleep_until_idle(drones[0]);
         mdp::sleep_until_idle(drones[1]);
         mdp::sleep_until_idle(drones[2]);
-
-        mdp::cmd_takeoff(drones[0], 1);
-        mdp::sleep_until_idle(drones[0]);
-        mdp::set_drone_position(drones[0], posMsg);
-        mdp::sleep_until_idle(drones[0]);
-        mdp::go_to_home(drones[0], 0.20, -1.0);
-        mdp::sleep_until_idle(drones[0]);
 
     }
 

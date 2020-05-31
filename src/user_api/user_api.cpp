@@ -193,7 +193,7 @@ position_data get_position(const mdp::id& pRigidbodyID) {
 
     auto Pose = &nodeData->droneData[pRigidbodyID.numericID].pose;
     data.respectiveID =     pRigidbodyID;
-    data.timeStampSec =    Pose->header.stamp.sec;
+    data.timeStampSec =     Pose->header.stamp.sec;
     data.x =                Pose->pose.position.x;
     data.y =                Pose->pose.position.y;
     data.z =                Pose->pose.position.z;
@@ -211,7 +211,7 @@ velocity_data get_velocity(const mdp::id& pRigidbodyID) {
 
     auto Vel = &nodeData->droneData[pRigidbodyID.numericID].velocity;
     data.respectiveID =     pRigidbodyID;
-    data.timeStampSec =    Vel->header.stamp.toSec();
+    data.timeStampSec =     Vel->header.stamp.toSec();
     data.x =                Vel->twist.linear.x;
     data.y =                Vel->twist.linear.y;
     data.z =                Vel->twist.linear.z;

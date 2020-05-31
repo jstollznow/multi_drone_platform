@@ -15,7 +15,6 @@ DroneGraphing = mdp_drone_graphing.empty(0, length(Drones));
 for i = 1 : length(Drones)
     DroneGraphing(i) = mdp_drone_graphing(Drones(i));
 end
-
 AllLanded = false;
 ShutdownSeq = rosparam('get','mdp/should_shut_down');
 
@@ -46,7 +45,7 @@ delete(Api);
 figure(1);
 clf;
 %X Coord
-subplot(3,2,1);
+subplot(3,3,1);
 for i = 1 : length(DroneGraphing)
     if ~isempty(DroneGraphing(i).get_X())
         lineName = strcat("drone ", num2str(DroneGraphing(i).get_ID().NumericId));
@@ -62,7 +61,7 @@ ylabel('Position (m)');
 % legend('Location', 'northeastoutside');
 hold off;
 %Y Coord
-subplot(3,2,3);
+subplot(3,3,4);
 for i = 1 : length(DroneGraphing)
     if ~isempty(DroneGraphing(i).get_Y())
         lineName = strcat("drone ", num2str(DroneGraphing(i).get_ID().NumericId));
@@ -79,7 +78,7 @@ ylabel('Position (m)');
 % legend('Location', 'northeastoutside');
 hold off;
 %Z Coord
-subplot(3,2,5);
+subplot(3,3,7);
 
 for i = 1 : length(DroneGraphing)
     if ~isempty(DroneGraphing(i).get_Z())
@@ -96,7 +95,7 @@ xlabel('Time (Seconds)');
 ylabel('Position (m)');
 % legend('Location', 'northeastoutside');
 hold off;
-subplot(3, 2, [2 4 6]);
+subplot(3, 3, [2 5 8]);
 % movegui('northeast');
 % saveas(gcf,strcat(SessionPath,'XYZGraphs.png'));
 % figure(2);
@@ -144,9 +143,26 @@ xlabel('X Pos (m)');
 ylabel('Y Pos (m)');
 legend('Location', 'northoutside');
 hold off;
-set(gcf, 'units', 'normalized', 'position', [0.1 0.4 0.8 0.6]);
+
+subplot(3,3,[3 6 9]);
+for i = 1 : length(DroneGraphing)
+    if ~isempty(DroneGraphing(i).get_Time())
+        lineName = strcat("drone ", num2str(DroneGraphing(i).get_ID().NumericId));
+        graph = plot(DroneGraphing(i).get_Time(), DroneGraphing(i).get_Dist(), 'DisplayName', lineName);
+        graph.MarkerFaceColor = DroneGraphing(i).get_Color();
+        graph.Color = DroneGraphing(i).get_Color();
+        hold on;    
+    end
+end
+title('Distance to nearest obstacle');
+xlabel('Time (seconds)');
+ylabel('Distance (m)');
+hold off;
+
+set(gcf, 'units', 'normalized', 'position', [0.1 0.5 0.8 0.5]);
 saveas(gcf, strcat(SessionPath, 'AllPlots.png'));
 saveas(gcf, strcat(SessionPath, 'AllPlots.fig'));
+save(strcat(SessionPath, '/data.mat'));
 uiwait(helpdlg('Examine the figures, then click OK to finish. Figures have been exported into sessions directory.'));
 movegui('south');
 

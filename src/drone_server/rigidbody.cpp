@@ -27,10 +27,16 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     std::string logTopic = "mdp/drone_" + idStr + "/log";
     std::string apiTopic = "mdp/drone_" + idStr + "/apiUpdate";
     std::string batteryTopic = "mdp/drone_" + idStr + "/battery";
+
     std::string currPoseTopic = "mdp/drone_" + idStr + "/curr_pose";
     std::string desPoseTopic = "mdp/drone_" + idStr + "/des_pose";
+
     std::string currTwistTopic = "mdp/drone_" + idStr + "/curr_twist";
     std::string desTwistTopic = "mdp/drone_" + idStr + "/des_twist";
+
+    std::string obstacleTopic = "mdp/drone_" + idStr +"/obstacles";
+    std::string closestObstacleTopic = "mdp/drone_" + idStr + "/closest_obstacle";
+
     droneHandle = ros::NodeHandle();
     droneHandle.setCallbackQueue(&myQueue);
 
@@ -46,6 +52,9 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     currentTwistPublisher = droneHandle.advertise<geometry_msgs::TwistStamped> (currTwistTopic, 1);
     desiredTwistPublisher = droneHandle.advertise<geometry_msgs::TwistStamped>(desTwistTopic, 1);
 
+    obstaclesPublisher = droneHandle.advertise<geometry_msgs::PoseArray> (obstacleTopic, 1);
+    closestObstaclePublisher = droneHandle.advertise<std_msgs::Float64> (closestObstacleTopic, 1);
+
     this->log(logger::INFO, "My id is: " + std::to_string(id));
     this->log(logger::INFO, "Subscribing to motion topic: " + motionTopic);
     this->log(logger::INFO, "Subscrbing to API topic: " + apiTopic);
@@ -54,6 +63,8 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->log(logger::INFO, "Publishing desired position to: " + desPoseTopic);
     this->log(logger::INFO, "Publishing current velocity to: " + currTwistTopic);
     this->log(logger::INFO, "Publishing desired velocity to: " + desTwistTopic);
+    this->log(logger::INFO, "Publishing obstacle array to: " + obstacleTopic);
+    this->log(logger::INFO, "Publishing closest obstacle distance to: " + closestObstacleTopic);
 
     this->set_state(flight_state::LANDED);
 }
