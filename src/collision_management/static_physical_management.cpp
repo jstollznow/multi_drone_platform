@@ -5,7 +5,7 @@
 #include "../drone_server/element_conversions.cpp"
 #include "static_physical_management.h"
 
-#define NAIVE_ACCEL_BUFFER 1.2
+#define NAIVE_ACCEL_BUFFER 1.0
 // @TODO: Use these two methods from utility functions rather than creating copies
 template<class T>
 T multiply_by_constant(T a, double multiple) {

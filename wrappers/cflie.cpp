@@ -97,6 +97,17 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         this->velocity_limits.y = {{-2.0, 2.0}};
         this->velocity_limits.z = {{-2.0, 1.5}};
         this->mass = 0.100;
+        this->width = 0.15;
+        this->length = 0.15;
+        this->height = 0.07;
+        this->restrictedDistance = 0.30;
+        this->influenceDistance = 0.70;
+
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/width", this->width);
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/height", this->height);
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/length", this->length);
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/restrictedDistance", this->restrictedDistance);
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/influenceDistance", this->influenceDistance);
 
         droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");

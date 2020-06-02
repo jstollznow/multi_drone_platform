@@ -3,11 +3,10 @@
 //
 #include "potential_fields.h"
 #include "utility_functions.cpp"
-#define MIN_DIST 0.50f
-#define GRAV_GAIN 0.25f
-#define REPLUSIVE_GAIN 8.00f
-#define COORD_GAIN 10.0f
-#define FORWARD_STEPS 10
+
+#define ATTRACTIVE_DIST 0.10f
+#define K_P 6.0f
+#define K_D 0.8f
 
 double closest = 1000.0f;
 double closestThisRound = 1000.0f;
@@ -27,19 +26,21 @@ bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies)
 //                if (!coord_equality(velLimited, d->desiredVelocity.linear)) {
 //                    d->set_desired_velocity(velLimited, 0.0, remainingDuration, true, true);
 //                }
-                break;
+            break;
                 /* POSITION */
             case 1:
                 position_based_pf(d, rigidbodies);
-
                 break;
         }
     }
 }
-bool potential_fields::check_influence_mag(geometry_msgs::Vector3 replusiveForces) {
-    return std::abs(replusiveForces.x) <= 0.1 &&
-           std::abs(replusiveForces.y) <= 0.1 &&
-           std::abs(replusiveForces.z) <= 0.1;
+geometry_msgs::Vector3 potential_fields::escape_local_minima(double speed) {
+    geometry_msgs::Vector3 randomVec;
+    randomVec.x = (2 * (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5));
+    randomVec.y = (2 * (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5));
+    randomVec.z = (2 * (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5));
+    randomVec = utility_functions::multiply_by_constant(randomVec, speed / utility_functions::magnitude(randomVec));
+    return randomVec;
 }
 
 geometry_msgs::Vector3 predict_position(ros::Time lastUpdate, geometry_msgs::Twist currVel, geometry_msgs::Pose currPos, int timeSteps) {
@@ -58,33 +59,27 @@ geometry_msgs::Vector3 predict_position(ros::Time lastUpdate, geometry_msgs::Twi
 }
 
 void potential_fields::position_based_pf(rigidbody *d, std::vector<rigidbody *> &rigidbodies) {
-    geometry_msgs::Vector3 netForce;
+    geometry_msgs::Vector3 netPotentialVelocity;
+
     auto remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
-    double t = 0.01;
     auto replusiveForces = replusive_forces(d, rigidbodies);
-    netForce = utility_functions::add_vec3_or_point(replusiveForces, attractive_forces(d));
-    geometry_msgs::Vector3 externalVelocityInfluence =
-            utility_functions::multiply_by_constant(netForce, t / (d->mass));
-//    geometry_msgs::Vector3 reqVel = calculate_req_velocity(d, remainingDuration);
-//    externalVelocityInfluence = utility_functions::multiply_by_constant(externalVelocityInfluence, utility_functions::magnitude(reqVel) / utility_functions::magnitude(externalVelocityInfluence));
-    geometry_msgs::Vector3 nextPos;
-    nextPos.x = externalVelocityInfluence.x * remainingDuration;
-    nextPos.y = externalVelocityInfluence.y * remainingDuration;
-    nextPos.z = externalVelocityInfluence.z * remainingDuration;
-    geometry_msgs::Vector3 nextVel;
-    nextVel.x = d->currentVelocity.linear.x + externalVelocityInfluence.x;
-    nextVel.y = d->currentVelocity.linear.y + externalVelocityInfluence.y;
-    nextVel.z = d->currentVelocity.linear.z + externalVelocityInfluence.z;
-    nextVel = utility_functions::multiply_by_constant(nextVel,
-            utility_functions::magnitude(calculate_req_velocity(d, remainingDuration))/utility_functions::magnitude(nextVel));
+    auto attractiveForces = attractive_forces(d, remainingDuration);
+    netPotentialVelocity = utility_functions::add_vec3_or_point(replusiveForces, attractiveForces);
     closest = std::min(closest, closestThisRound);
 
     d->log(logger::DEBUG, "Distance to closest " + std::to_string(closestThisRound));
-    d->log_coord(logger::DEBUG, "Replusive Forces", replusiveForces);
-    d->log_coord(logger::DEBUG, "External Velocity", externalVelocityInfluence);
-    d->log_coord(logger::DEBUG, "NetForces", netForce);
-
-    d->set_desired_velocity(nextVel, 0.0, remainingDuration);
+    d->log_coord(logger::DEBUG, "Repulsive Force", replusiveForces);
+    d->log_coord(logger::DEBUG, "NetForces", netPotentialVelocity);
+    if (utility_functions::magnitude(netPotentialVelocity) <= 0.20) {
+        d->log(logger::DEBUG, "Local Minima");
+        netPotentialVelocity = escape_local_minima(utility_functions::magnitude(attractiveForces));
+    }
+    if (utility_functions::magnitude(replusiveForces) <= 0.2) {
+        d->set_desired_position(d->lastRecievedApiUpdate.posVel, 0.0, remainingDuration);
+    }
+    else {
+        d->set_desired_velocity(netPotentialVelocity, 0.0, remainingDuration);
+    }
     d->log(logger::INFO, "Closest dist: " + std::to_string(closest));
     lastClosestRound = closestThisRound;
     closestThisRound = 1000.0f;
@@ -93,31 +88,36 @@ void potential_fields::position_based_pf(rigidbody *d, std::vector<rigidbody *> 
 geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vector<rigidbody *> &rigidbodies) {
     geometry_msgs::Vector3 replusiveForce;
     std::multimap<double, geometry_msgs::Pose> sortedObstacles;
-
     for (auto rb : rigidbodies) {
         if (rb->get_id() != d->get_id()) {
-            double timeSteps =
-                    utility_functions::magnitude(
-                            utility_functions::difference(
-                                    rb->currentVelocity.linear,
-                                    rb->currentVelocity.linear))
-                    * FORWARD_STEPS;
             auto obPoint = utility_functions::point_to_vec3(rb->currentPose.position);
-            auto obFuturePoint = predict_position(rb->lastUpdate, rb->currentVelocity, rb->currentPose, timeSteps);
-            auto dPoint = utility_functions::point_to_vec3(d->currentPose.position);
-            double dist = utility_functions::distance_between(dPoint, obPoint);
+            auto dPoint = utility_functions::point_to_vec3(d->currentPose.position);\
+            auto dFuturePoint = predict_position(d->lastUpdate, d->currentVelocity, d->currentPose, 10);
+            auto diffVec = utility_functions::difference(dFuturePoint, obPoint);
+            double d0 = utility_functions::magnitude(diffVec);
+            auto unitDirection = utility_functions::multiply_by_constant(diffVec, 1 / d0);
+
+            double velDiff = utility_functions::distance_between(d->currentVelocity.linear, rb->currentVelocity.linear);
+
             geometry_msgs::Pose obstacle;
             obstacle.orientation.w = rb->get_id();
-            obstacle.orientation.x = dist;
+            obstacle.orientation.x = d0;
             obstacle.position = utility_functions::vec3_to_point(utility_functions::difference(obPoint, dPoint));
-            sortedObstacles.insert(std::pair<double, geometry_msgs::Pose>(dist, obstacle));
-            closestThisRound = std::min(closestThisRound, utility_functions::distance_between(dPoint, obPoint));
-            if (dist <= MIN_DIST) {
-                double multiple = (REPLUSIVE_GAIN * std::pow((1.0 / dist) - (1.0 / MIN_DIST), 2.0)) / std::pow(dist, 3.0);
-                auto diffVec = utility_functions::difference(dPoint, obPoint);
-                replusiveForce.x += multiple * diffVec.x;
-                replusiveForce.y += multiple * diffVec.y;
-                replusiveForce.z += multiple * diffVec.z;
+            sortedObstacles.insert(std::pair<double, geometry_msgs::Pose>(d0, obstacle));
+
+            closestThisRound = std::min(closestThisRound, d0);
+
+            d->log(logger::DEBUG, "Dist: " + std::to_string(d0));
+
+            if (d0 <= rb->restrictedDistance) {
+                replusiveForce.x += d->maxVel * unitDirection.x;
+                replusiveForce.y += d->maxVel * unitDirection.y;
+                replusiveForce.z += d->maxVel * unitDirection.z;
+            }else if (d0 <= rb->influenceDistance) {
+                double vr = K_P * (rb->influenceDistance - d0) + K_D * (velDiff);
+                replusiveForce.x += vr * unitDirection.x;
+                replusiveForce.y += vr * unitDirection.y;
+                replusiveForce.z += vr * unitDirection.z;
             }
         }
     }
@@ -134,22 +134,27 @@ geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vec
     d->closestObstaclePublisher.publish(closestMsg);
     return replusiveForce;
 }
-geometry_msgs::Vector3 potential_fields::coordination_force(rigidbody* d) {
+geometry_msgs::Vector3 potential_fields::tangential_force(rigidbody* d, geometry_msgs::Vector3 repulsive, geometry_msgs::Vector3 attractive) {
     geometry_msgs::Vector3 coordForce;
-    auto distToTarget = utility_functions::distance_between(utility_functions::point_to_vec3(d->currentPose.position), d->lastRecievedApiUpdate.posVel);
-    if (distToTarget < 0.01) return coordForce;
-    double multiple = COORD_GAIN * distToTarget * std::pow((1.0 / distToTarget) - (1.0 / MIN_DIST), 2.0);
-    coordForce.x = coordForce.y = coordForce.z = multiple;
-    return coordForce;
+    auto normalVec = utility_functions::get_tangent_vec(attractive, repulsive);
+    normalVec = utility_functions::multiply_by_constant(normalVec, 2);
+    return normalVec;
 }
 
-geometry_msgs::Vector3 potential_fields::attractive_forces(rigidbody *d) {
+geometry_msgs::Vector3 potential_fields::attractive_forces(rigidbody *d, double remainingDuration) {
     geometry_msgs::Vector3 attractiveForce;
-    auto diffVec = utility_functions::difference(utility_functions::point_to_vec3(d->currentPose.position), d->lastRecievedApiUpdate.posVel);
-    double multiple = -GRAV_GAIN;
-    attractiveForce.x = multiple * diffVec.x;
-    attractiveForce.y = multiple * diffVec.y;
-    attractiveForce.z = multiple * diffVec.z;
+    auto distToTarget = utility_functions::distance_between(utility_functions::point_to_vec3(d->currentPose.position), d->lastRecievedApiUpdate.posVel);
+    auto reqVelocity = calculate_req_velocity(d, remainingDuration);
+
+    if (distToTarget <= ATTRACTIVE_DIST) {
+        double multiple = utility_functions::magnitude(reqVelocity)/ATTRACTIVE_DIST;
+        auto posDiff = utility_functions::difference(d->lastRecievedApiUpdate.posVel,utility_functions::point_to_vec3(d->currentPose.position));
+        attractiveForce = utility_functions::multiply_by_constant(posDiff, multiple);
+    }
+    else {
+        attractiveForce = reqVelocity;
+    }
+
     return attractiveForce;
 }
 

@@ -9,9 +9,7 @@ class DRONE_WRAPPER(object)
 
     public:
     void on_init(std::vector<std::string> args) final {
-        this->velocity_limits.x = {{0.0, 0.0}};
-        this->velocity_limits.y = {{0.0, 0.0}};
-        this->velocity_limits.z = {{0.0, 0.0}};
+
     };
 
     void on_deinit() final {

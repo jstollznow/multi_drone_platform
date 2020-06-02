@@ -5,7 +5,6 @@
 int main() {
     mdp::initialise(10, "vel");
     auto drones = mdp::get_all_rigidbodies();
-
     if (drones.size() > 0) {
         mdp::cmd_takeoff(drones[0], 0.5);
         mdp::sleep_until_idle(drones[0]);

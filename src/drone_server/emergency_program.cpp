@@ -1,6 +1,6 @@
 #include "ros/ros.h"
 #include "std_msgs/Empty.h"
-#include "../src/debug/logger/logger.h"
+#include "../debug/logger/logger.h"
 
 int main(int argc, char** argv) {
     ros::init(argc, argv, "mdp_emergency_program");

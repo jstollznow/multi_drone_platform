@@ -86,6 +86,16 @@ public:
         this->velocity_limits.y = {{-3.0, 3.0}};
         this->velocity_limits.z = {{-3.0, 2.0}};
         this->mass = 0.100;
+        this->width = 0.20;
+        this->length = 0.20;
+        this->height = 0.07;
+        this->restrictedDistance = 0.30;
+        this->influenceDistance = 0.70;
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/width", this->width);
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/height", this->height);
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/length", this->length);
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/restrictedDistance", this->restrictedDistance);
+        droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/influenceDistance", this->influenceDistance);
 
         this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(this->get_tag()), 1);
         this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (desPoseTopic, 1);
@@ -146,7 +156,7 @@ public:
                     if (timeLeft > 0.0) {
                         // @FIX: this is probably good enough for now
                         // should be adjusted if we want more 'realistic' movement
-                        desiredVelocity = 3*(distanceToGoal / timeLeft);
+                        desiredVelocity = 3 * (distanceToGoal / timeLeft);
                     }
 
                     this->desiredVelocityArray[0] = (dirToDesPos[0] / magnitude) * desiredVelocity;

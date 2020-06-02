@@ -115,8 +115,20 @@ class rigidbody {
             std::array<double, 2> z;
         } velocity_limits;
         double maxVel;
-        bool isUnderInfluence;
+        // related to traditional APF
+        // in kg
         double mass;
+
+        // related to velocity APF
+        // in meters
+        double restrictedDistance;
+        double influenceDistance;
+
+        // related to safeguarding LiveView feedback
+        // in meters
+        double width;
+        double height;
+        double length;
 
     /* FUNCTIONS */
     private:

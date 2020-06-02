@@ -16,7 +16,18 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     this->velocity_limits.y = {{-10.0, 10.0}};
     this->velocity_limits.z = {{-10.0, 10.0}};
     this->maxVel = -1.0;
-    this->isUnderInfluence = false;
+    this->width = 0.0;
+    this->length = 0.0;
+    this->height = 0.0;
+    this->restrictedDistance = 0.0;
+    this->influenceDistance = 0.0;
+
+    droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/width", this->width);
+    droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/height", this->height);
+    droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/length", this->length);
+    droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/restrictedDistance", this->restrictedDistance);
+    droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/influenceDistance", this->influenceDistance);
+
 //    initialise approx. mass in kg
     this->mass = 0.100;
 
@@ -127,7 +138,7 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
     this->log(logger::DEBUG, "Adjusted Dur: " + std::to_string(duration));
     geometry_msgs::PoseStamped desPoseMsg;
     desPoseMsg.pose = desiredPose;
-    desPoseMsg.header.stamp = timeOfLastApiUpdate;
+    desPoseMsg.header.stamp = ros::Time::now();
     desiredPosePublisher.publish(desPoseMsg);
 
     /* declare flight state to moving if this is not a hover message */
@@ -152,7 +163,7 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
 
     geometry_msgs::TwistStamped desTwistMsg;
     desTwistMsg.twist = desiredVelocity;
-    desTwistMsg.header.stamp = timeOfLastApiUpdate;
+    desTwistMsg.header.stamp = ros::Time::now();
 
     desiredTwistPublisher.publish(desTwistMsg);
 

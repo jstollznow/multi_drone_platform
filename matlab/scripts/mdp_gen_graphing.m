@@ -1,12 +1,16 @@
 
 Rate = 100;
 
-
 Api = mdp_api(Rate, 'matlab_graphing');
 
+ShutdownSeq = rosparam('get','mdp/should_shut_down');
+if ShutdownSeq
+  return 
+end
 Drones = Api.getalldrones();
 
-if isempty(Drones)
+ShutdownSeq = rosparam('get','mdp/should_shut_down');
+if isempty(Drones) || ShutdownSeq
    return 
 end
 

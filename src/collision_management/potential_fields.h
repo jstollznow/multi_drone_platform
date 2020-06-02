@@ -12,15 +12,15 @@ static geometry_msgs::Vector3 maxVel;
 class potential_fields {
 private:
     static geometry_msgs::Vector3 replusive_forces(rigidbody* d, std::vector<rigidbody*>& rigidbodies);
-    static geometry_msgs::Vector3 attractive_forces(rigidbody* d);
+    static geometry_msgs::Vector3 attractive_forces(rigidbody* d, double remainingDuration);
     static geometry_msgs::Vector3 calculate_req_velocity(rigidbody* d, double remainingDuration);
-    static bool check_influence_mag(geometry_msgs::Vector3 replusiveForces);
+    static geometry_msgs::Vector3 escape_local_minima(double speed);
     static void position_based_pf(rigidbody* d, std::vector<rigidbody *> &rigidbodies);
 public:
     static bool check(rigidbody* d, std::vector<rigidbody*>& rigidbodies);
 
 
-    static geometry_msgs::Vector3 coordination_force(rigidbody *d);
+    static geometry_msgs::Vector3 tangential_force(rigidbody *d, geometry_msgs::Vector3 repulsive, geometry_msgs::Vector3 attractive);
 
 
 
