@@ -114,7 +114,8 @@ add_dependencies(TELEOP multi_drone_platform_generate_messages_cpp)
 
 add_library(DEBUGAPP
         src/debug/debug_app/debug_app.cpp
-        src/debug/debug_app/debug_window.cpp)
+        src/debug/debug_app/debug_window.cpp
+        )
 target_link_libraries(DEBUGAPP ${catkin_LIBRARIES})
 add_dependencies(DEBUGAPP multi_drone_platform_generate_messages_cpp)
 
@@ -140,6 +141,9 @@ add_dependencies(add_drone multi_drone_platform_generate_messages_cpp ${CMAKE_CU
 add_executable(shutdown_drone_server src/drone_server/shutdown_drone_server.cpp)
 target_link_libraries(shutdown_drone_server ${catkin_LIBRARIES})
 
+add_executable(emergency_program src/drone_server/emergency_program.cpp)
+target_link_libraries(emergency_program ${catkin_LIBRARIES} LOGGER)
+
 add_executable(all_debug_windows src/debug/debug_app/debug_app_test.cpp)
 target_link_libraries(all_debug_windows ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP)
 
@@ -150,6 +154,6 @@ file(GLOB files  "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.cpp")
 foreach(file ${files})
     get_filename_component(exe_name "${file}" NAME_WE)
     add_executable(${exe_name} ${file})
-    target_link_libraries(${exe_name} ${catkin_LIBRARIES} MDP_API LOGGER)
+    target_link_libraries(${exe_name} ${catkin_LIBRARIES} MDP_API)
 endforeach()
 

@@ -7,7 +7,6 @@
 #include <array>
 
 #define NODE_NAME "debug_application"
-#define EXPANDED false
 
 class debug_app: public Gtk::Application {
     private:
@@ -16,5 +15,5 @@ class debug_app: public Gtk::Application {
     protected:
         std::map<std::string, debug_window*> droneDebugWindows;
     public:
-        debug_app(std::vector<mdp::id> myDrones, int argc, char **argv);
+        debug_app(std::vector<mdp::id> myDrones, int argc, char **argv, bool expanded);
 };

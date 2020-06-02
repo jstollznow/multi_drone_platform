@@ -45,12 +45,23 @@ private:
     void des_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void curr_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg);
     void des_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg);
+    void fill_panel(geometry_msgs::Pose ob, int level, std::array<double, 3> color);
+    std::vector<int> reduce(std::vector<int> a, std::vector<int> b);
+    void check_x(geometry_msgs::Pose ob, std::vector<int>& candidates);
+    void check_y(geometry_msgs::Pose ob, std::vector<int>& candidates);
+    void reset_all_panels();
+    bool on_draw(const Cairo::RefPtr<Cairo::Context>& cr) override;
     // data
 
     // ROS related
     ros::CallbackQueue windowQueue;
 
     mdp::id myDrone;
+    double dWidth;
+    double dHeight;
+    double dLength;
+    double dRestrictedDistance;
+    double dInfluenceDistance;
 
     ros::NodeHandle windowNode;
     ros::Subscriber logSubscriber;
@@ -72,6 +83,7 @@ private:
     std::string toAddToLog;
     std::string currState;
     bool expanded;
+    double droneSpeedMultiplier;
     bool first;
     double maxMag;
     ros::Time firstTimeStamp;
@@ -81,6 +93,11 @@ private:
     Glib::RefPtr<Gtk::Builder> builder;
     Gtk::Label* droneNameLabel;
     std::string logTopic;
+    double inner = 0.3;
+    double middle = 0.6;
+    double outer = 0.9;
+    double lineWidth = 0.1;
+    std::array<double,3> defaultColor = std::array<double,3> {0.2, 0.4, 0.5};
 
     // velocity/position labels
     Gtk::Label* currPosX;
@@ -134,5 +151,6 @@ private:
     Gtk::DrawingArea* topViewBotRight;
     Gtk::DrawingArea* topViewBotLeft;
 
-
+    Gtk::DrawingArea* sideViewTop;
+    Gtk::DrawingArea* sideViewBottom;
 };

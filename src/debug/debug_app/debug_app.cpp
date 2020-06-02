@@ -22,7 +22,7 @@ std::array<int,2> debug_app::get_window_position(int droneNum, bool expanded) {
         rows = cols;
     }
     else {
-        xSplit = 600;
+        xSplit = 630;
         ySplit = 350;
         maxWindows = 9;
         cols = 3;
@@ -55,11 +55,11 @@ void debug_app::generate_session_folder() {
     }
 }
 
-debug_app::debug_app(std::vector<mdp::id> myDrones, int argc, char **argv)
+debug_app::debug_app(std::vector<mdp::id> myDrones, int argc, char **argv, bool expanded)
 :Gtk::Application(argc, argv, "debug_window.app") {
-    bool expanded = EXPANDED;
     ros::init(argc, argv, NODE_NAME);
     generate_session_folder();
+
     for (size_t i = 0; i < myDrones.size(); i++) {
         debug_window *myWindow = 0;
         std::string path = ros::package::getPath("multi_drone_platform") + UI_PATH;
