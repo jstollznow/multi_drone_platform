@@ -100,7 +100,6 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
         this->move(startLocation[0], startLocation[1]);
     }
     this->show();
-
 }
 
 std::string debug_window::round_to_string(double val, int n) {
@@ -110,153 +109,6 @@ std::string debug_window::round_to_string(double val, int n) {
     std::ostringstream streamObj;
     streamObj << std::fixed << std::setprecision(n) << val;
     return streamObj.str();
-}
-
-void debug_window::fill_panel(geometry_msgs::Pose ob, int level, std::array<double, 3> color) {
-    std::vector<int> panels(8);
-    std::iota (std::begin(panels), std::end(panels), 1);
-
-    check_x(ob, panels);
-    check_y(ob, panels);
-
-    int width = 0;
-    int height = 0;
-    Gtk::Allocation allocation;
-    Cairo::RefPtr<Cairo::Context> cr;
-
-    if (panels.size() == 1) {
-        switch (panels[0]) {
-            case 1:
-                cr = topViewTopLeft->get_window()->create_cairo_context();
-                allocation = topViewTopLeft->get_allocation();
-                cr->scale(allocation.get_width(), allocation.get_height());
-                switch (level) {
-                    case 3:
-                        cr->move_to(1.0 - outer,1.0);
-                        cr->arc(1.0, 1.0, outer, M_PI, M_PI/2);
-                    case 2:
-                        cr->move_to(1.0 - middle,1.0);
-                        cr->arc(1.0, 1.0, middle, M_PI, M_PI/2);
-                    case 1:
-                        cr->move_to(1.0 - inner,1.0);
-                        cr->arc(1.0, 1.0, inner, M_PI, M_PI/2);
-                }
-                break;
-            case 2:
-                cr = topViewTop->get_window()->create_cairo_context();
-                allocation = topViewTop->get_allocation();
-                cr->scale(allocation.get_width(), allocation.get_height());
-                switch(level) {
-                    case 3:
-                        cr->move_to(0.0,1.0 - outer);
-                        cr->line_to(1.0, 1.0 - outer);
-                    case 2:
-                        cr->move_to(0.0,1.0 - middle);
-                        cr->line_to(1.0, 1.0 - middle);
-                    case 1:
-                        cr->move_to(0.0,1.0 - inner);
-                        cr->line_to(1.0, 1.0 - inner);
-                }
-                break;
-            case 3:
-                cr = topViewTopRight->get_window()->create_cairo_context();
-                allocation = topViewTopRight->get_allocation();
-                cr->scale(allocation.get_width(), allocation.get_height());
-                switch(level) {
-                    case 3:
-                        cr->arc(0.0, 1.0, outer, M_PI/2, 0.0);
-                    case 2:
-                        cr->arc(0.0, 1.0, middle, M_PI/2, 0.0);
-                    case 1:
-                        cr->arc(0.0, 1.0, inner, M_PI/2, 0.0);
-                }
-                break;
-            case 4:
-                cr = topViewLeft->get_window()->create_cairo_context();
-                allocation = topViewLeft->get_allocation();
-                cr->scale(allocation.get_width(), allocation.get_height());
-                switch(level) {
-                    case 3:
-                        cr->move_to(1.0 - outer, 0.0);
-                        cr->line_to(1.0 - outer, 1.0);
-                    case 2:
-                        cr->move_to(1.0 - middle, 0.0);
-                        cr->line_to(1.0 - middle, 1.0);
-                    case 1:
-                        cr->move_to(1.0-inner,0.0);
-                        cr->line_to(1.0-inner, 1.0);
-                }
-                break;
-            case 5:
-                cr = topViewRight->get_window()->create_cairo_context();
-                allocation = topViewRight->get_allocation();
-                cr->scale(allocation.get_width(), allocation.get_height());
-                switch(level) {
-                    case 3:
-                        cr->move_to(outer, 0.0);
-                        cr->line_to(outer, 1.0);
-                    case 2:
-                        cr->move_to(middle, 0.0);
-                        cr->line_to(middle, 1.0);
-                    case 1:
-                        cr->move_to(inner,0.0);
-                        cr->line_to(inner, 1.0);
-                }
-                break;
-            case 6:
-                cr = topViewBotLeft->get_window()->create_cairo_context();
-                allocation = topViewBotLeft->get_allocation();
-                cr->scale(allocation.get_width(), allocation.get_height());
-                switch(level) {
-                    case 3:
-                        cr->move_to(1.0-outer,0.0);
-                        cr->arc(1.0, 0.0, outer, -M_PI/2, -M_PI);
-                    case 2:
-                        cr->move_to(1.0-middle,0.0);
-                        cr->arc(1.0, 0.0, middle, -M_PI/2, -M_PI);
-                    case 1:
-                        cr->move_to(1.0-inner, 0.0);
-                        cr->arc(1.0, 0.0, inner, -M_PI/2, -M_PI);
-                }
-                break;
-            case 7:
-                cr = topViewBottom->get_window()->create_cairo_context();
-                allocation = topViewBottom->get_allocation();
-                cr->scale(allocation.get_width(), allocation.get_height());
-                switch(level) {
-                    case 3:
-                        cr->move_to(0.0,outer);
-                        cr->line_to(1.0, outer);
-                    case 2:
-                        cr->move_to(0.0,middle);
-                        cr->line_to(1.0, middle);
-                    case 1:
-                        cr->move_to(0.0,inner);
-                        cr->line_to(1.0, inner);
-                }
-                break;
-            case 8:
-                cr = topViewBotRight->get_window()->create_cairo_context();
-                allocation = topViewBotRight->get_allocation();
-                cr->scale(allocation.get_width(), allocation.get_height());
-                switch(level) {
-                    case 3:
-                        cr->move_to(outer,0.0);
-                        cr->arc(0.0, 0.0, outer, 0, -M_PI/2);
-                    case 2:
-                        cr->move_to(middle,0.0);
-                        cr->arc(0.0, 0.0, middle, 0, -M_PI/2);
-                    case 1:
-                        cr->move_to(inner, 0.0);
-                        cr->arc(0.0, 0.0, inner, 0, -M_PI/2);
-                }
-                break;
-        }
-        cr->set_source_rgb(color[0], color[1], color[2]);
-        cr->set_line_width(lineWidth);
-        cr->stroke();
-    }
-
 }
 
 bool debug_window::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
@@ -359,6 +211,7 @@ void debug_window::update_ui_labels() {
 
     draw_obstacles();
 }
+
 void debug_window::update_ui_on_resume() {
     logTextBuffer->insert(logTextBuffer->end(), toAddToLog);
     toAddToLog = "";
@@ -378,6 +231,7 @@ void debug_window::write_to_file() {
     file << logTextBuffer->get_text(true);
     file.close();
 }
+
 void debug_window::fetch_state_param() {
     if (windowNode.hasParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state")) {
         windowNode.getParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state", currState);
@@ -386,6 +240,7 @@ void debug_window::fetch_state_param() {
         this->close();
     }
 }
+
 bool debug_window::ros_spin() {
     windowQueue.callAvailable();
     fetch_state_param();
@@ -396,6 +251,7 @@ bool debug_window::ros_spin() {
 void debug_window::on_landButton_clicked() {
     mdp::cmd_land(myDrone);
 }
+
 void debug_window::on_emergencyButton_clicked() {
     mdp::cmd_emergency(myDrone);
 }
@@ -409,18 +265,23 @@ void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) 
 void debug_window::curr_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
     currVelocityMsg = *(msg.get());
 }
+
 void debug_window::curr_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     currPositionMsg = *(msg.get());
 }
+
 void debug_window::des_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg) {
     desPositionMsg = *(msg.get());
 }
+
 void debug_window::des_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg) {
     desVelocityMsg = *(msg.get());
 }
+
 void debug_window::obstacle_callback(const geometry_msgs::PoseArray::ConstPtr &msg) {
     obstacles = *(msg.get());
 }
+
 void debug_window::on_speedScale_value_changed() {
     if ((int)speedScale->get_value()<= 5) {
         droneSpeedMultiplier = speedScale->get_value() * 0.2;
@@ -432,6 +293,7 @@ void debug_window::on_speedScale_value_changed() {
     const std::string multi = round_to_string(droneSpeedMultiplier, 1) + "x";
     speedMultiplierLabel->set_text(multi);
 }
+
 void debug_window::on_expandButton_clicked() {
     if (!expanded) {
         logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 50, &debug_window::log_callback, this);
@@ -638,4 +500,150 @@ void debug_window::reset_all_panels() {
     cr->move_to(0.0,outer);
     cr->line_to(1.0, outer);
     cr->stroke();
+}
+
+void debug_window::fill_panel(geometry_msgs::Pose ob, int level, std::array<double, 3> color) {
+    std::vector<int> panels(8);
+    std::iota (std::begin(panels), std::end(panels), 1);
+
+    check_x(ob, panels);
+    check_y(ob, panels);
+
+    int width = 0;
+    int height = 0;
+    Gtk::Allocation allocation;
+    Cairo::RefPtr<Cairo::Context> cr;
+
+    if (panels.size() == 1) {
+        switch (panels[0]) {
+            case 1:
+                cr = topViewTopLeft->get_window()->create_cairo_context();
+                allocation = topViewTopLeft->get_allocation();
+                cr->scale(allocation.get_width(), allocation.get_height());
+                switch (level) {
+                    case 3:
+                        cr->move_to(1.0 - outer,1.0);
+                        cr->arc(1.0, 1.0, outer, M_PI, M_PI/2);
+                    case 2:
+                        cr->move_to(1.0 - middle,1.0);
+                        cr->arc(1.0, 1.0, middle, M_PI, M_PI/2);
+                    case 1:
+                        cr->move_to(1.0 - inner,1.0);
+                        cr->arc(1.0, 1.0, inner, M_PI, M_PI/2);
+                }
+                break;
+            case 2:
+                cr = topViewTop->get_window()->create_cairo_context();
+                allocation = topViewTop->get_allocation();
+                cr->scale(allocation.get_width(), allocation.get_height());
+                switch(level) {
+                    case 3:
+                        cr->move_to(0.0,1.0 - outer);
+                        cr->line_to(1.0, 1.0 - outer);
+                    case 2:
+                        cr->move_to(0.0,1.0 - middle);
+                        cr->line_to(1.0, 1.0 - middle);
+                    case 1:
+                        cr->move_to(0.0,1.0 - inner);
+                        cr->line_to(1.0, 1.0 - inner);
+                }
+                break;
+            case 3:
+                cr = topViewTopRight->get_window()->create_cairo_context();
+                allocation = topViewTopRight->get_allocation();
+                cr->scale(allocation.get_width(), allocation.get_height());
+                switch(level) {
+                    case 3:
+                        cr->arc(0.0, 1.0, outer, M_PI/2, 0.0);
+                    case 2:
+                        cr->arc(0.0, 1.0, middle, M_PI/2, 0.0);
+                    case 1:
+                        cr->arc(0.0, 1.0, inner, M_PI/2, 0.0);
+                }
+                break;
+            case 4:
+                cr = topViewLeft->get_window()->create_cairo_context();
+                allocation = topViewLeft->get_allocation();
+                cr->scale(allocation.get_width(), allocation.get_height());
+                switch(level) {
+                    case 3:
+                        cr->move_to(1.0 - outer, 0.0);
+                        cr->line_to(1.0 - outer, 1.0);
+                    case 2:
+                        cr->move_to(1.0 - middle, 0.0);
+                        cr->line_to(1.0 - middle, 1.0);
+                    case 1:
+                        cr->move_to(1.0-inner,0.0);
+                        cr->line_to(1.0-inner, 1.0);
+                }
+                break;
+            case 5:
+                cr = topViewRight->get_window()->create_cairo_context();
+                allocation = topViewRight->get_allocation();
+                cr->scale(allocation.get_width(), allocation.get_height());
+                switch(level) {
+                    case 3:
+                        cr->move_to(outer, 0.0);
+                        cr->line_to(outer, 1.0);
+                    case 2:
+                        cr->move_to(middle, 0.0);
+                        cr->line_to(middle, 1.0);
+                    case 1:
+                        cr->move_to(inner,0.0);
+                        cr->line_to(inner, 1.0);
+                }
+                break;
+            case 6:
+                cr = topViewBotLeft->get_window()->create_cairo_context();
+                allocation = topViewBotLeft->get_allocation();
+                cr->scale(allocation.get_width(), allocation.get_height());
+                switch(level) {
+                    case 3:
+                        cr->move_to(1.0-outer,0.0);
+                        cr->arc(1.0, 0.0, outer, -M_PI/2, -M_PI);
+                    case 2:
+                        cr->move_to(1.0-middle,0.0);
+                        cr->arc(1.0, 0.0, middle, -M_PI/2, -M_PI);
+                    case 1:
+                        cr->move_to(1.0-inner, 0.0);
+                        cr->arc(1.0, 0.0, inner, -M_PI/2, -M_PI);
+                }
+                break;
+            case 7:
+                cr = topViewBottom->get_window()->create_cairo_context();
+                allocation = topViewBottom->get_allocation();
+                cr->scale(allocation.get_width(), allocation.get_height());
+                switch(level) {
+                    case 3:
+                        cr->move_to(0.0,outer);
+                        cr->line_to(1.0, outer);
+                    case 2:
+                        cr->move_to(0.0,middle);
+                        cr->line_to(1.0, middle);
+                    case 1:
+                        cr->move_to(0.0,inner);
+                        cr->line_to(1.0, inner);
+                }
+                break;
+            case 8:
+                cr = topViewBotRight->get_window()->create_cairo_context();
+                allocation = topViewBotRight->get_allocation();
+                cr->scale(allocation.get_width(), allocation.get_height());
+                switch(level) {
+                    case 3:
+                        cr->move_to(outer,0.0);
+                        cr->arc(0.0, 0.0, outer, 0, -M_PI/2);
+                    case 2:
+                        cr->move_to(middle,0.0);
+                        cr->arc(0.0, 0.0, middle, 0, -M_PI/2);
+                    case 1:
+                        cr->move_to(inner, 0.0);
+                        cr->arc(0.0, 0.0, inner, 0, -M_PI/2);
+                }
+                break;
+        }
+        cr->set_source_rgb(color[0], color[1], color[2]);
+        cr->set_line_width(lineWidth);
+        cr->stroke();
+    }
 }
