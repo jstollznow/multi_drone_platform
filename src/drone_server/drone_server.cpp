@@ -6,15 +6,18 @@
 #include "multi_drone_platform/api_update.h"
 #include "multi_drone_platform/add_drone.h"
 
+#if POINT_SET_REG
+#   define ICP_IMPL_INIT ,icpImplementation(&this->rigidbodyList, this->node)
+#else
+#   define ICP_IMPL_INIT
+#endif /* POINT_SET_REG */
+
 drone_server* globalDroneServer = nullptr;
 bool globalShouldShutdown = false;
 bool globalGoodShutDown = true;
 
 
-drone_server::drone_server() :
-    node(),
-    loopRate(LOOP_RATE_HZ),
-    icpImplementation(&this->rigidbodyList, this->node)
+drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) ICP_IMPL_INIT
 {
     node.setParam(SHUTDOWN_PARAM, false);
     inputAPISub = node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 2, &drone_server::api_callback, this);
@@ -68,13 +71,6 @@ void drone_server::shutdown() {
     }
     rigidbodyList.clear();
 }
-
-// @TODO: implementation task on Trello
-void drone_server::init_rigidbodies_from_VRPN() {
-    this->log(logger::WARN, "Initialising drones from vrpn is \
-    currently not supported, please add drones manually");
-}
-
 
 bool drone_server::add_new_rigidbody(const std::string& pTag, std::vector<std::string> args) {
     rigidbody* RB;

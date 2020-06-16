@@ -13,10 +13,12 @@ public:
 private:
     const std::vector<rigidbody*>* rigidbodyList = nullptr;
     ros::Subscriber markerCloudSubscriber;
+    double TiterationTime = 0.0;
+    double count = 0.0;
 
     void marker_cloud_callback(const visualization_msgs::Marker::ConstPtr& msg);
 
-    static geometry_msgs::Pose perform_icp(const std::vector<geometry_msgs::Point>& markerTemplate, geometry_msgs::Pose initialEstimate, const kd_tree_3d& pointCloudTree);
+    geometry_msgs::Pose perform_icp(const std::vector<geometry_msgs::Point>& markerTemplate, geometry_msgs::Pose initialEstimate, const kd_tree_3d& pointCloudTree);
 };
 
 

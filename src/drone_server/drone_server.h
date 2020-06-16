@@ -10,6 +10,7 @@
 
 #define LOOP_RATE_HZ 100
 #define TIMING_UPDATE 5
+#define POINT_SET_REG false
 
 #define NODE_NAME "mdp_drone_server"
 #define SRV_TOPIC "mdp_data_srv"
@@ -39,10 +40,9 @@ class drone_server {
         float timeToUpdateDrones;
         float waitTime;
 
-        // @TODO: place this under a define so that we can enable or disable this feature
+#if POINT_SET_REG
         icp_impl icpImplementation;
-
-        void init_rigidbodies_from_VRPN();
+#endif /* POINT_SET_REG */
 
         bool add_new_rigidbody(const std::string& pTag, std::vector<std::string> args);
         void remove_rigidbody(unsigned int pDroneID);

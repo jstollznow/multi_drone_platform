@@ -25,10 +25,10 @@ void icp_impl::marker_cloud_callback(const visualization_msgs::Marker::ConstPtr&
         }
 
         // ignore vflies (special case, vflies produce their own poses)
-        // @TODO: comment this out to test ICP using a vflie
-//        if (rigidbody->isVflie) {
-//            continue;
-//        }
+        // comment this out to test ICP using a vflie, also enable publishing of markers from vflie
+        if (rigidbody->isVflie) {
+            continue;
+        }
 
         // if the icp object has not been initialised, ignore it
         if (!rigidbody->icpObject.has_initialised()) {
@@ -42,12 +42,6 @@ void icp_impl::marker_cloud_callback(const visualization_msgs::Marker::ConstPtr&
         p.orientation.w = q.w();p.orientation.x = q.x();p.orientation.y = q.y();p.orientation.z = q.z();
         auto newPose = icp_impl::perform_icp(rigidbody->icpObject.get_marker_template(), p, pointCloudTree);
 
-        // @TODO: REMOVE THIS WHEN FINISHED TESTING
-        std::cout << "diff" << std::endl;
-        std::cout << "pos x" << rigidbody->get_current_pose().position.x - newPose.position.x << std::endl;
-        std::cout << "pos y" << rigidbody->get_current_pose().position.y - newPose.position.y << std::endl;
-        std::cout << "pos z" << rigidbody->get_current_pose().position.z - newPose.position.z << std::endl;
-
         // create a PoseStamped from generated pose and timeNow
         geometry_msgs::PoseStamped poseStamped;
         poseStamped.header = premadeHeader;
@@ -56,16 +50,8 @@ void icp_impl::marker_cloud_callback(const visualization_msgs::Marker::ConstPtr&
         // publish stamped pose for this rigidbody
         rigidbody->icpObject.posePublisher.publish(poseStamped);
     }
-}
 
-inline Eigen::Matrix3d construct_rotation_matrix(double a, double b, double y) {
-    double cosA = cos(a), cosB = cos(b), cosY = cos(y);
-    double sinA = sin(a), sinB = sin(b), sinY = sin(y);
-    Eigen::Matrix3d r;
-    r <<    cosY*cosB,  -sinY*cosA + cosY*sinB*sinA,    sinY*sinA + cosY*sinB*cosA,
-            sinY*cosB,  cosY*cosA + sinY*sinB*sinA,    -cosY*sinA + sinY*sinB*cosA,
-            -sinB,      cosB*sinA,                      cosB*cosA;
-    return r.transpose();
+    std::cout << "Average iter time: " << (this->TiterationTime / this->count) << std::endl;
 }
 
 #define ICP_MAX_ITERATIONS 10
@@ -98,33 +84,32 @@ geometry_msgs::Pose icp_impl::perform_icp(const std::vector<geometry_msgs::Point
     Eigen::Quaterniond estimateQuat(poseEstimate.orientation.w, poseEstimate.orientation.x, poseEstimate.orientation.y, poseEstimate.orientation.z);
     Eigen::Vector3d estimateTranslation(poseEstimate.position.x, poseEstimate.position.y, poseEstimate.position.z);
 
+    ros::Time t1;
+
     while (iteration < ICP_MAX_ITERATIONS && error_value > ICP_ERROR_THRESHOLD) {
+        t1 = ros::Time::now();
         /* convert marker template to eigen vectors */
         std::vector<Eigen::Vector3d> poseMarkers;
-        std::vector<Eigen::Vector3d> normals;
-        for (const geometry_msgs::Point p : markerTemplate) {
+        for (const geometry_msgs::Point& p : markerTemplate) {
             Eigen::Vector3d point(p.x, p.y, p.z);
             poseMarkers.emplace_back(point);
-            normals.emplace_back(point.normalized());
         }
 
-        /* transform marker template by estimate */
+        /* transform marker template by estimate rotation */
         for (Eigen::Vector3d& point : poseMarkers) {
             /* rotate about estimate rotation */
             point = estimateQuat * point;
-            point = point + estimateTranslation;
         }
 
 
         double averageDistanceSq = 0.0;
         std::vector<Eigen::Vector3d> dstPoints; dstPoints.reserve(poseMarkers.size());
         Eigen::Vector3d dstCentroid(0.0, 0.0, 0.0);
-        Eigen::Vector3d srcCentroid(0.0, 0.0, 0.0);
-        for (int i = 0; i < poseMarkers.size(); i++) {
-            auto closestPoint = pointCloudTree.find_nearest_neighbor(poseMarkers[i]);
+        Eigen::Vector3d srcCentroid = estimateTranslation;
+        for (const Eigen::Vector3d& poseMarker : poseMarkers) {
+            auto closestPoint = pointCloudTree.find_nearest_neighbor(poseMarker);
             dstPoints.emplace_back(closestPoint.first);
             dstCentroid += closestPoint.first;
-            srcCentroid += poseMarkers[i];
 
             /* add to running average */
             averageDistanceSq += closestPoint.second;
@@ -132,13 +117,11 @@ geometry_msgs::Pose icp_impl::perform_icp(const std::vector<geometry_msgs::Point
 
         /* finalise average distance squared */
         dstCentroid /= poseMarkers.size();
-        srcCentroid /= poseMarkers.size();
         averageDistanceSq /= poseMarkers.size();
 
         /* bring destination points to origin */
-        for (int i = 0; i < poseMarkers.size(); i++) {
-            dstPoints[i] -= dstCentroid;
-            poseMarkers[i] -= srcCentroid;
+        for (Eigen::Vector3d& dstPoint : dstPoints) {
+            dstPoint -= dstCentroid;
         }
 
         double Sxx = 0.0, Sxy = 0.0, Sxz = 0.0, Syx = 0.0, Syy = 0.0, Syz = 0.0, Szx = 0.0, Szy = 0.0, Szz = 0.0;
@@ -165,7 +148,6 @@ geometry_msgs::Pose icp_impl::perform_icp(const std::vector<geometry_msgs::Point
         Eigen::EigenSolver<Eigen::Matrix4d> es;
         es.compute(Nmat, true);
 
-
         int max_index = 0;
         double max_num = 0.0;
         for (int i = 0; i < es.eigenvalues().size(); i++) {
@@ -188,6 +170,9 @@ geometry_msgs::Pose icp_impl::perform_icp(const std::vector<geometry_msgs::Point
         /* apply error metric and increment iteration */
         error_value = averageDistanceSq;
         iteration++;
+
+        this->TiterationTime += ros::Time().now().toSec() - t1.toSec();
+        this->count += 1.0;
     }
 
     if (iteration >= ICP_MAX_ITERATIONS) {

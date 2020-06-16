@@ -2,6 +2,8 @@
 #include <visualization_msgs/Marker.h>
 #include <Eigen/Dense>
 
+#define ICP_TEST false
+
 std::string get_pose_topic(const std::string& tag) {
 #if USE_NATNET
     return "/mocap/rigid_bodies/" + tag + "/pose";
@@ -35,7 +37,9 @@ geometry_msgs::Quaternion to_quaternion(double yaw) {
 class DRONE_WRAPPER(vflie, homePosX, homePosY)
     private:
     ros::Publisher posePub;
-    ros::Publisher markerPub; // @TODO: REMOVE WHEN FINISHED TESTING
+#if ICP_TEST
+    ros::Publisher markerPub;
+#endif
     ros::Publisher desPub;
 
     std::array<double, 3> positionArray = {{0.0, 0.0, 0.0}};
@@ -86,7 +90,7 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
         this->posePub.publish(translatedMsg);
     }
 
-    // @TODO: REMOVE THIS WHEN FINISHED TESTING
+#if ICP_TEST
     /* publishes a marker set to emulate natnet point cloud, note this overrides a value from natnet and does not append to it. Only use this in testing */
     inline geometry_msgs::Point from_eigen(const Eigen::Vector3d& v) {
         geometry_msgs::Point r;
@@ -96,7 +100,6 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
         return r;
     }
 
-    // @TODO: REMOVE THIS WHEN FINISHED TESTING
     void publish_vflie_marker_set() {
         std::array<Eigen::Vector3d, 4> markerTemplate = {{
                 {0.04, 0.0, 0.0},
@@ -128,6 +131,7 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
         ml.color.r = 1.0; ml.color.g = 1.0; ml.color.b = 1.0; ml.color.a = 1.0;
         markerPub.publish(ml);
     };
+#endif /* ICP_TEST */
 
     void pub_des() {
         geometry_msgs::PoseStamped msg;
@@ -144,7 +148,9 @@ public:
 
         this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(this->get_tag()), 1);
         this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (desPoseTopic, 1);
+#if ICP_TEST
         this->markerPub = this->droneHandle.advertise<visualization_msgs::Marker> ("/markers/vis", 1);
+#endif
         // @TODO, add a unique home point system
 
         this->homePosition.x = std::stof(args[0]);
@@ -240,8 +246,11 @@ public:
         this->positionArray[1] = this->positionArray[1] + (this->velocityArray[1] * deltaTime);
         this->positionArray[2] = this->positionArray[2] + (this->velocityArray[2] * deltaTime);
 
+#if ICP_TEST
+        this->publish_vflie_marker_set(); // enable only when testing ICP
+#else
         this->publish_current_pose();
-        this->publish_vflie_marker_set(); // @TODO: REMOVE WHEN FINISHED TESTING
+#endif
         this->pub_des();
         lastPoseUpdate = ros::Time::now().toSec();
     }

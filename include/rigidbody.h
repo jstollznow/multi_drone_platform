@@ -20,7 +20,7 @@
 #define DEFAULT_QUEUE 10
 #define TIMEOUT_HOVER 20
 
-#define USE_NATNET 1
+#define USE_NATNET true
 
 // api structures
 
