@@ -5,6 +5,8 @@
  * file is included in the /wrappers/ folder, then it will automatically be compiled with the drone server. When developing
  * a new drone wrapper, run catkin_make in the base folder of the catkin workspace to recompile the platform including the new drone.
  */
+
+// @TODO: WARNING, the tello wrapper has not been completed. test this entire system.
 class DRONE_WRAPPER(tello, ip_address)
 private:
     boost::asio::io_service io_service;
@@ -13,7 +15,6 @@ private:
 
 
     bool send_message_to_drone(const std::string& message) {
-        // @TODO: test this entire system
         if (!this->socket.is_open()) {
             this->log(logger::log_type::WARN, "Tello socket is not open");
             return false;
@@ -97,12 +98,17 @@ public:
         }
     }
 
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) final {
+    void on_motion_capture(const geometry_msgs::PoseStamped& msg) final {
 
     }
 
     void on_update() final {
-        // @TODO: perform movement adjustments based on optitrack differences
+        /* @TODO: perform movement adjustments based on differences between optitrack recorded tello location and
+         * what it's desired is. i.e. if the desired position is {0, 0, 1} but its optitrack recorded is {0, 0, 0.9} and
+         * the drone is in state HOVERING, then push a command to the tello to move the extra 0.1 to match the desired
+         * position of {0, 0, 1}. This has to be done here as the tello itself does not manage motion capture internally
+         * as the crazyflie does.
+        */
     }
 
     void on_takeoff(float height, float duration) final {
