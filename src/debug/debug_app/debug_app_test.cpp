@@ -20,7 +20,6 @@ int main(int argc, char *argv[]) {
         myId.numericID = i;
         myDrones.push_back(myId);
     }
-    
-    // name must have '.' in it, else will throw runtime error
+
     auto app = debug_app(mdp::get_all_rigidbodies(), argc, argv);
 }

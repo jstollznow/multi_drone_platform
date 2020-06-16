@@ -15,9 +15,12 @@
 #include "std_msgs/Float64MultiArray.h"
 #include "../src/debug/logger/logger.h"
 #include "multi_drone_platform/api_update.h"
+#include "../src/icp_implementation/icp_object.h"
 
 #define DEFAULT_QUEUE 10
 #define TIMEOUT_HOVER 20
+
+#define USE_NATNET true
 
 // api structures
 
@@ -32,7 +35,7 @@ class mdp_timer {
 private:
     bool isStage1Timeout = false;
     bool timerIsActive = false;
-    double timeoutTime{};
+    double timeoutTime {};
 
 public:
     void close_timer();
@@ -63,6 +66,7 @@ class rigidbody {
     };
 
     friend class drone_server;
+    friend class icp_impl;
 /* DATA */
     private:
         uint32_t numericID;
@@ -74,6 +78,8 @@ class rigidbody {
         ros::Publisher currentTwistPublisher;
         ros::Publisher desiredPosePublisher;
         ros::Publisher desiredTwistPublisher;
+        ros::Time commandEnd;
+
         bool shutdownHasBeenCalled = false;
         ros::AsyncSpinner mySpin;
         ros::CallbackQueue myQueue;
@@ -82,7 +88,8 @@ class rigidbody {
         mdp_timer hoverTimer;
         double declaredStateEndTime = 0.0;
         std::vector<multi_drone_platform::api_update> commandQueue;
-        
+        bool isVflie = false;
+
     protected:
         bool batteryDying = false; // @TODO: formalise wrapper drone use of this variable (and cflie)
         multi_drone_platform::api_update lastRecievedApiUpdate;
@@ -101,6 +108,8 @@ class rigidbody {
         ros::Subscriber motionSubscriber;
         ros::NodeHandle droneHandle;
 
+    public:
+        icp_object icpObject;
 
     /* FUNCTIONS */
     private:
@@ -153,8 +162,15 @@ class rigidbody {
          */
         void log(logger::log_type msgType, std::string message);
 
-        const std::string& get_tag();
-        uint32_t get_id();
+        /**
+         * This log_coord function is very similar to log but eases the process of logging a Vector3 object
+         * which is used in velocity and position ROS messages
+         * @param msgType msgType contains the level of the log. This can be one of four levels including
+         * INFO, DEBUG, WARN, ERROR.
+         * @param dataLabel dataLabel contains the message to be sent with the set of coordinates
+         * @param data data contains the coordinates to be posted
+         */
+        void log_coord(logger::log_type msgType, std::string dataLabel, geometry_msgs::Vector3 data);
 
         // Wrapper Methods
 
@@ -171,7 +187,7 @@ class rigidbody {
          * @param msg the motion capture frame presented as a ros PoseStamped. header contains time stamp information, pose
          * contains position data (cartesian from origin) and orientation data (as quaternion).
          */
-        virtual void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) {};
+        virtual void on_motion_capture(const geometry_msgs::PoseStamped& msg) {};
 
         /**
          * on_takeoff is called whenever a takeoff command is to be sent to the drone.
@@ -246,6 +262,11 @@ class rigidbody {
          * @return the predicted yaw
          */
         double predict_current_yaw();
+
+        const std::string& get_tag();
+        uint32_t get_id();
+
+        const geometry_msgs::Pose& get_current_pose() const;
 
 };
 

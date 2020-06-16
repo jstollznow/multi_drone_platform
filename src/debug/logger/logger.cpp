@@ -1,11 +1,11 @@
 #include "logger.h"
 
-void logger::post_log(log_type type, std::string caller, std::string message, ros::Publisher& logPublisher)
-{
-    std::map<log_type,std::string> logLevel = {
-        {INFO, "INFO"}, {DEBUG, "DEBUG"},
-        {WARN, "WARN"}, {ERROR, "ERROR"}
-    };
+std::map<logger::log_type,std::string> logLevel = {
+        {logger::INFO, "INFO"}, {logger::DEBUG, "DEBUG"},
+        {logger::WARN, "WARN"}, {logger::ERROR, "ERROR"}
+};
+
+void logger::post_log(const log_type type, const std::string& caller, const ros::Publisher& logPublisher, const std::string& message) {
 
     multi_drone_platform::log myLogPost;
     myLogPost.type = logLevel[type];
@@ -25,6 +25,4 @@ void logger::post_log(log_type type, std::string caller, std::string message, ro
             ROS_ERROR("%s: %s", caller.c_str(), message.c_str());
             break;
     }
-
-
 }

@@ -64,33 +64,36 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         goToMsg.request.goal.x = goal.x;
         goToMsg.request.goal.y = goal.y;
         goToMsg.request.goal.z = goal.z;
-        ROS_INFO("GOTO: [%f, %f, %f] in %f, relative: %d", goal.x, goal.y, goal.z, duration, isRelative);
+        std::ostringstream logMsg;
+        logMsg<<"GO_TO ["<<goal.x<<", "<<goal.y<<", "<<goal.z<<"] in "<<duration<<" relative: "<<isRelative;
+
+        this->log(logger::DEBUG, logMsg.str());
         goToMsg.request.duration = ros::Duration(duration);
         goToMsg.request.yaw = yaw;
         goToMsg.request.relative = isRelative;
         
         auto startPoint = std::chrono::high_resolution_clock::now();
+
         if (!goToService.call(goToMsg)) {
             ROS_WARN("GOTO FAILED ON '%s'", this->get_tag().c_str());
             goToService = droneHandle.serviceClient<crazyflie_driver::GoTo>("/" + this->get_tag() + "/go_to", true);
         }
         long long start = std::chrono::time_point_cast<std::chrono::milliseconds> (startPoint).time_since_epoch().count();
         long long end = std::chrono::time_point_cast<std::chrono::milliseconds> (std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-        ROS_WARN("GOTO TOOK %lld ms", end - start);
+
+        this->log(logger::WARN, "GO_TO TOOK "+ std::to_string(end - start) + " ms");
     }
 
     void battery_log(const std_msgs::Float32::ConstPtr &msg) {
         if (msg->data <= 3.15f) {
-            ROS_WARN("Battery dying soon...");
+            this->log(logger::WARN, "Battery dying soon...");
             batteryDying = true;
-        } else {
-            batteryDying = false;
         }
     }
 
     public:
     void on_init(std::vector<std::string> args) final {
-        droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1, this->get_tag().length()));
+        droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
         myUri = linkUri + "/0xE7E7E7E7" + droneAddress;
 
@@ -99,7 +102,7 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         msg.request.tf_prefix = this->get_tag();
         msg.request.roll_trim = 0.0f;
         msg.request.pitch_trim = 0.0f;
-        msg.request.enable_logging = false;
+        msg.request.enable_logging = true;
         msg.request.enable_parameters = true;
         msg.request.use_ros_time = true;
         msg.request.enable_logging_imu = false;
@@ -111,9 +114,9 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         msg.request.enable_logging_packets = false;
 
         if (addCrazyflieService.call(msg)) {
-            ROS_INFO("%s launched on Crazyflie Server", this->get_tag().c_str());
+            this->log(logger::INFO, "Launched on Crazyflie Server");
         } else {
-            ROS_ERROR("Could not add %s to Crazyflie Server, please check the drone tag", this->get_tag().c_str());
+            this->log(logger::ERROR, "Could not add to Crazyflie Server, please check the drone tag");
         }
 
         updateParams = droneHandle.serviceClient<crazyflie_driver::UpdateParams>("/" + this->get_tag() + "/update_params");
@@ -146,11 +149,11 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         }
     }
     
-    void on_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg) override {
+    void on_motion_capture(const geometry_msgs::PoseStamped& msg) override {
         // external_pose.publish(msg);
         geometry_msgs::PointStamped pointMsg;
-        pointMsg.header = msg->header;
-        pointMsg.point = msg->pose.position;
+        pointMsg.header = msg.header;
+        pointMsg.point = msg.pose.position;
         externalPosition.publish(pointMsg);
     }
     
@@ -186,33 +189,33 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     }
 
     void on_takeoff(float height, float duration) override {
-        ROS_INFO("Takeoff sent to %s", this->get_tag().c_str());
+        this->log(logger::INFO, "Takeoff requested");
         crazyflie_driver::Takeoff msg;
         msg.request.duration = ros::Duration(duration);
         msg.request.height = height;
         if (!takeoffService.call(msg)) {
-            ROS_ERROR("Takeoff service failed");
+            this->log(logger::ERROR, "Takeoff service failed");
         }
     }
 
     void on_land(float duration) override {
-        ROS_INFO("Land sent to %s", this->get_tag().c_str());
+        this->log(logger::INFO, "Land requested");
         crazyflie_driver::Land msg;
         msg.request.duration = ros::Duration(duration);
         // 5cm above the ground?
         msg.request.height = 0.05f;
         if (!landService.call(msg)) {
-            ROS_ERROR("Land service failed");
+            this->log(logger::ERROR, "Land service failed");
         }
     }
 
     void on_emergency() override {
-        ROS_INFO("Emergency sent to %s", this->get_tag().c_str());
+        this->log(logger::INFO, "Emergency requested");
         std_srvs::Empty msg;
         if(emergencyService.call(msg)) {
-            ROS_INFO("Emergency land for %s successful", this->get_tag().c_str());
+            this->log(logger::INFO, "Emergency land successful");
         } else {
-            ROS_INFO("Emergency land for %s not successful", this->get_tag().c_str());
+            this->log(logger::INFO, "Emergency land was not successful");
         }
     }
 };

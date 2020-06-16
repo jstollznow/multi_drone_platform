@@ -66,5 +66,6 @@
     },
     "cSpell.words": [
         "opti"
-    ]
+    ],
+    "ros.distro": "kinetic"
 }
