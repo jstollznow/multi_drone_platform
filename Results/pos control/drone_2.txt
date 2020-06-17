@@ -1,0 +1,8 @@
+4677.0193: All timing relative to 1591194677.019289
+4737.7932: INFO Landing drone for shut down
+4737.7933: INFO => Handling command: GOTO_HOME
+4737.7933: DEBUG Duration 4.000000
+4737.7934: INFO => Handling command: POSITION
+4737.7934: DEBUG Duration 4.000000
+4737.7935: WARN Go to position called on landed drone, ignoring
+4738.0960: INFO Deconstructing...
