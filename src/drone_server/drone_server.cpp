@@ -20,11 +20,11 @@ bool globalGoodShutDown = true;
 drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) ICP_IMPL_INIT
 {
     node.setParam(SHUTDOWN_PARAM, false);
-    inputAPISub = node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 2, &drone_server::api_callback, this);
-    emergencySub = node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::emergency_callback, this);
+    inputAPISub = node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 100, &drone_server::api_callback, this);
+    emergencySub = node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 100, &drone_server::emergency_callback, this);
     std::string logTopic = NODE_NAME;
     logTopic += "/log";
-    logPublisher = node.advertise<multi_drone_platform::log> (logTopic, 10);
+    logPublisher = node.advertise<multi_drone_platform::log> (logTopic, 100);
     
     this->log(logger::INFO, "Initialising");
     

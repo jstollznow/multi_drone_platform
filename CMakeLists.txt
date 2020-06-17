@@ -82,18 +82,16 @@ link_directories(
   ${catkin_LINK_DIRS}
 )
 
-file(GLOB test_src
-  "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.cpp"
-)
-
 # User API
-add_library(MDP_API ${CMAKE_CURRENT_SOURCE_DIR}/src/user_api/user_api.cpp)
+add_library(MDP_API
+        src/user_api/user_api.cpp)
 target_link_libraries(MDP_API ${catkin_LIBRARIES})
 add_dependencies(MDP_API multi_drone_platform_generate_messages_cpp)
 
 #Various libraries in MDP
 
-add_library(LOGGER ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/logger/logger.cpp)
+add_library(LOGGER
+        src/debug/logger/logger.cpp)
 target_link_libraries(LOGGER ${catkin_LIBRARIES})
 add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
 
@@ -109,21 +107,32 @@ add_library(ICP_IMPL ${CMAKE_CURRENT_SOURCE_DIR}/src/icp_implementation/icp_impl
 target_link_libraries(ICP_IMPL ${catkin_LIBRARIES} KD_TREE)
 add_dependencies(ICP_IMPL multi_drone_platform_generate_messages_cpp)
 
-add_library(RIGIDBODY ${CMAKE_CURRENT_SOURCE_DIR}/src/drone_server/rigidbody.cpp)
-target_link_libraries(RIGIDBODY ${catkin_LIBRARIES} ICP_OBJ)
-add_dependencies(RIGIDBODY multi_drone_platform_generate_messages_cpp)
+add_library(COLLISION
+        src/collision_management/static_physical_management.cpp
+        src/collision_management/potential_fields.cpp
+        )
+target_link_libraries(COLLISION ${catkin_LIBRARIES})
+add_dependencies(COLLISION multi_drone_platform_generate_messages_cpp)
 
-add_library(TELEOP ${CMAKE_CURRENT_SOURCE_DIR}/src/teleop_control/teleop.cpp)
+add_library(RIGIDBODY
+        src/drone_server/rigidbody.cpp)
+target_link_libraries(RIGIDBODY COLLISION ICP_OBJ ${catkin_LIBRARIES})
+add_dependencies(RIGIDBODY COLLISION multi_drone_platform_generate_messages_cpp)
+
+add_library(TELEOP
+        src/teleop_control/teleop.cpp)
 target_link_libraries(TELEOP ${catkin_LIBRARIES})
-add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
+add_dependencies(TELEOP multi_drone_platform_generate_messages_cpp)
 
-add_library(DEBUGAPP ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_app.cpp)
+add_library(DEBUGAPP
+        src/debug/debug_app/debug_app.cpp
+        src/debug/debug_app/debug_window.cpp
+        )
 target_link_libraries(DEBUGAPP ${catkin_LIBRARIES})
 add_dependencies(DEBUGAPP multi_drone_platform_generate_messages_cpp)
 
-add_library(DEBUGWINDOW ${CMAKE_CURRENT_SOURCE_DIR}/src/debug/debug_app/debug_window.cpp)
-target_link_libraries(DEBUGWINDOW ${catkin_LIBRARIES})
-add_dependencies(DEBUGWINDOW multi_drone_platform_generate_messages_cpp)
+
+
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTKMM gtkmm-3.0)
@@ -134,33 +143,29 @@ include_directories(include ${GTKMM_INCLUDE_DIRS})
 # Programs and Bindings
 
 add_executable(drone_server src/drone_server/drone_server.cpp)
-target_link_libraries(drone_server ${catkin_LIBRARIES} RIGIDBODY LOGGER ICP_IMPL)
+target_link_libraries(drone_server ${catkin_LIBRARIES} COLLISION ICP_IMPL RIGIDBODY LOGGER)
 add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
 add_executable(add_drone src/drone_server/add_drone.cpp)
-target_link_libraries(add_drone ${catkin_LIBRARIES} RIGIDBODY LOGGER)
+target_link_libraries(add_drone ${catkin_LIBRARIES} COLLISION RIGIDBODY LOGGER)
 add_dependencies(add_drone multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
 add_executable(shutdown_drone_server src/drone_server/shutdown_drone_server.cpp)
 target_link_libraries(shutdown_drone_server ${catkin_LIBRARIES})
 
-add_executable(script_wk_10 scripts/demoWk10.cpp)
-target_link_libraries(script_wk_10 ${catkin_LIBRARIES} MDP_API)
-
-add_executable(follow_control scripts/follow_the_leader_demo.cpp)
-target_link_libraries(follow_control ${catkin_LIBRARIES} MDP_API)
-
-add_executable(test_program scripts/test_program_19Oct2019.cpp)
-target_link_libraries(test_program ${catkin_LIBRARIES} MDP_API)
-
-add_executable(velocity_example scripts/testVelControl.cpp)
-target_link_libraries(velocity_example ${catkin_LIBRARIES} MDP_API)
-
-add_executable(emergency_program src/user_api/emergency_program.cpp)
-target_link_libraries(emergency_program ${catkin_LIBRARIES} MDP_API) 
+add_executable(emergency_program src/drone_server/emergency_program.cpp)
+target_link_libraries(emergency_program ${catkin_LIBRARIES} LOGGER)
 
 add_executable(all_debug_windows src/debug/debug_app/debug_app_test.cpp)
-target_link_libraries(all_debug_windows ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP DEBUGWINDOW)
+target_link_libraries(all_debug_windows ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} DEBUGAPP)
 
 add_executable(teleop_test src/teleop_control/teleop_test.cpp)
 target_link_libraries(teleop_test ${catkin_LIBRARIES} MDP_API ${GTKMM_LIBRARIES} MDP_API TELEOP LOGGER)
+
+file(GLOB files  "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.cpp")
+foreach(file ${files})
+    get_filename_component(exe_name "${file}" NAME_WE)
+    add_executable(${exe_name} ${file})
+    target_link_libraries(${exe_name} ${catkin_LIBRARIES} MDP_API)
+endforeach()
+

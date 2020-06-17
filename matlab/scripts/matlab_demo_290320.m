@@ -1,7 +1,6 @@
 
 Rate = 100;
 
-
 Api = mdp_api(Rate, 'matlab_demo');
 
 Drones = Api.getalldrones();
@@ -37,6 +36,8 @@ WayDronePosX = [];
 FolDronePosX = [];
 WayDronePosY = [];
 FolDronePosY = [];
+TimeStampsWay = [];
+TimeStampsFol = [];
 
 % wait till drones geet to their heights
 Api.sleepuntilidle(Drones(1));
@@ -66,11 +67,14 @@ for n = 1 : length(Positions)
         
         % plot the drone positions
         FolPos = Api.getposition(Drones(2));
+        
         WayDronePosX = [WayDronePosX WayPos.X];
         WayDronePosY = [WayDronePosY WayPos.Y];
+        TimeStampsWay = [TimeStampsWay WayPos.TimeStampSec];
         FolDronePosX = [FolDronePosX FolPos.X];
         FolDronePosY = [FolDronePosY FolPos.Y];
-        
+        TimeStampsFol = [TimeStampsFol FolPos.TimeStampSec];
+         
         State = Api.getstate(Drones(1));
     end
 end
@@ -88,19 +92,28 @@ delete(Api);
 
 % plot the data
 clf
-Iters = (1:length(WayDronePosX));
-subplot(2,1,1);
-plot(Iters, WayDronePosX);
+%X Coord
+subplot(3,1,1);
+plot(TimeStampsWay, WayDronePosX);
 hold on
-plot(Iters, FolDronePosX);
+plot(TimeStampsFol, FolDronePosX);
 title('X position');
 legend('Waypoint Drone', 'Follow Drone');
-axis([0 length(WayDronePosX) -1 1]);
-subplot(2,1,2);
-plot(Iters, WayDronePosY);
+
+%Y Coord
+subplot(3,1,2);
+plot(TimeStampsWay, WayDronePosY);
 hold on
-plot(Iters, FolDronePosY);
+plot(TimeStampsFol, FolDronePosY);
 title('Y position');
 legend('Waypoint Drone', 'Follow Drone');
-axis([0 length(WayDronePosX) -1 1]);
+
+%Z Coord
+subplot(3,1,3);
+plot(TimeStampsWay, WayDronePosY);
+hold on
+plot(TimeStampsFol, FolDronePosY);
+title('Y position');
+legend('Waypoint Drone', 'Follow Drone');
+
 hold off

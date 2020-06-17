@@ -2,13 +2,29 @@ rosrun multi_drone_platform add_drone <<!
 
 NEW
 vflie_00
-0.0
+1.5
 1.0
 
 NEW
 vflie_01
 1.0
 2.0
+
+NEW
+vflie_02
+2.5
+3.0
+
+NEW
+vflie_03
+0.5
+0.0
+
+NEW
+vflie_04
+-2.0
+-0.5
+
 
 END
 !

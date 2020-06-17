@@ -11,6 +11,16 @@ int main(int argc, char *argv[]) {
 
     mdp::initialise(10, "debug_app_test");
 
+    bool expanded = false;
+    if (argc >= 1) {
+        std::string state;
+        state = argv[1];
+        if (state == "expanded") expanded = true;
+        if (state == "compressed") expanded = false;
+    }
+
+
+
     // for potential testing
     std::vector<mdp::id> myDrones;
 
@@ -21,5 +31,5 @@ int main(int argc, char *argv[]) {
         myDrones.push_back(myId);
     }
 
-    auto app = debug_app(mdp::get_all_rigidbodies(), argc, argv);
+    auto app = debug_app(mdp::get_all_rigidbodies(), argc, argv, expanded);
 }

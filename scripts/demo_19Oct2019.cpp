@@ -1,11 +1,11 @@
 #include "user_api.h"
 #include "ros/ros.h"
 
-#define DO_FLIGHT_TEST      1
+#define DO_FLIGHT_TEST      0
 #define DO_HOVER_TEST       0
 #define DO_BASEBALL_RUN     0
-#define DO_FIGURE_EIGHT     0   // velocity control, may be a bit risky
-#define DO_DONUTS           0
+#define DO_FIGURE_EIGHT     0
+#define DO_DONUTS           1
 
 
 void do_drone_flight_test(mdp::id drone)
