@@ -200,13 +200,22 @@ class rigidbody {
         template <class T>
         void log_coord(logger::log_type msgType, std::string dataLabel, T data);
 
-        const std::string& get_tag();
-        uint32_t get_id();
-
         // Wrapper Methods
 
+        /**
+         * This function is called on initialisation of the drone on the platform. The parameter 'args' is filled
+         * with arguments as defined in the drone wrapper's DRONE_WRAPPER(..) declaration and argument values are filled
+         * in by the user on drone declaration to the platform at run-time
+         * @param args a list of arguments to support the drone's initialisation
+         */
         virtual void on_init(std::vector<std::string> args) = 0;
+
+        /**
+         * the last function to be called on the wrapper before the drone is removed from the platform. Do any cleanup
+         * operations here.
+         */
         virtual void on_deinit() = 0;
+
         /**
          * The on_update function is called at the update rate defined in the drone-server, by default this is 100Hz
          * but is modifiable by a user application
@@ -277,27 +286,29 @@ class rigidbody {
          * returns the name of the rigidbody
          * @return string name
          */
-        std::string get_name();
-
-        /**
-         * predicts the current position of the rigidbody based upon its last known location and its velocity
-         * @return a geometry_msgs::Vector3 depicting the rigidbody's predicted location
-         */
-        geometry_msgs::Vector3 predict_current_position();
-
-        /**
-         * perdicts the current yaw of the rigidbody based upon its last known yaw and yawrate
-         * @return the predicted yaw
-         */
-        double predict_current_yaw();
-
         const std::string& get_tag();
+
+        /**
+         * returns the id of the rigidbody
+         * @return the rigidbody's id
+         */
         uint32_t get_id();
 
+        /**
+         * returns the current pose of the rigidbody
+         * @return the rigidbody's current pose
+         */
         const geometry_msgs::Pose& get_current_pose() const;
 
 };
 
+
+/** The DRONE_WRAPPER(..) macro is ordered as follows, the first parameter is the identifying tag of the drone and all following
+ * parameters represent an argument to be passed into the on_init(..) function at drone startup. i.e. DRONE_WRAPPER(object, argA, argB) will
+ * mean that the drone's tag is 'object' and under the on_init(std::vector<std::string> args) function 'args[0]' will hold the result of
+ * argA when the drone is declared, and 'args[1]' will represent argB. The values of these args are given when the drone is declared onto
+ * the drone platform through the 'add_drone' platform program.
+ */
 #define DRONE_WRAPPER(DroneName, ...) \
     DroneName : protected rigidbody { \
         public:\

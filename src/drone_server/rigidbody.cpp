@@ -545,8 +545,7 @@ uint32_t rigidbody::get_id() {
     return this->numericID;
 }
 
-const geometry_msgs::Pose& rigidbody::get_current_pose() const
-{
+const geometry_msgs::Pose& rigidbody::get_current_pose() const {
     return this->currentPose;
 }
 
