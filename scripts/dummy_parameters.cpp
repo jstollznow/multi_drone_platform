@@ -17,7 +17,6 @@ int main() {
         mdp::sleep_until_idle(drones[0]);
         mdp::cmd_land(drones[0], -1.0);
         mdp::sleep_until_idle(drones[0]);
-
     }
     mdp::terminate();
     return 0;

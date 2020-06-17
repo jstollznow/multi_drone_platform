@@ -62,19 +62,23 @@ void potential_fields::position_based_pf(rigidbody *d, std::vector<rigidbody *> 
     geometry_msgs::Vector3 netPotentialVelocity;
 
     auto remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
-    auto replusiveForces = replusive_forces(d, rigidbodies);
+    auto repulsiveForces = replusive_forces(d, rigidbodies);
     auto attractiveForces = attractive_forces(d, remainingDuration);
-    netPotentialVelocity = utility_functions::add_vec3_or_point(replusiveForces, attractiveForces);
+    netPotentialVelocity = utility_functions::add_vec3_or_point(repulsiveForces, attractiveForces);
     closest = std::min(closest, closestThisRound);
 
     d->log(logger::DEBUG, "Distance to closest " + std::to_string(closestThisRound));
-    d->log_coord(logger::DEBUG, "Repulsive Force", replusiveForces);
+    d->log_coord(logger::DEBUG, "Repulsive Force", repulsiveForces);
     d->log_coord(logger::DEBUG, "NetForces", netPotentialVelocity);
     if (utility_functions::magnitude(netPotentialVelocity) <= 0.20) {
         d->log(logger::DEBUG, "Local Minima");
-        netPotentialVelocity = escape_local_minima(utility_functions::magnitude(attractiveForces));
+//        var halfWayVector = (Vector3.up + Vector3.right).normalized;
+        auto tangVec = utility_functions::get_tangent_vec(attractiveForces, repulsiveForces);
+
+//        netPotentialVelocity = utility_functions::multiply_by_constant(tangVec, 2);
     }
-    if (utility_functions::magnitude(replusiveForces) <= 0.2) {
+
+    if (utility_functions::magnitude(repulsiveForces) <= 0.2) {
         d->set_desired_position(d->lastRecievedApiUpdate.posVel, 0.0, remainingDuration);
     }
     else {
@@ -91,7 +95,7 @@ geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vec
     for (auto rb : rigidbodies) {
         if (rb->get_id() != d->get_id()) {
             auto obPoint = utility_functions::point_to_vec3(rb->currentPose.position);
-            auto dPoint = utility_functions::point_to_vec3(d->currentPose.position);\
+            auto dPoint = utility_functions::point_to_vec3(d->currentPose.position);
             auto dFuturePoint = predict_position(d->lastUpdate, d->currentVelocity, d->currentPose, 10);
             auto diffVec = utility_functions::difference(dFuturePoint, obPoint);
             double d0 = utility_functions::magnitude(diffVec);

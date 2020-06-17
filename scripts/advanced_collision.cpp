@@ -12,14 +12,13 @@ int main() {
 
     for (auto drone : drones) {
         mdp::cmd_takeoff(drone, 1.0, 1.0);
-
     }
 
     if (drones.size() > 2) {
         mdp::position_msg posMsg;
         posMsg.keepHeight = true;
         posMsg.relative = false;
-        posMsg.duration = 4.5;
+        posMsg.duration = 5.0;
 
         posMsg.position = {1.0, -1.0, 0.0};
         mdp::sleep_until_idle(drones[0]);

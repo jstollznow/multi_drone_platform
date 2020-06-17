@@ -155,24 +155,18 @@ void debug_window::draw_obstacles() {
     for (int i = obstacles.poses.size() - 1; i >= 0; i --) {
         geometry_msgs::Pose ob = obstacles.poses[i];
         int level = 0;
-        std::array<double, 3> highlightColor {0.0, 0.0, 0.0};
+
         // distance
         if (ob.orientation.x <= dRestrictedDistance) {
-            // red
-            highlightColor = {0.8, 0.0, 0.10};
             level = 3;
         }
         else if (ob.orientation.x <= dInfluenceDistance) {
-            // orange
-            highlightColor = {0.9, 0.50, 0.00};
             level = 2;
         }
         else {
-            // yellow
-            highlightColor = {1.0, 0.90, 0.00};
             level = 1;
         }
-        fill_panel(ob, level, highlightColor);
+        fill_panel(ob, level);
     }
 
 }
@@ -337,7 +331,6 @@ void debug_window::link_widgets() {
         builder->get_widget(VNAME(speedMultiplierLabel), speedMultiplierLabel);
         builder->get_widget(VNAME(pktLossLabel), pktLossLabel);
         builder->get_widget(VNAME(logTextView), logTextView);
-        logTextBuffer = logTextView->get_buffer();
         builder->get_widget(VNAME(landButton), landButton);
         builder->get_widget(VNAME(emergencyButton), emergencyButton);
         builder->get_widget(VNAME(speedScale), speedScale);
@@ -356,6 +349,8 @@ void debug_window::link_widgets() {
         builder->get_widget(VNAME(logScroll), logScroll);
         builder->get_widget(VNAME(compressImage), compressImage);
         builder->get_widget(VNAME(expandImage), expandImage);
+
+        logTextBuffer = logTextView->get_buffer();
 
         landButton->signal_clicked().connect
                 (sigc::mem_fun(*this, &debug_window::on_landButton_clicked));
@@ -481,12 +476,12 @@ void debug_window::reset_all_panels() {
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
     cr->scale(width, height);
-    cr->move_to(0.0,1.0 - outer);
-    cr->line_to(1.0, 1.0 - outer);
-    cr->move_to(0.0,1.0 - middle);
-    cr->line_to(1.0, 1.0 - middle);
     cr->move_to(0.0,1.0 - inner);
     cr->line_to(1.0, 1.0 - inner);
+    cr->move_to(0.0,1.0 - middle);
+    cr->line_to(1.0, 1.0 - middle);
+    cr->move_to(0.0,1.0 - outer);
+    cr->line_to(1.0, 1.0 - outer);
     cr->stroke();
 
     cr = sideViewBottom->get_window()->create_cairo_context();
@@ -502,7 +497,24 @@ void debug_window::reset_all_panels() {
     cr->stroke();
 }
 
-void debug_window::fill_panel(geometry_msgs::Pose ob, int level, std::array<double, 3> color) {
+void debug_window::fill_panel(geometry_msgs::Pose ob, int level) {
+    std::array<double, 3> highlightColor;
+
+    switch (level) {
+        case 3:
+            // red
+            highlightColor = {0.8, 0.0, 0.10};
+            break;
+        case 2:
+            // orange
+            highlightColor = {0.9, 0.50, 0.00};
+            break;
+        case 1:
+            // yellow
+            highlightColor = {1.0, 0.90, 0.00};
+            break;
+    }
+
     std::vector<int> panels(8);
     std::iota (std::begin(panels), std::end(panels), 1);
 
@@ -642,8 +654,47 @@ void debug_window::fill_panel(geometry_msgs::Pose ob, int level, std::array<doub
                 }
                 break;
         }
-        cr->set_source_rgb(color[0], color[1], color[2]);
+        cr->set_source_rgb(highlightColor[0], highlightColor[1], highlightColor[2]);
         cr->set_line_width(lineWidth);
         cr->stroke();
+
+        if (ob.position.z >= dHeight/2) {
+            cr = sideViewTop->get_window()->create_cairo_context();
+            allocation = topViewBotRight->get_allocation();
+            cr->scale(allocation.get_width(), allocation.get_height());
+            switch(level) {
+                case 3:
+                    cr->move_to(0.0,1.0 - outer);
+                    cr->line_to(1.0, 1.0 - outer);
+                case 2:
+                    cr->move_to(0.0,1.0 - middle);
+                    cr->line_to(1.0, 1.0 - middle);
+                case 1:
+                    cr->move_to(0.0,1.0 - inner);
+                    cr->line_to(1.0, 1.0 - inner);
+            }
+            cr->set_source_rgb(highlightColor[0], highlightColor[1], highlightColor[2]);
+            cr->set_line_width(lineWidth);
+            cr->stroke();
+        }
+        else if (ob.position.z <= -dHeight/2) {
+            cr = sideViewBottom->get_window()->create_cairo_context();
+            allocation = topViewBotRight->get_allocation();
+            cr->scale(allocation.get_width(), allocation.get_height());
+            switch(level) {
+                case 3:
+                    cr->move_to(0.0,outer);
+                    cr->line_to(1.0, outer);
+                case 2:
+                    cr->move_to(0.0,middle);
+                    cr->line_to(1.0, middle);
+                case 1:
+                    cr->move_to(0.0,inner);
+                    cr->line_to(1.0, inner);
+            }
+            cr->set_source_rgb(highlightColor[0], highlightColor[1], highlightColor[2]);
+            cr->set_line_width(lineWidth);
+            cr->stroke();
+        }
     }
 }

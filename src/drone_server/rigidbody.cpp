@@ -1,6 +1,5 @@
 #include <queue>
 #include <rigidbody.h>
-#include "rigidbody.h"
 #include "element_conversions.cpp"
 #include "../collision_management/static_physical_management.h"
 #include "../collision_management/potential_fields.h"

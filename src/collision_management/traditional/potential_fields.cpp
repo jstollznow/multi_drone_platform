@@ -3,7 +3,7 @@
 //
 #include "potential_fields.h"
 #include "utility_functions.cpp"
-#define MIN_DIST 0.50f
+#define MIN_DIST 0.70f
 #define GRAV_GAIN 0.25f
 #define REPLUSIVE_GAIN 8.00f
 #define COORD_GAIN 10.0f

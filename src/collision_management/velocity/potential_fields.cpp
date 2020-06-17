@@ -3,8 +3,7 @@
 //
 #include "potential_fields.h"
 #include "utility_functions.cpp"
-#define D_R 0.7f
-#define D_S 0.30f
+
 #define ATTRACTIVE_DIST 0.10f
 #define K_P 6.0f
 #define K_D 0.8f
@@ -63,19 +62,23 @@ void potential_fields::position_based_pf(rigidbody *d, std::vector<rigidbody *> 
     geometry_msgs::Vector3 netPotentialVelocity;
 
     auto remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
-    auto replusiveForces = replusive_forces(d, rigidbodies);
+    auto repulsiveForces = replusive_forces(d, rigidbodies);
     auto attractiveForces = attractive_forces(d, remainingDuration);
-    netPotentialVelocity = utility_functions::add_vec3_or_point(replusiveForces, attractiveForces);
+    netPotentialVelocity = utility_functions::add_vec3_or_point(repulsiveForces, attractiveForces);
     closest = std::min(closest, closestThisRound);
 
     d->log(logger::DEBUG, "Distance to closest " + std::to_string(closestThisRound));
-    d->log_coord(logger::DEBUG, "Repulsive Force", replusiveForces);
+    d->log_coord(logger::DEBUG, "Repulsive Force", repulsiveForces);
     d->log_coord(logger::DEBUG, "NetForces", netPotentialVelocity);
     if (utility_functions::magnitude(netPotentialVelocity) <= 0.20) {
         d->log(logger::DEBUG, "Local Minima");
-        netPotentialVelocity = escape_local_minima(utility_functions::magnitude(attractiveForces));
+//        var halfWayVector = (Vector3.up + Vector3.right).normalized;
+        auto tangVec = utility_functions::get_tangent_vec(attractiveForces, repulsiveForces);
+
+//        netPotentialVelocity = utility_functions::multiply_by_constant(tangVec, 2);
     }
-    if (utility_functions::magnitude(replusiveForces) <= 0.2) {
+
+    if (utility_functions::magnitude(repulsiveForces) <= 0.2) {
         d->set_desired_position(d->lastRecievedApiUpdate.posVel, 0.0, remainingDuration);
     }
     else {
@@ -92,7 +95,7 @@ geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vec
     for (auto rb : rigidbodies) {
         if (rb->get_id() != d->get_id()) {
             auto obPoint = utility_functions::point_to_vec3(rb->currentPose.position);
-            auto dPoint = utility_functions::point_to_vec3(d->currentPose.position);\
+            auto dPoint = utility_functions::point_to_vec3(d->currentPose.position);
             auto dFuturePoint = predict_position(d->lastUpdate, d->currentVelocity, d->currentPose, 10);
             auto diffVec = utility_functions::difference(dFuturePoint, obPoint);
             double d0 = utility_functions::magnitude(diffVec);
@@ -110,12 +113,12 @@ geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vec
 
             d->log(logger::DEBUG, "Dist: " + std::to_string(d0));
 
-            if (d0 <= D_S) {
+            if (d0 <= rb->restrictedDistance) {
                 replusiveForce.x += d->maxVel * unitDirection.x;
                 replusiveForce.y += d->maxVel * unitDirection.y;
                 replusiveForce.z += d->maxVel * unitDirection.z;
-            }else if (d0 <= D_R) {
-                double vr = K_P * (D_R - d0) + K_D * (velDiff);
+            }else if (d0 <= rb->influenceDistance) {
+                double vr = K_P * (rb->influenceDistance - d0) + K_D * (velDiff);
                 replusiveForce.x += vr * unitDirection.x;
                 replusiveForce.y += vr * unitDirection.y;
                 replusiveForce.z += vr * unitDirection.z;

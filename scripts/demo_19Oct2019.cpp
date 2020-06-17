@@ -4,7 +4,7 @@
 #define DO_FLIGHT_TEST      0
 #define DO_HOVER_TEST       0
 #define DO_BASEBALL_RUN     0
-#define DO_FIGURE_EIGHT     0   // velocity control, may be a bit risky
+#define DO_FIGURE_EIGHT     0
 #define DO_DONUTS           1
 
 
