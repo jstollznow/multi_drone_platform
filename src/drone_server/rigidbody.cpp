@@ -105,10 +105,6 @@ void rigidbody::shutdown() {
     this->handle_command();
 }
 
-std::string rigidbody::get_name() {
-    return this->tag;
-}
-
 void rigidbody::set_max_vel() {
     this->maxVel = std::max(std::abs(velocity_limits.x[0]), std::abs(velocity_limits.x[1]));
     this->maxVel = std::max(maxVel, std::abs(velocity_limits.y[0]));

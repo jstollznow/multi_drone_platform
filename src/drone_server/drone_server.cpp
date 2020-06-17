@@ -98,7 +98,7 @@ void drone_server::remove_rigidbody(unsigned int pDroneID) {
     if (pDroneID < rigidbodyList.size()) {
         if (rigidbodyList[pDroneID] != nullptr) {
             
-            this->log(logger::INFO, "Removing '" + rigidbodyList[pDroneID]->get_name() + "'");
+            this->log(logger::INFO, "Removing '" + rigidbodyList[pDroneID]->get_tag() + "'");
 
             rigidbodyList[pDroneID]->mySpin.stop();
             delete rigidbodyList[pDroneID];
@@ -277,7 +277,7 @@ bool drone_server::api_list_service(tf2_msgs::FrameGraph::Request &req, tf2_msgs
     res.frame_yaml = "";
     for (size_t i = 0; i < rigidbodyList.size(); i++) {
         if (rigidbodyList[i] == nullptr) continue;
-        res.frame_yaml += std::to_string(i) + ":" + rigidbodyList[i]->get_name() + " ";
+        res.frame_yaml += std::to_string(i) + ":" + rigidbodyList[i]->get_tag() + " ";
     }
     return true;
 }
