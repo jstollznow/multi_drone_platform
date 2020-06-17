@@ -6,12 +6,19 @@
 #include "multi_drone_platform/api_update.h"
 #include "multi_drone_platform/add_drone.h"
 
+#if POINT_SET_REG
+#   define ICP_IMPL_INIT ,icpImplementation(&this->rigidbodyList, this->node)
+#else
+#   define ICP_IMPL_INIT
+#endif /* POINT_SET_REG */
+
 drone_server* globalDroneServer = nullptr;
 bool globalShouldShutdown = false;
 bool globalGoodShutDown = true;
 
 
-drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) {
+drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) ICP_IMPL_INIT
+{
     node.setParam(SHUTDOWN_PARAM, false);
     inputAPISub = node.subscribe<geometry_msgs::TransformStamped> (SUB_TOPIC, 2, &drone_server::api_callback, this);
     emergencySub = node.subscribe<std_msgs::Empty> (EMERGENCY_TOPIC, 10, &drone_server::emergency_callback, this);
@@ -65,17 +72,15 @@ void drone_server::shutdown() {
     rigidbodyList.clear();
 }
 
-// @TODO: implementation task on Trello
-void drone_server::init_rigidbodies_from_VRPN() {
-    this->log(logger::WARN, "Initialising drones from vrpn is \
-    currently not supported, please add drones manually");
-}
-
-
 bool drone_server::add_new_rigidbody(const std::string& pTag, std::vector<std::string> args) {
     rigidbody* RB;
     if (mdp_wrappers::create_new_rigidbody(pTag, rigidbodyList.size(), std::move(args), RB)) {
         /* update drone state on param server */
+
+        /* indicate if the drone is a vflie or not, this is used for ICP */
+        if (mdp_wrappers::get_drone_type_id(pTag) == droneTypeMap["vflie"]) {
+            RB->isVflie = true;
+        }
 
         rigidbodyList.push_back(RB);
         RB->mySpin.start();
