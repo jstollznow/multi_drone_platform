@@ -1,7 +1,15 @@
 #include "rigidbody.h"
+#include <visualization_msgs/Marker.h>
+#include <Eigen/Dense>
+
+#define ICP_TEST false
 
 std::string get_pose_topic(const std::string& tag) {
+#if USE_NATNET
+    return "/mocap/rigid_bodies/" + tag + "/pose";
+#else
     return "/vrpn_client_node/" + tag + "/pose";
+#endif
 }
 
 double lerp(double begin, double end, double t) {
@@ -15,16 +23,13 @@ double linear_lerp(double begin, double end, double maxChange) {
 
 // yaw (Z), pitch (Y), roll (X)
 geometry_msgs::Quaternion to_quaternion(double yaw) {
-    yaw = yaw * 0.01745; // to radians
-    // Abbreviations for the various angular functions
-    double cy = cos(yaw * 0.5);
-    double sy = sin(yaw * 0.5);
+    Eigen::Quaterniond qE(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
 
     geometry_msgs::Quaternion q;
-    q.w = cy;
-    q.x = cy;
-    q.y = 0.0;
-    q.z = sy;
+    q.w = qE.w();
+    q.x = qE.x();
+    q.y = qE.y();
+    q.z = qE.z();
 
     return q;
 }
@@ -32,6 +37,9 @@ geometry_msgs::Quaternion to_quaternion(double yaw) {
 class DRONE_WRAPPER(vflie, homePosX, homePosY)
     private:
     ros::Publisher posePub;
+#if ICP_TEST
+    ros::Publisher markerPub;
+#endif
     ros::Publisher desPub;
 
     std::array<double, 3> positionArray = {{0.0, 0.0, 0.0}};
@@ -52,22 +60,78 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
     double lastPoseUpdate = -1.0;
 
     void publish_current_pose() {
-        geometry_msgs::Quaternion orientationVRPN = to_quaternion(this->currentYaw);
+        geometry_msgs::Quaternion orientation = to_quaternion(this->currentYaw);
 
         geometry_msgs::PoseStamped translatedMsg;
+#if USE_NATNET
+        // natnet is z up
+        translatedMsg.pose.position.x = positionArray[0];
+        translatedMsg.pose.position.y = positionArray[1];
+        translatedMsg.pose.position.z = positionArray[2];
+
+        translatedMsg.pose.orientation.x = orientation.x;
+        translatedMsg.pose.orientation.y = orientation.y;
+        translatedMsg.pose.orientation.z = orientation.z;
+        translatedMsg.pose.orientation.w = orientation.w;
+        translatedMsg.header.frame_id = "mocap";
+#else /* USE VRPN */
+        // convert to y up
         translatedMsg.pose.position.x = positionArray[1];
         translatedMsg.pose.position.y = positionArray[0] * -1;
         translatedMsg.pose.position.z = positionArray[2];
 
-        translatedMsg.pose.orientation.x = orientationVRPN.y;
-        translatedMsg.pose.orientation.y = orientationVRPN.x * -1;
-        translatedMsg.pose.orientation.z = orientationVRPN.z;
-        translatedMsg.pose.orientation.w = orientationVRPN.w;
-
-        translatedMsg.header.stamp = ros::Time::now();
+        translatedMsg.pose.orientation.x = orientation.y;
+        translatedMsg.pose.orientation.y = orientation.x * -1;
+        translatedMsg.pose.orientation.z = orientation.z;
+        translatedMsg.pose.orientation.w = orientation.w;
         translatedMsg.header.frame_id = "map";
+#endif
+        translatedMsg.header.stamp = ros::Time::now();
         this->posePub.publish(translatedMsg);
     }
+
+#if ICP_TEST
+    /* publishes a marker set to emulate natnet point cloud, note this overrides a value from natnet and does not append to it. Only use this in testing */
+    inline geometry_msgs::Point from_eigen(const Eigen::Vector3d& v) {
+        geometry_msgs::Point r;
+        r.x = v.x();
+        r.y = v.y();
+        r.z = v.z();
+        return r;
+    }
+
+    void publish_vflie_marker_set() {
+        std::array<Eigen::Vector3d, 4> markerTemplate = {{
+                {0.04, 0.0, 0.0},
+                {0.0, 0.04, 0.0},
+                {0.0, -0.04, 0.0},
+                {-0.04, 0.0, 0.04}
+        }};
+        Eigen::Quaterniond q(Eigen::AngleAxisd(sin(ros::Time::now().toSec()), Eigen::Vector3d::UnitZ()));
+        for (Eigen::Vector3d& p : markerTemplate) {
+            p = q * p;
+            p += Eigen::Vector3d(positionArray[0], positionArray[1], positionArray[2]);
+        }
+
+        std::vector<geometry_msgs::Point> m;
+        m.resize(markerTemplate.size());
+        m[0] = from_eigen(markerTemplate[0]);
+        m[1] = from_eigen(markerTemplate[1]);
+        m[2] = from_eigen(markerTemplate[2]);
+        m[3] = from_eigen(markerTemplate[3]);
+
+        visualization_msgs::Marker ml;
+        ml.header.frame_id = "world";
+        ml.header.stamp = ros::Time::now();
+        ml.points = m;
+        ml.type = 7;
+        ml.action = 0;
+        geometry_msgs::Vector3 s; s.x = 0.01; s.y = 0.01; s.z = 0.01;
+        ml.scale = s;
+        ml.color.r = 1.0; ml.color.g = 1.0; ml.color.b = 1.0; ml.color.a = 1.0;
+        markerPub.publish(ml);
+    };
+#endif /* ICP_TEST */
 
     void pub_des() {
         geometry_msgs::PoseStamped msg;
@@ -99,6 +163,9 @@ public:
 
         this->posePub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (get_pose_topic(this->get_tag()), 1);
         this->desPub = this->droneHandle.advertise<geometry_msgs::PoseStamped> (desPoseTopic, 1);
+#if ICP_TEST
+        this->markerPub = this->droneHandle.advertise<visualization_msgs::Marker> ("/markers/vis", 1);
+#endif
         // @TODO, add a unique home point system
 
         this->homePosition.x = std::stof(args[0]);
@@ -187,7 +254,11 @@ public:
         this->positionArray[1] = this->positionArray[1] + (this->velocityArray[1] * deltaTime);
         this->positionArray[2] = this->positionArray[2] + (this->velocityArray[2] * deltaTime);
 
+#if ICP_TEST
+        this->publish_vflie_marker_set(); // enable only when testing ICP
+#else
         this->publish_current_pose();
+#endif
         this->pub_des();
         lastPoseUpdate = ros::Time::now().toSec();
     }

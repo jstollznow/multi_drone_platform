@@ -1,10 +1,10 @@
 #include <queue>
-#include <rigidbody.h>
+#include "rigidbody.h"
 #include "element_conversions.cpp"
 #include "../collision_management/static_physical_management.h"
 #include "../collision_management/potential_fields.h"
 
-rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
+rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue), icpObject(tag, droneHandle) {
     this->tag = tag;
     this->numericID = id;
     this->batteryDying = false;
@@ -33,7 +33,11 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue) {
     // look for drone under tag namespace then vrpn output
     std::string idStr = std::to_string(numericID);
 
+#if USE_NATNET
+    std::string motionTopic = "/mocap/rigid_bodies/" + tag + "/pose";
+#else /* USE VRPN */
     std::string motionTopic = "/vrpn_client_node/" + tag + "/pose";
+#endif
     std::string logTopic = "mdp/drone_" + idStr + "/log";
     std::string apiTopic = "mdp/drone_" + idStr + "/apiUpdate";
     std::string batteryTopic = "mdp/drone_" + idStr + "/battery";
@@ -205,7 +209,11 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     /* if this is the first recieved message, fill motionCapture with homePositions */
     geometry_msgs::PoseStamped motionMsg;
 
-//  convert VRPN data to Z-Up
+#if USE_NATNET
+    // natnet is z up
+    motionMsg = *msg;
+#else /* USE VRPN */
+    //  convert VRPN data to Z-Up
     motionMsg.header = msg->header;
 
     motionMsg.pose.position.x = msg->pose.position.y * -1;
@@ -216,8 +224,9 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     motionMsg.pose.orientation.y = msg->pose.orientation.x;
     motionMsg.pose.orientation.z = msg->pose.orientation.z;
     motionMsg.pose.orientation.w = msg->pose.orientation.w;
+#endif
 
-    if(motionCapture.size() == 0) {
+    if (motionCapture.empty()) {
         motionCapture.push(motionMsg);
         motionCapture.push(motionMsg);
 
@@ -246,6 +255,7 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
 
     this->lastUpdate = ros::Time::now();
     this->on_motion_capture(motionMsg);
+
 }
 
 geometry_msgs::PoseStamped rigidbody::get_motion_capture() {
@@ -534,6 +544,12 @@ const std::string& rigidbody::get_tag() {
 uint32_t rigidbody::get_id() {
     return this->numericID;
 }
+
+const geometry_msgs::Pose& rigidbody::get_current_pose() const
+{
+    return this->currentPose;
+}
+
 
 void mdp_timer::reset_timer(double duration, bool Stage1Timeout) {
     this->timeoutTime = ros::Time::now().toSec() + duration;

@@ -47,6 +47,7 @@ generate_messages(
   geometry_msgs
   std_msgs
   sensor_msgs
+
 )
 
 ###################################
@@ -74,11 +75,11 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty
 )
 
 link_directories(
-        ${catkin_LINK_DIRS}
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/natnet/lib
+  ${catkin_LINK_DIRS}
 )
 
 # User API
@@ -94,6 +95,17 @@ add_library(LOGGER
 target_link_libraries(LOGGER ${catkin_LIBRARIES})
 add_dependencies(LOGGER multi_drone_platform_generate_messages_cpp)
 
+add_library(KD_TREE ${CMAKE_CURRENT_SOURCE_DIR}/src/icp_implementation/kd_tree_3d.cpp)
+target_link_libraries(KD_TREE ${catkin_LIBRARIES})
+add_dependencies(KD_TREE multi_drone_platform_generate_messages_cpp)
+
+add_library(ICP_OBJ ${CMAKE_CURRENT_SOURCE_DIR}/src/icp_implementation/icp_object.cpp)
+target_link_libraries(ICP_OBJ ${catkin_LIBRARIES})
+add_dependencies(ICP_OBJ multi_drone_platform_generate_messages_cpp)
+
+add_library(ICP_IMPL ${CMAKE_CURRENT_SOURCE_DIR}/src/icp_implementation/icp_impl.cpp)
+target_link_libraries(ICP_IMPL ${catkin_LIBRARIES} KD_TREE)
+add_dependencies(ICP_IMPL multi_drone_platform_generate_messages_cpp)
 
 add_library(COLLISION
         src/collision_management/static_physical_management.cpp
@@ -104,7 +116,7 @@ add_dependencies(COLLISION multi_drone_platform_generate_messages_cpp)
 
 add_library(RIGIDBODY
         src/drone_server/rigidbody.cpp)
-target_link_libraries(RIGIDBODY COLLISION ${catkin_LIBRARIES})
+target_link_libraries(RIGIDBODY COLLISION ICP_OBJ ${catkin_LIBRARIES})
 add_dependencies(RIGIDBODY COLLISION multi_drone_platform_generate_messages_cpp)
 
 add_library(TELEOP
@@ -131,7 +143,7 @@ include_directories(include ${GTKMM_INCLUDE_DIRS})
 # Programs and Bindings
 
 add_executable(drone_server src/drone_server/drone_server.cpp)
-target_link_libraries(drone_server ${catkin_LIBRARIES} COLLISION RIGIDBODY LOGGER)
+target_link_libraries(drone_server ${catkin_LIBRARIES} COLLISION ICP_IMPL RIGIDBODY LOGGER)
 add_dependencies(drone_server multi_drone_platform_generate_messages_cpp ${CMAKE_CURRENT_BINARY_DIR}/__wrappers.h)
 
 add_executable(add_drone src/drone_server/add_drone.cpp)

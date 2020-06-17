@@ -6,9 +6,11 @@
 #include "rigidbody.h"
 #include "wrappers.h"
 #include "../src/drone_server/drone_server_msg_translations.cpp"
+#include "../icp_implementation/icp_impl.h"
 
 #define LOOP_RATE_HZ 100
 #define TIMING_UPDATE 5
+#define POINT_SET_REG false
 
 #define NODE_NAME "mdp_drone_server"
 #define SRV_TOPIC "mdp_data_srv"
@@ -21,7 +23,7 @@
 
 class drone_server {
     private:
-        std::vector<rigidbody*> rigidbodyList;
+        std::vector<rigidbody*> rigidbodyList{};
 
         ros::NodeHandle node;
         ros::Subscriber inputAPISub;
@@ -38,7 +40,9 @@ class drone_server {
         float timeToUpdateDrones;
         float waitTime;
 
-        void init_rigidbodies_from_VRPN();
+#if POINT_SET_REG
+        icp_impl icpImplementation;
+#endif /* POINT_SET_REG */
 
         bool add_new_rigidbody(const std::string& pTag, std::vector<std::string> args);
         void remove_rigidbody(unsigned int pDroneID);

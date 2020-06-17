@@ -17,9 +17,12 @@
 #include "std_msgs/Float64MultiArray.h"
 #include "../src/debug/logger/logger.h"
 #include "multi_drone_platform/api_update.h"
+#include "../src/icp_implementation/icp_object.h"
 
 #define DEFAULT_QUEUE 10
 #define TIMEOUT_HOVER 20
+
+#define USE_NATNET true
 
 // api structures
 
@@ -67,6 +70,7 @@ class rigidbody {
     friend class drone_server;
     friend class static_physical_management;
     friend class potential_fields;
+    friend class icp_impl;
 /* DATA */
     private:
         uint32_t numericID;
@@ -90,6 +94,7 @@ class rigidbody {
         mdp_timer hoverTimer;
         double declaredStateEndTime = 0.0;
         std::vector<multi_drone_platform::api_update> commandQueue;
+        bool isVflie = false;
 
     protected:
         bool batteryDying = false; // @TODO: formalise wrapper drone use of this variable (and cflie)
@@ -129,6 +134,8 @@ class rigidbody {
         double width;
         double height;
         double length;
+    public:
+        icp_object icpObject;
 
     /* FUNCTIONS */
     private:
@@ -271,6 +278,24 @@ class rigidbody {
          * @return string name
          */
         std::string get_name();
+
+        /**
+         * predicts the current position of the rigidbody based upon its last known location and its velocity
+         * @return a geometry_msgs::Vector3 depicting the rigidbody's predicted location
+         */
+        geometry_msgs::Vector3 predict_current_position();
+
+        /**
+         * perdicts the current yaw of the rigidbody based upon its last known yaw and yawrate
+         * @return the predicted yaw
+         */
+        double predict_current_yaw();
+
+        const std::string& get_tag();
+        uint32_t get_id();
+
+        const geometry_msgs::Pose& get_current_pose() const;
+
 };
 
 #define DRONE_WRAPPER(DroneName, ...) \
