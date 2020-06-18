@@ -332,7 +332,7 @@ int main(int argc, char **argv) {
         printf(
                 BOLDGREEN
                 "Drone server shut down correctly, closing additional ros nodes.\n"
-                "Ignore the following boxed red text:\n"
+                "Ignore the following boxed red text if printed.\n"
                 RESET);
     } else {
         printf("\n\n\n"

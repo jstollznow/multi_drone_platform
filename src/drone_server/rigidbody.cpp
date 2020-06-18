@@ -207,7 +207,16 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
 
 #if USE_NATNET
     // natnet is z up
-    motionMsg = *msg;
+    motionMsg.header = msg->header;
+
+    motionMsg.pose.position.x = msg->pose.position.x;
+    motionMsg.pose.position.y = msg->pose.position.y;
+    motionMsg.pose.position.z = msg->pose.position.z;
+
+    motionMsg.pose.orientation.x = msg->pose.orientation.x;
+    motionMsg.pose.orientation.y = msg->pose.orientation.y;
+    motionMsg.pose.orientation.z = msg->pose.orientation.z;
+    motionMsg.pose.orientation.w = msg->pose.orientation.w;
 #else /* USE VRPN */
     //  convert VRPN data to Z-Up
     motionMsg.header = msg->header;
@@ -282,7 +291,7 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
         }
     }
     else if (this->get_state() == MOVING || this->get_state() == HOVERING){
-        potential_fields::check(this, rigidbodies);
+        //potential_fields::check(this, rigidbodies);
     }
 
     this->on_update();
@@ -523,7 +532,7 @@ std::string rigidbody::get_flight_state_string(rigidbody::flight_state input) {
 
 void rigidbody::declare_expected_state(rigidbody::flight_state inputState) {
     this->set_state(inputState);
-    this->declaredStateEndTime = ros::Time::now().toSec() + 0.1;
+    this->declaredStateEndTime = ros::Time::now().toSec() + 0.25;
 }
 
 void rigidbody::do_stage_1_timeout() {

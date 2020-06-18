@@ -153,8 +153,8 @@ public:
         this->width = 0.20;
         this->length = 0.20;
         this->height = 0.07;
-        this->restrictedDistance = 0.30;
-        this->influenceDistance = 0.70;
+        this->restrictedDistance = 0.10;
+        this->influenceDistance = 0.40;
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/width", this->width);
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/height", this->height);
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/length", this->length);

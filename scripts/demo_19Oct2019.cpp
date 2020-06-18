@@ -2,10 +2,10 @@
 #include "ros/ros.h"
 
 #define DO_FLIGHT_TEST      0
-#define DO_HOVER_TEST       0
+#define DO_HOVER_TEST       1
 #define DO_BASEBALL_RUN     0
 #define DO_FIGURE_EIGHT     0
-#define DO_DONUTS           1
+#define DO_DONUTS           0
 
 
 void do_drone_flight_test(mdp::id drone)
@@ -65,7 +65,7 @@ void hover_test(mdp::id drone)
     mdp::position_msg msg;
     msg.relative = true;
     msg.keepHeight = true;
-    msg.position = {2.5, 0.0, 0.0};
+    msg.position = {1.0, 0.0, 0.0};
     msg.yaw = 0.0;
     msg.duration = 3.0;
 
