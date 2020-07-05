@@ -152,29 +152,30 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
     // NOTE: this is only necessary when setting absolute yaw
     // @TODO: may need testing.
     float current_yaw = mdp_conversions::get_yaw_from_pose(this->get_current_pose());
-    float base_degrees = std::floor(current_yaw / 360.0f);
-    float current_yaw_mod = std::fmod(current_yaw, 360.0f);
 
-    if (current_yaw_mod > yaw) {
-        float degrees_to_move = current_yaw_mod - yaw;
-        float over_360 = (360.0f - current_yaw_mod) + yaw;
+    if (current_yaw > yaw) {
+        float degrees_to_move = current_yaw - yaw;
+        float over_360 = (360.0f - current_yaw) + yaw;
         if (std::abs(over_360) < std::abs(degrees_to_move)) {
             // if going over 360 is the shortest path to new yaw
-            yaw = base_degrees + 360.0f + yaw;
+            yaw = 360.0f + yaw;
         } else {
             // otherwise a direct path is shorter
-            yaw = base_degrees + yaw;
+            yaw = yaw;
         }
     } else {
-        float degrees_to_move = yaw - current_yaw_mod;
-        float over_360 = (current_yaw_mod) + yaw;
+        float degrees_to_move = yaw - current_yaw;
+        float over_360 = (current_yaw) + (360.0f - yaw);
         if (std::abs(over_360) < std::abs(degrees_to_move)) {
             // if going over 0 is the shortest path
-            yaw = base_degrees - (360.0f - yaw);
+            yaw = (360.0f - yaw);
         } else {
-            yaw = base_degrees + yaw;
+            // otherwise a direct path is shorter
+            yaw = yaw;
         }
     }
+
+    this->log(logger::WARN, "yaw as " + std::to_string(yaw));
 
     /* send to wrapper */
     this->on_set_position(pos, yaw, duration);

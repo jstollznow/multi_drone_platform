@@ -189,6 +189,9 @@ public:
         this->desiredPositionArray[1] = pos.y;
         this->desiredPositionArray[2] = pos.z;
 
+        this->desiredYaw = yaw;
+        this->currentYaw = std::fmod(this->currentYaw, 360.0);
+
         this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
@@ -241,7 +244,7 @@ public:
                 this->velocityArray[1] = linear_lerp(this->velocityArray[1], this->desiredVelocityArray[1], T);
                 this->velocityArray[2] = linear_lerp(this->velocityArray[2], this->desiredVelocityArray[2], T);
 
-                this->currentYaw = linear_lerp(this->currentYaw, this->desiredYaw, 20.0f * deltaTime);
+                this->currentYaw = linear_lerp(this->currentYaw, this->desiredYaw, 100.0f * deltaTime);
 
             } break;
             case move_type::VELOCITY: {
