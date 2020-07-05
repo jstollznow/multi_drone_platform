@@ -7,6 +7,8 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/TwistStamped.h"
+#include "geometry_msgs/PoseArray.h"
+#include <std_msgs/Float64.h>
 #include "std_msgs/Float32MultiArray.h"
 #include "std_msgs/String.h"
 #include "geometry_msgs/Vector3.h"
@@ -66,6 +68,8 @@ class rigidbody {
     };
 
     friend class drone_server;
+    friend class static_physical_management;
+    friend class potential_fields;
     friend class icp_impl;
 /* DATA */
     private:
@@ -78,6 +82,8 @@ class rigidbody {
         ros::Publisher currentTwistPublisher;
         ros::Publisher desiredPosePublisher;
         ros::Publisher desiredTwistPublisher;
+        ros::Publisher obstaclesPublisher;
+        ros::Publisher closestObstaclePublisher;
         ros::Time commandEnd;
 
         bool shutdownHasBeenCalled = false;
@@ -108,12 +114,33 @@ class rigidbody {
         ros::Subscriber motionSubscriber;
         ros::NodeHandle droneHandle;
 
+        struct {
+            std::array<double, 2> x;
+            std::array<double, 2> y;
+            std::array<double, 2> z;
+        } velocity_limits;
+        double maxVel;
+        // related to traditional APF
+        // in kg
+        double mass;
+
+        // related to velocity APF
+        // in meters
+        double restrictedDistance;
+        double influenceDistance;
+
+        // related to safeguarding LiveView feedback
+        // in meters
+        double width;
+        double height;
+        double length;
     public:
         icp_object icpObject;
 
     /* FUNCTIONS */
     private:
         void calculate_velocity();
+        void set_max_vel();
         static double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
 
         /* this function declares that we are expecting the drone to enter this state very soon. This expected overrides the physical state for the next 100ms or so.
@@ -132,8 +159,8 @@ class rigidbody {
         void do_stage_1_timeout();
         bool is_msg_different(multi_drone_platform::api_update msg);
 
-        void set_desired_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool relativeXY, bool relativeZ);
-        void set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration, bool relativeXY, bool relativeHeight);
+        void set_desired_position(geometry_msgs::Vector3 pos, float yaw, float duration);
+        void set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration);
 
         void add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg);
         geometry_msgs::PoseStamped get_motion_capture();
@@ -142,14 +169,14 @@ class rigidbody {
         void api_callback(const multi_drone_platform::api_update& msg);
 
         void emergency();
-        void land(float duration = 5.0f);
-        void takeoff(float height = 0.25f, float duration = 3.0f);
+        void land(float duration);
+        void takeoff(float height, float duration);
         void hover(float duration);
-        void go_home(float yaw = 0.0f, float duration = 4.0f, float height = 0.0f);
+        void go_home(float yaw, float duration, float height);
         void shutdown();
 
         geometry_msgs::Vector3 get_home_coordinates();
-        void set_home_coordiates(geometry_msgs::Vector3 pos, bool relative);
+        void set_home_coordiates(geometry_msgs::Vector3 pos);
 
     protected:
         /**
@@ -170,12 +197,25 @@ class rigidbody {
          * @param dataLabel dataLabel contains the message to be sent with the set of coordinates
          * @param data data contains the coordinates to be posted
          */
-        void log_coord(logger::log_type msgType, std::string dataLabel, geometry_msgs::Vector3 data);
+        template <class T>
+        void log_coord(logger::log_type msgType, std::string dataLabel, T data);
 
         // Wrapper Methods
 
+        /**
+         * This function is called on initialisation of the drone on the platform. The parameter 'args' is filled
+         * with arguments as defined in the drone wrapper's DRONE_WRAPPER(..) declaration and argument values are filled
+         * in by the user on drone declaration to the platform at run-time
+         * @param args a list of arguments to support the drone's initialisation
+         */
         virtual void on_init(std::vector<std::string> args) = 0;
+
+        /**
+         * the last function to be called on the wrapper before the drone is removed from the platform. Do any cleanup
+         * operations here.
+         */
         virtual void on_deinit() = 0;
+
         /**
          * The on_update function is called at the update rate defined in the drone-server, by default this is 100Hz
          * but is modifiable by a user application
@@ -216,11 +256,9 @@ class rigidbody {
          * @param pos the desired position for the drone to move to (modified by value of isRelative).
          * @param yaw the desired yaw of the drone upon reaching the desired position (degrees).
          * @param duration the time it should take for the drone to reach this position (seconds).
-         * @param isRelative If true, pos refers to a position relative to the drones current position. If false, pos
-         * refers to an absolute position.
          * @see set_drone_position
          */
-        virtual void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) = 0;
+        virtual void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration) = 0;
 
         /**
          * on_set_velocity is called whenever the drone should move with a desired velocity. This corresponds to a call to
@@ -228,9 +266,8 @@ class rigidbody {
          * @param vel the desired velocity for the drone (xyz meters per second)
          * @param yawrate the desired yawrate for the drone (degrees per second)
          * @param duration TODO: what is duration in this case?
-         * @param relativeHeight TODO: how does the relative height thing even work, its a velocity not an abs height in meters
          */
-        virtual void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) = 0;
+        virtual void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) = 0;
 
     public:
         /**
@@ -249,27 +286,29 @@ class rigidbody {
          * returns the name of the rigidbody
          * @return string name
          */
-        std::string get_name();
-
-        /**
-         * predicts the current position of the rigidbody based upon its last known location and its velocity
-         * @return a geometry_msgs::Vector3 depicting the rigidbody's predicted location
-         */
-        geometry_msgs::Vector3 predict_current_position();
-
-        /**
-         * perdicts the current yaw of the rigidbody based upon its last known yaw and yawrate
-         * @return the predicted yaw
-         */
-        double predict_current_yaw();
-
         const std::string& get_tag();
+
+        /**
+         * returns the id of the rigidbody
+         * @return the rigidbody's id
+         */
         uint32_t get_id();
 
+        /**
+         * returns the current pose of the rigidbody
+         * @return the rigidbody's current pose
+         */
         const geometry_msgs::Pose& get_current_pose() const;
 
 };
 
+
+/** The DRONE_WRAPPER(..) macro is ordered as follows, the first parameter is the identifying tag of the drone and all following
+ * parameters represent an argument to be passed into the on_init(..) function at drone startup. i.e. DRONE_WRAPPER(object, argA, argB) will
+ * mean that the drone's tag is 'object' and under the on_init(std::vector<std::string> args) function 'args[0]' will hold the result of
+ * argA when the drone is declared, and 'args[1]' will represent argB. The values of these args are given when the drone is declared onto
+ * the drone platform through the 'add_drone' platform program.
+ */
 #define DRONE_WRAPPER(DroneName, ...) \
     DroneName : protected rigidbody { \
         public:\

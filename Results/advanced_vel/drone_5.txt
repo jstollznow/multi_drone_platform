@@ -1,0 +1,25 @@
+7765.0762: All timing relative to 1591277765.076174
+7775.1724: DEBUG Set duration 1.000000 Required: 1.200000
+7775.1730: DEBUG Position within bounds: [0.000000, 0.000000, 1.000000]
+7775.1733: INFO => Handling command: TAKEOFF
+7775.1733: DEBUG Duration 1.200000
+7775.1734: INFO Duration: 1.200000
+7775.1736: INFO Setting state to MOVING
+7776.2827: DEBUG Timeout stage 1
+7776.2828: DEBUG Position at hover request: : [-1.200000, 0.000000, 0.999657]
+7776.2829: DEBUG Set duration 20.000000 Required: -nan
+7776.2829: DEBUG Position within bounds: [-1.200000, 0.000000, 0.999657]
+7776.2830: DEBUG Desired Position: [-1.200000, 0.000000, 0.999657]
+7776.2830: DEBUG Adjusted Dur: 20.000000
+7776.2830: INFO Setting state to HOVERING
+7785.8920: INFO => Handling command: LAND
+7785.8921: DEBUG Duration 2.400000
+7785.8924: INFO Setting state to MOVING
+7788.0020: INFO Setting state to LANDED
+7790.2436: INFO Landing drone for shut down
+7790.2436: INFO => Handling command: GOTO_HOME
+7790.2437: DEBUG Duration 4.000000
+7790.2437: INFO => Handling command: POSITION
+7790.2437: DEBUG Duration 4.000000
+7790.2438: WARN Go to position called on landed drone, ignoring
+7790.8464: INFO Deconstructing...

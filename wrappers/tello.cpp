@@ -54,13 +54,12 @@ public:
         }
     }
 
-    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) final {
-        if (!isRelative) {
-            // force relative
-            pos.x -= this->currentPose.position.x;
-            pos.y -= this->currentPose.position.y;
-            pos.z -= this->currentPose.position.z;
-        }
+    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration) final {
+        // change to relative position
+        pos.x -= this->currentPose.position.x;
+        pos.y -= this->currentPose.position.y;
+        pos.z -= this->currentPose.position.z;
+
         // convert from meters to centimeters
         pos.x /= 100.0;
         pos.y /= 100.0;
@@ -77,11 +76,10 @@ public:
         }
     }
 
-    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) final {
-        if (!relativeHeight) {
-            // force relative
-            vel.z -= this->currentPose.position.z;
-        }
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) final {
+        // change to relative height
+        vel.z -= this->currentPose.position.z;
+
         // convert from meters to centimeters
         vel.x /= 100.0;
         vel.y /= 100.0;

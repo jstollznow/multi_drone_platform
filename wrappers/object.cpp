@@ -27,11 +27,11 @@ class DRONE_WRAPPER(object)
 
     }
 
-    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration, bool isRelative) final {
+    void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration) final {
 
     }
 
-    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration, bool relativeHeight) final {
+    void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) final {
 
     }
 

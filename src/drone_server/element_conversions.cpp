@@ -31,7 +31,7 @@ euler_rotation to_euler(geometry_msgs::Quaternion pQuaternion) {
 
     // yaw
     double siny_cosp = +2.0 * (pQuaternion.w * pQuaternion.z + pQuaternion.x * pQuaternion.y);
-    double cosy_cosp = +1.0 - 2.0 * (pQuaternion.y * pQuaternion.y + pQuaternion.z * pQuaternion.z);  
+    double cosy_cosp = +1.0 - 2.0 * (pQuaternion.y * pQuaternion.y + pQuaternion.z * pQuaternion.z);
     angles.yaw = atan2(siny_cosp, cosy_cosp);
 
     return angles;
@@ -40,38 +40,38 @@ euler_rotation to_euler(geometry_msgs::Quaternion pQuaternion) {
 geometry_msgs::Vector3 get_up_vector(geometry_msgs::Quaternion pQuaternion) {
     geometry_msgs::Vector3 v;
     // UP (z)
-    v.x = 2 * (pQuaternion.x*pQuaternion.z + pQuaternion.w*pQuaternion.y);
-    v.y = 2 * (pQuaternion.y*pQuaternion.z - pQuaternion.w*pQuaternion.x);
-    v.z = 1 - 2 * (pQuaternion.x*pQuaternion.x + pQuaternion.y*pQuaternion.y);
+    v.x = 2 * (pQuaternion.x * pQuaternion.z + pQuaternion.w * pQuaternion.y);
+    v.y = 2 * (pQuaternion.y * pQuaternion.z - pQuaternion.w * pQuaternion.x);
+    v.z = 1 - 2 * (pQuaternion.x * pQuaternion.x + pQuaternion.y * pQuaternion.y);
     return v;
 }
 
 float min(float a, float b) {
-    return (a > b)? b: a;
+    return (a > b) ? b : a;
 }
 
-geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped& lastPos, geometry_msgs::PoseStamped& firstPos) {
+geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &lastPos, geometry_msgs::PoseStamped &firstPos) {
     geometry_msgs::Twist returnVel;
-    
+
     float dx = lastPos.pose.position.x - firstPos.pose.position.x;
     float dy = lastPos.pose.position.y - firstPos.pose.position.y;
     float dz = lastPos.pose.position.z - firstPos.pose.position.z;
     float dt = (lastPos.header.stamp.toSec() - firstPos.header.stamp.toSec());
-    returnVel.linear.x =  dx / dt;
-    returnVel.linear.y = dy / dt; 
+    returnVel.linear.x = dx / dt;
+    returnVel.linear.y = dy / dt;
     returnVel.linear.z = dz / dt;
-    
+
     // ROS_INFO("%f / %f = %f", dx, dt, returnVel.linear.x);
 
 
     // // convert orientation to angular position
     // geometry_msgs::Vector3 lastPosAng = getUpVector(lastPos.pose.orientation);
     // geometry_msgs::Vector3 firstPosAng = getUpVector(firstPos.pose.orientation);
-    
+
     // // not used by Duong in his algorithms
     // // maybe yaw will be useful but pitch and roll will be internal controls
-    
-    
+
+
     // // angular velocities
     // // assume easiest route to the same point
 
@@ -88,7 +88,7 @@ geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped& lastPos, geometry_msgs
     return returnVel;
 }
 
-geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point& point) {
+geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point &point) {
     geometry_msgs::Vector3 v;
     v.x = point.x;
     v.y = point.y;
@@ -96,8 +96,7 @@ geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point& point) {
     return v;
 }
 
-float get_yaw_from_pose(const geometry_msgs::Pose& pos) {
+float get_yaw_from_pose(const geometry_msgs::Pose &pos) {
     return to_euler(pos.orientation).yaw;
 }
-
 }

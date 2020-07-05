@@ -1,0 +1,8 @@
+8912.1259: All timing relative to 1591188912.125916
+8942.2126: INFO Landing drone for shut down
+8942.2126: INFO => Handling command: GOTO_HOME
+8942.2127: DEBUG Duration 4.000000
+8942.2127: INFO => Handling command: POSITION
+8942.2127: DEBUG Duration 4.000000
+8942.2128: WARN Go to position called on landed drone, ignoring
+8942.6152: INFO Deconstructing...

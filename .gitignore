@@ -1,8 +1,7 @@
 src/drone_server/wrappers.h
 .vscode
 .idea
-GUI/UI/#debugWindow.glade#
-GUI/UI/debugWindow.glade~
 src/debug/debug_app/debug.ui~
 src/debug/commander_app/commander.ui~
 docs
+/sessions/

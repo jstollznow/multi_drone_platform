@@ -1,7 +1,7 @@
 
 classdef mdp_timings
     properties
-        TimeStampNSec = 0
+        TimeStampSec = 0.0
         MoCapUpdateRate = 0
         DesiredDroneServerUpdateRate = 0
         ActualDroneServerUpdateRate = 0
@@ -11,7 +11,7 @@ classdef mdp_timings
 
     methods
         function valid = isvalid(obj)
-            valid = (obj.TimeStampNSec > 0);
+            valid = (obj.TimeStampSec > 0.0);
         end
     end
 end
