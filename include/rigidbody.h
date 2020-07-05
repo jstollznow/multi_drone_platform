@@ -200,6 +200,14 @@ class rigidbody {
         template <class T>
         void log_coord(logger::log_type msgType, std::string dataLabel, T data);
 
+        /**
+         * returns the end yaw when a yawrate of the given duration is conducted on the drone.
+         * @param yawrate the input yaw rate to rotate the drone by in degrees
+         * @param time_period the time period to apply this yawrate for in seconds
+         * @return the end yaw rotation of the drone in degrees
+         */
+        double get_end_yaw_from_yawrate_and_time_period(double yawrate, double time_period) const;
+
         // Wrapper Methods
 
         /**
