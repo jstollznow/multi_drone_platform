@@ -145,6 +145,39 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
         this->declare_expected_state(flight_state::MOVING);
     }
 
+    // mod input yaw to between 0 and 360 degrees
+    yaw = std::fmod(yaw, 360.0f);
+
+    /* modify input yaw such that it takes the shortest route to the new yaw */
+    // NOTE: this is only necessary when setting absolute yaw
+    // @TODO: may need testing.
+    float current_yaw = mdp_conversions::get_yaw_from_pose(this->get_current_pose());
+
+    if (current_yaw > yaw) {
+        float degrees_to_move = current_yaw - yaw;
+        float over_360 = (360.0f - current_yaw) + yaw;
+        if (std::abs(over_360) < std::abs(degrees_to_move)) {
+            // if going over 360 is the shortest path to new yaw
+            yaw = 360.0f + yaw;
+        } else {
+            // otherwise a direct path is shorter
+            yaw = yaw;
+        }
+    } else {
+        float degrees_to_move = yaw - current_yaw;
+        float over_360 = (current_yaw) + (360.0f - yaw);
+        if (std::abs(over_360) < std::abs(degrees_to_move)) {
+            // if going over 0 is the shortest path
+            yaw = (360.0f - yaw);
+        } else {
+            // otherwise a direct path is shorter
+            yaw = yaw;
+        }
+    }
+
+    this->log(logger::WARN, "yaw as " + std::to_string(yaw));
+
+    /* send to wrapper */
     this->on_set_position(pos, yaw, duration);
 }
 
@@ -432,11 +465,12 @@ void rigidbody::hover(float duration) {
         return;
     }
     this->log_coord<geometry_msgs::Point>(logger::DEBUG, "Position at hover request: ", currentPose.position);
-    set_desired_position(mdp_conversions::point_to_vector3(currentPose.position), 0.0f, duration);
+    float yaw = mdp_conversions::get_yaw_from_pose(this->get_current_pose());
+    set_desired_position(mdp_conversions::point_to_vector3(currentPose.position), yaw, duration);
     this->declare_expected_state(flight_state::HOVERING);
 }
 
-void rigidbody::go_home(float yaw, float duration, float height) {
+void rigidbody::go_home(float yaw, float duration, float in_height) {
     /* enqueue goto command */
     multi_drone_platform::api_update goMsg;
     goMsg.msgType = "POSITION";
@@ -447,7 +481,7 @@ void rigidbody::go_home(float yaw, float duration, float height) {
     enqueue_command(goMsg);
 
     /* enqueue land msg if necessary */
-    if (height < 0.1f) {
+    if (in_height < 0.1f) {
         multi_drone_platform::api_update landMsg;
         landMsg.msgType = "LAND";
         landMsg.duration = 3.0f;
@@ -552,6 +586,11 @@ uint32_t rigidbody::get_id() {
 
 const geometry_msgs::Pose& rigidbody::get_current_pose() const {
     return this->currentPose;
+}
+
+double rigidbody::get_end_yaw_from_yawrate_and_time_period(double yawrate, double time_period) const {
+    double current_yaw = mdp_conversions::get_yaw_from_pose(this->get_current_pose());
+    return current_yaw + (yawrate * time_period);
 }
 
 

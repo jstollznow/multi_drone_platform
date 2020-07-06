@@ -22,8 +22,9 @@ double linear_lerp(double begin, double end, double maxChange) {
 }
 
 // yaw (Z), pitch (Y), roll (X)
-geometry_msgs::Quaternion to_quaternion(double yaw) {
-    Eigen::Quaterniond qE(Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()));
+geometry_msgs::Quaternion to_quaternion(double yaw_deg) {
+    float yaw_rads = yaw_deg * 0.01745329f;
+    Eigen::Quaterniond qE(Eigen::AngleAxisd(yaw_rads, Eigen::Vector3d::UnitZ()));
 
     geometry_msgs::Quaternion q;
     q.w = qE.w();
@@ -53,7 +54,7 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
     
     double currentYaw = 0.0;
     double currentYawRate = 0.0;
-
+    double desiredYaw = 0.0;
 
     double endOfCommand = 0.0;
 
@@ -188,12 +189,16 @@ public:
         this->desiredPositionArray[1] = pos.y;
         this->desiredPositionArray[2] = pos.z;
 
+        this->desiredYaw = yaw;
+        this->currentYaw = std::fmod(this->currentYaw, 360.0);
+
         this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
     void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) override {
         //@TODO: add relative height
         this->moveType = move_type::VELOCITY;
+        this->currentYawRate = yawrate;
         this->endOfCommand = ros::Time::now().toSec() + duration;
     }
 
@@ -239,12 +244,19 @@ public:
                 this->velocityArray[1] = linear_lerp(this->velocityArray[1], this->desiredVelocityArray[1], T);
                 this->velocityArray[2] = linear_lerp(this->velocityArray[2], this->desiredVelocityArray[2], T);
 
+                this->currentYaw = linear_lerp(this->currentYaw, this->desiredYaw, 100.0f * deltaTime);
+
             } break;
             case move_type::VELOCITY: {
 
                 this->velocityArray[0] = linear_lerp(this->velocityArray[0], this->desiredVelocity.linear.x, T);
                 this->velocityArray[1] = linear_lerp(this->velocityArray[1], this->desiredVelocity.linear.y, T);
                 this->velocityArray[2] = linear_lerp(this->velocityArray[2], this->desiredVelocity.linear.z, T);
+
+                if ((endOfCommand - ros::Time::now().toSec()) > 0.0) {
+                    // i.e. spin by yawrate only while the command is still running
+                    this->currentYaw += this->currentYawRate * deltaTime;
+                }
 
             } break;
             default: break;

@@ -96,7 +96,16 @@ geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point &point) {
     return v;
 }
 
-float get_yaw_from_pose(const geometry_msgs::Pose &pos) {
-    return to_euler(pos.orientation).yaw;
+constexpr float to_degrees(float rads) {
+    return rads * 57.2957795f;
 }
+
+constexpr float to_rads(float degrees) {
+    return degrees / 57.2957795f;
+}
+
+float get_yaw_from_pose(const geometry_msgs::Pose &pos) {
+    return to_degrees(to_euler(pos.orientation).yaw);
+}
+
 }
