@@ -69,7 +69,7 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
 
         this->log(logger::DEBUG, logMsg.str());
         goToMsg.request.duration = ros::Duration(duration);
-        goToMsg.request.yaw = yaw;
+        goToMsg.request.yaw =  yaw * 0.017453293f; // to radians
         goToMsg.request.relative = isRelative;
         
         auto startPoint = std::chrono::high_resolution_clock::now();
@@ -85,10 +85,13 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     }
 
     void battery_log(const std_msgs::Float32::ConstPtr &msg) {
-        if (msg->data <= 3.15f) {
+        if (msg->data <= 3.00f) {
             this->log(logger::WARN, "Battery dying soon...");
             batteryDying = true;
         }
+        std_msgs::Float32 percentage;
+        percentage.data = msg->data/4.2;
+        this->batteryPublisher.publish(percentage);
     }
 
     public:
