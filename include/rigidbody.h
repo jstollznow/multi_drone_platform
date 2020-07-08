@@ -77,7 +77,6 @@ class rigidbody {
         std::string tag;
         ros::Subscriber apiSubscriber;
         ros::Publisher logPublisher;
-        ros::Publisher batteryPublisher;
         ros::Publisher currentPosePublisher;
         ros::Publisher currentTwistPublisher;
         ros::Publisher desiredPosePublisher;
@@ -112,6 +111,7 @@ class rigidbody {
         geometry_msgs::Pose currentPose;
         geometry_msgs::Vector3 homePosition;
         ros::Subscriber motionSubscriber;
+        ros::Publisher batteryPublisher;
         ros::NodeHandle droneHandle;
 
         struct {
@@ -134,7 +134,9 @@ class rigidbody {
         double width;
         double height;
         double length;
-    public:
+
+        double absoluteYaw;
+public:
         icp_object icpObject;
 
     /* FUNCTIONS */
@@ -145,7 +147,7 @@ class rigidbody {
 
         /* this function declares that we are expecting the drone to enter this state very soon. This expected overrides the physical state for the next 100ms or so.
          * This is so that state immediately changes when a call to set position for instance is made (and so that wait_till_idle on the user api is not skipped over) */
-        void declare_expected_state(flight_state inputState);
+        void declare_expected_state(flight_state inputState, double duration = 0.5);
         void set_state(const flight_state& state);
         const flight_state& get_state() const;
         static std::string get_flight_state_string(flight_state input);
