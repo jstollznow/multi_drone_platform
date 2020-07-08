@@ -3,6 +3,7 @@
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Twist.h"
+#include "ros/ros.h"
 
 namespace mdp_conversions {
 
@@ -64,27 +65,25 @@ geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &lastPos, geometry_msgs
     // ROS_INFO("%f / %f = %f", dx, dt, returnVel.linear.x);
 
 
-    // // convert orientation to angular position
-    // geometry_msgs::Vector3 lastPosAng = getUpVector(lastPos.pose.orientation);
-    // geometry_msgs::Vector3 firstPosAng = getUpVector(firstPos.pose.orientation);
+     // convert orientation to angular position
+     auto lastPosEuler = to_euler(lastPos.pose.orientation);
+     auto firstPosEuler = to_euler(firstPos.pose.orientation);
 
-    // // not used by Duong in his algorithms
-    // // maybe yaw will be useful but pitch and roll will be internal controls
-
-
-    // // angular velocities
-    // // assume easiest route to the same point
-
-    // float rollDiff = (lastPosAng.x - firstPosAng.x);
-    // float pitchDiff = (lastPosAng.y - firstPosAng.y);
-    // float yawDiff = (lastPosAng.z - firstPosAng.z);
-
-    // // @FIX: does not account for direction
-    // returnVel.angular.x =  min(rollDiff, 180 - rollDiff)/ dt;
-    // returnVel.angular.y = min(pitchDiff, 90 - pitchDiff) / dt;
-    // returnVel.angular.z = min(yawDiff, 180 - yawDiff) / dt;
+     // not used by Duong in his algorithms
+     // maybe yaw will be useful but pitch and roll will be internal controls
 
 
+     // angular velocities
+     // assume easiest route to the same point
+
+     float rollDiff = (lastPosEuler.roll - firstPosEuler.roll);
+     float pitchDiff = (lastPosEuler.pitch - firstPosEuler.pitch);
+     float yawDiff = (lastPosEuler.yaw - firstPosEuler.yaw);
+
+     // @FIX: does not account for direction
+     returnVel.angular.x =  min(rollDiff, 360.0 - rollDiff)/ dt;
+     returnVel.angular.y = min(pitchDiff, 180.0 - pitchDiff) / dt;
+     returnVel.angular.z = min(yawDiff, 360.0 - yawDiff) / dt;
     return returnVel;
 }
 

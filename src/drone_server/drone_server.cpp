@@ -2,6 +2,7 @@
 
 #include <csignal>
 #include <utility>
+#include <fstream>
 
 #include "multi_drone_platform/api_update.h"
 #include "multi_drone_platform/add_drone.h"
@@ -25,9 +26,12 @@ drone_server::drone_server() : node(), loopRate(LOOP_RATE_HZ) ICP_IMPL_INIT
     std::string logTopic = NODE_NAME;
     logTopic += "/log";
     logPublisher = node.advertise<multi_drone_platform::log> (logTopic, 100);
-    
-    this->log(logger::INFO, "Initialising");
-    
+    serverStartTime = ros::Time::now();
+    exportLog = "";
+
+    this->log(logger::INFO, "Start time: " + std::to_string(ros::Time::now().toSec()));
+    this->log(logger::INFO, "Initialising...");
+
     dataServer = node.advertiseService(SRV_TOPIC, &drone_server::api_get_data_service, this);
     listServer = node.advertiseService(LIST_SRV_TOPIC, &drone_server::api_list_service, this);
     addDroneServer = node.advertiseService(ADD_DRONE_TOPIC, &drone_server::add_drone_service, this);
@@ -44,7 +48,6 @@ void drone_server::shutdown() {
             rigidbodyList[i]->shutdown();
         }
     }
-    
     /* sleep until drones have all landed */
     this->log(logger::INFO, "Waiting for drones to land...");
     bool allLanded = false;
@@ -70,6 +73,16 @@ void drone_server::shutdown() {
         remove_rigidbody(i);
     }
     rigidbodyList.clear();
+
+    if (ros::param::has(SESSION_PARAM)) {
+        std::string session = "";
+        ros::param::get(SESSION_PARAM, session);
+        std::ofstream file;
+        std::string fileName = "drone_server.txt";
+        file.open(session + fileName);
+        file << exportLog;
+        file.close();
+    }
 }
 
 bool drone_server::add_new_rigidbody(const std::string& pTag, std::vector<std::string> args) {
@@ -165,7 +178,7 @@ void drone_server::run() {
             float avgDroneUpdate = timeToUpdateDrones/timingPrint;
             timingPrint = 0;
 
-            std::string loopInfo = "Avg. Loop Info--\n";
+            std::string loopInfo = "Avg. Loop Info-- ";
             loopInfo += "Actual [Hz]: " + std::to_string(avgLoopRate) + 
             ", Wait [s]: " + std::to_string(avgWaitTime) + ", Drones [s]: " 
             + std::to_string(avgDroneUpdate);
@@ -304,6 +317,30 @@ bool drone_server::add_drone_service(multi_drone_platform::add_drone::Request &r
 
 void drone_server::log(logger::log_type logType, std::string message) {
     logger::post_log(logType, "Drone Server", logPublisher, std::move(message));
+
+    double time = ros::Time::now().toSec();
+    double deci = time - (int)time;
+    time = (int)time % 10000;
+    time += deci;
+    std::ostringstream streamObj;
+    streamObj << std::fixed << std::setprecision(4) << time;
+    std::string level;
+    switch (logType) {
+        case logger::INFO:
+            level = "INFO";
+            break;
+        case logger::DEBUG:
+            level = "DEBUG";
+            break;
+        case logger::WARN:
+            level = "WARN";
+            break;
+        case logger::ERROR:
+            level = "ERROR";
+            break;
+    }
+    std::string newLogLine = streamObj.str() + ": " + level + " " + message + "\n";
+    exportLog += newLogLine;
 }
 
 
