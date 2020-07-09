@@ -247,20 +247,6 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     /* if this is the first recieved message, fill motionCapture with homePositions */
     geometry_msgs::PoseStamped motionMsg;
 
-//#if USE_NATNET
-//    // natnet is z up
-//    motionMsg.header = msg->header;
-//
-//    motionMsg.pose.position.x = msg->pose.position.x;
-//    motionMsg.pose.position.y = msg->pose.position.y;
-//    motionMsg.pose.position.z = msg->pose.position.z;
-//
-//    motionMsg.pose.orientation.x = msg->pose.orientation.x;
-//    motionMsg.pose.orientation.y = msg->pose.orientation.y;
-//    motionMsg.pose.orientation.z = msg->pose.orientation.z;
-//    motionMsg.pose.orientation.w = msg->pose.orientation.w;
-//#else /* USE VRPN */ // @TODO: check if this actually fixes the issue
-    // do stuff with coordinate systems
     motionMsg.header = msg->header;
 
     motionMsg.pose.position.x = msg->pose.position.y * -1;
@@ -271,7 +257,8 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     motionMsg.pose.orientation.y = msg->pose.orientation.x;
     motionMsg.pose.orientation.z = msg->pose.orientation.z;
     motionMsg.pose.orientation.w = msg->pose.orientation.w;
-//#endif
+
+    motionMsg.header.frame_id = "mocap";
 
     if (motionCapture.empty()) {
         motionCapture.push(motionMsg);

@@ -352,6 +352,7 @@ void teleop::input_callback(const sensor_msgs::Joy::ConstPtr& msg) {
     yawAxes = msg->axes[4];
     incAltitudeInput = msg->axes[5];
     decAltitudeInput = msg->axes[2];
+
     command_handle();
 }
 //@TODO: configure limit modes
