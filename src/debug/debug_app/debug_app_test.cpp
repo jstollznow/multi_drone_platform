@@ -11,8 +11,8 @@ int main(int argc, char *argv[]) {
 
     mdp::initialise(10, "debug_app_test");
 
-    bool expanded = false;
-    if (argc >= 1) {
+    bool expanded = true;
+    if (argc > 1) {
         std::string state;
         state = argv[1];
         if (state == "expanded") expanded = true;

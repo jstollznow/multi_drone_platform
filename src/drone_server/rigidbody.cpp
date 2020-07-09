@@ -1,4 +1,5 @@
 #include <queue>
+#include <std_msgs/Float32.h>
 #include "rigidbody.h"
 #include "element_conversions.cpp"
 #include "../collision_management/static_physical_management.h"
@@ -20,6 +21,7 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue), icpObjec
     this->height = 0.0;
     this->restrictedDistance = 0.0;
     this->influenceDistance = 0.0;
+    this->absoluteYaw = 0.0;
 
     droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/width", this->width);
     droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/height", this->height);
@@ -58,7 +60,7 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue), icpObjec
     apiSubscriber = droneHandle.subscribe(apiTopic, 2, &rigidbody::api_callback, this);
     logPublisher = droneHandle.advertise<multi_drone_platform::log> (logTopic, 20);
     motionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 1,&rigidbody::add_motion_capture, this);
-    batteryPublisher = droneHandle.advertise<std_msgs::String>(batteryTopic, 1);
+    batteryPublisher = droneHandle.advertise<std_msgs::Float32>(batteryTopic, 1);
 
     currentPosePublisher = droneHandle.advertise<geometry_msgs::PoseStamped> (currPoseTopic, 1);
     desiredPosePublisher = droneHandle.advertise<geometry_msgs::PoseStamped>(desPoseTopic, 1);
@@ -153,27 +155,34 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
     // @TODO: may need testing.
     float current_yaw = mdp_conversions::get_yaw_from_pose(this->get_current_pose());
 
-    if (current_yaw > yaw) {
-        float degrees_to_move = current_yaw - yaw;
-        float over_360 = (360.0f - current_yaw) + yaw;
-        if (std::abs(over_360) < std::abs(degrees_to_move)) {
-            // if going over 360 is the shortest path to new yaw
-            yaw = 360.0f + yaw;
-        } else {
-            // otherwise a direct path is shorter
-            yaw = yaw;
-        }
-    } else {
-        float degrees_to_move = yaw - current_yaw;
-        float over_360 = (current_yaw) + (360.0f - yaw);
-        if (std::abs(over_360) < std::abs(degrees_to_move)) {
-            // if going over 0 is the shortest path
-            yaw = (360.0f - yaw);
-        } else {
-            // otherwise a direct path is shorter
-            yaw = yaw;
-        }
+    float yawDiff = std::fmod(yaw, 360.0f) - std::fmod(current_yaw, 360.0f);
+    if (yawDiff > 180.0) {
+        yawDiff -= 360.0f;
     }
+    yaw = current_yaw + yawDiff;
+
+
+//    if (current_yaw > yaw) {
+//        float degrees_to_move = current_yaw - yaw;
+//        float over_360 = (360.0f - current_yaw) + yaw;
+//        if (std::abs(over_360) < std::abs(degrees_to_move)) {
+//            // if going over 360 is the shortest path to new yaw
+//            yaw = 360.0f + yaw;
+//        } else {
+//            // otherwise a direct path is shorter
+//            yaw = yaw;
+//        }
+//    } else {
+//        float degrees_to_move = yaw - current_yaw;
+//        float over_360 = (current_yaw) + (360.0f - yaw);
+//        if (std::abs(over_360) < std::abs(degrees_to_move)) {
+//            // if going over 0 is the shortest path
+//            yaw = (360.0f - yaw);
+//        } else {
+//            // otherwise a direct path is shorter
+//            yaw = yaw;
+//        }
+//    }
 
     this->log(logger::WARN, "yaw as " + std::to_string(yaw));
 
@@ -238,20 +247,20 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     /* if this is the first recieved message, fill motionCapture with homePositions */
     geometry_msgs::PoseStamped motionMsg;
 
-#if USE_NATNET
-    // natnet is z up
-    motionMsg.header = msg->header;
-
-    motionMsg.pose.position.x = msg->pose.position.x;
-    motionMsg.pose.position.y = msg->pose.position.y;
-    motionMsg.pose.position.z = msg->pose.position.z;
-
-    motionMsg.pose.orientation.x = msg->pose.orientation.x;
-    motionMsg.pose.orientation.y = msg->pose.orientation.y;
-    motionMsg.pose.orientation.z = msg->pose.orientation.z;
-    motionMsg.pose.orientation.w = msg->pose.orientation.w;
-#else /* USE VRPN */
-    //  convert VRPN data to Z-Up
+//#if USE_NATNET
+//    // natnet is z up
+//    motionMsg.header = msg->header;
+//
+//    motionMsg.pose.position.x = msg->pose.position.x;
+//    motionMsg.pose.position.y = msg->pose.position.y;
+//    motionMsg.pose.position.z = msg->pose.position.z;
+//
+//    motionMsg.pose.orientation.x = msg->pose.orientation.x;
+//    motionMsg.pose.orientation.y = msg->pose.orientation.y;
+//    motionMsg.pose.orientation.z = msg->pose.orientation.z;
+//    motionMsg.pose.orientation.w = msg->pose.orientation.w;
+//#else /* USE VRPN */ // @TODO: check if this actually fixes the issue
+    // do stuff with coordinate systems
     motionMsg.header = msg->header;
 
     motionMsg.pose.position.x = msg->pose.position.y * -1;
@@ -262,7 +271,7 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     motionMsg.pose.orientation.y = msg->pose.orientation.x;
     motionMsg.pose.orientation.z = msg->pose.orientation.z;
     motionMsg.pose.orientation.w = msg->pose.orientation.w;
-#endif
+//#endif
 
     if (motionCapture.empty()) {
         motionCapture.push(motionMsg);
@@ -285,6 +294,10 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     currentPose = motionCapture.back().pose;
     // ROS_INFO("Current Position: x: %f, y: %f, z: %f",currPos.position.x, currPos.position.y, currPos.position.z);
     // @TODO: Orientation implementation
+
+    geometry_msgs::Vector3& vel = currentVelocity.linear;
+    double velocityMag = sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z));
+//    this->log(logger::INFO, "vel = " + std::to_string(velocityMag) + "(z = " + std::to_string(vel.z) + ")");
 
     if (ros::Time::now().toSec() > this->declaredStateEndTime) {
         this->update_current_flight_state();
@@ -465,7 +478,7 @@ void rigidbody::hover(float duration) {
     this->log_coord<geometry_msgs::Point>(logger::DEBUG, "Position at hover request: ", currentPose.position);
     float yaw = mdp_conversions::get_yaw_from_pose(this->get_current_pose());
     set_desired_position(mdp_conversions::point_to_vector3(currentPose.position), yaw, duration);
-    this->declare_expected_state(flight_state::HOVERING);
+    this->declare_expected_state(flight_state::MOVING, duration);
 }
 
 void rigidbody::go_home(float yaw, float duration, float in_height) {
@@ -562,9 +575,9 @@ std::string rigidbody::get_flight_state_string(rigidbody::flight_state input) {
     }
 }
 
-void rigidbody::declare_expected_state(rigidbody::flight_state inputState) {
+void rigidbody::declare_expected_state(rigidbody::flight_state inputState, double duration) {
     this->set_state(inputState);
-    this->declaredStateEndTime = ros::Time::now().toSec() + 0.25;
+    this->declaredStateEndTime = ros::Time::now().toSec() + duration;
 }
 
 void rigidbody::do_stage_1_timeout() {

@@ -1,7 +1,10 @@
 #include "debug_window.h"
+#include "../../drone_server/element_conversions.cpp"
 #include <fstream>
 #include <ros/package.h>
 #include <math.h>
+#include <std_msgs/Float32.h>
+
 #define VNAME(x) #x
 
 struct importError : public std::exception {
@@ -34,7 +37,6 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
     windowNode.getParam("mdp/drone_" + std::to_string(myDrone.numericID) + "/restrictedDistance", this->dRestrictedDistance);
     windowNode.getParam("mdp/drone_" + std::to_string(myDrone.numericID) + "/influenceDistance", this->dInfluenceDistance);
 
-    droneSpeedMultiplier = 1.0;
     logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
     firstTimeStamp = ros::Time().now();
     logTextBuffer->set_text(
@@ -49,6 +51,8 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
     std::string desTwistTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/des_twist";
 
     std::string obstacleTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/obstacles";
+
+    std::string batteryTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/battery";
 
     windowNode.setCallbackQueue(&windowQueue);
     
@@ -85,14 +89,16 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
             &debug_window::obstacle_callback,
             this);
 
+    batterySubscriber = windowNode.subscribe<std_msgs::Float32>(
+            batteryTopic,
+            1,
+            &debug_window::battery_callback,
+            this);
 
     this->expanded = false;
     this->set_title(myDrone.name);
 
     droneNameLabel->set_label(myDrone.name);
-    speedScale->set_round_digits(0);
-    speedScale->set_value(5);
-    speedMultiplierLabel->set_text("1.0x");
 
     if (expanded) on_expandButton_clicked();
 
@@ -182,7 +188,7 @@ void debug_window::update_ui_labels() {
     currPosX->set_text(round_to_string(currPositionMsg.pose.position.x, decimals));
     currPosY->set_text(round_to_string(currPositionMsg.pose.position.y, decimals));
     currPosZ->set_text(round_to_string(currPositionMsg.pose.position.z, decimals));
-     currYaw->set_text(round_to_string(currPositionMsg.pose.orientation.z, 5));
+    currYaw->set_text(round_to_string(mdp_conversions::get_yaw_from_pose(currPositionMsg.pose), decimals));
 
     desVelX->set_text(round_to_string(desVelocityMsg.twist.linear.x, decimals));
     desVelY->set_text(round_to_string(desVelocityMsg.twist.linear.y, decimals));
@@ -192,16 +198,19 @@ void debug_window::update_ui_labels() {
     desPosX->set_text(round_to_string(desPositionMsg.pose.position.x, decimals));
     desPosY->set_text(round_to_string(desPositionMsg.pose.position.y, decimals));
     desPosZ->set_text(round_to_string(desPositionMsg.pose.position.z, decimals));
-    desYaw->set_text(round_to_string(desPositionMsg.pose.orientation.z, 5));
+    desYaw->set_text(round_to_string(mdp_conversions::get_yaw_from_pose(desPositionMsg.pose), decimals));
+
     double vel = std::sqrt(
             currVelocityMsg.twist.linear.x * currVelocityMsg.twist.linear.x +
             currVelocityMsg.twist.linear.y * currVelocityMsg.twist.linear.y +
             currVelocityMsg.twist.linear.z + currVelocityMsg.twist.linear.z
             );
-    maxMag = std::max(maxMag, vel);
-    currYaw->set_text(round_to_string(maxMag, decimals));
 
+    maxMag = std::max(maxMag, vel);
+    maxSpeedLabel->set_text(round_to_string(maxMag, decimals));
     stateInput->set_text(currState);
+
+    batteryLevelBar->set_value(batteryPercent);
 
     draw_obstacles();
 }
@@ -276,16 +285,8 @@ void debug_window::obstacle_callback(const geometry_msgs::PoseArray::ConstPtr &m
     obstacles = *(msg.get());
 }
 
-void debug_window::on_speedScale_value_changed() {
-    if ((int)speedScale->get_value()<= 5) {
-        droneSpeedMultiplier = speedScale->get_value() * 0.2;
-    }
-    else {
-        droneSpeedMultiplier = 2.0;
-    }
-
-    const std::string multi = round_to_string(droneSpeedMultiplier, 1) + "x";
-    speedMultiplierLabel->set_text(multi);
+void debug_window::battery_callback(const std_msgs::Float32::ConstPtr &msg) {
+    batteryPercent = *(double*)(msg.get());
 }
 
 void debug_window::on_expandButton_clicked() {
@@ -328,12 +329,12 @@ void debug_window::link_widgets() {
         builder->get_widget(VNAME(desYawRate), desYawRate);
         builder->get_widget(VNAME(stateInput), stateInput);
         builder->get_widget(VNAME(batteryLevelBar), batteryLevelBar);
-        builder->get_widget(VNAME(speedMultiplierLabel), speedMultiplierLabel);
         builder->get_widget(VNAME(pktLossLabel), pktLossLabel);
         builder->get_widget(VNAME(logTextView), logTextView);
         builder->get_widget(VNAME(landButton), landButton);
         builder->get_widget(VNAME(emergencyButton), emergencyButton);
-        builder->get_widget(VNAME(speedScale), speedScale);
+        builder->get_widget(VNAME(speedLabel), speedLabel);
+        builder->get_widget(VNAME(maxSpeedLabel), maxSpeedLabel);
         builder->get_widget(VNAME(expandButton), expandButton);
         builder->get_widget(VNAME(sidePanelGrid), sidePanelGrid);
         builder->get_widget(VNAME(topViewBottom), topViewBottom);
@@ -357,9 +358,6 @@ void debug_window::link_widgets() {
 
         emergencyButton->signal_clicked().connect
                 (sigc::mem_fun(*this, &debug_window::on_emergencyButton_clicked));
-
-        speedScale->signal_value_changed().connect
-                (sigc::mem_fun(*this, &debug_window::on_speedScale_value_changed));
 
         expandButton->signal_clicked().connect
                 (sigc::mem_fun(*this, &debug_window::on_expandButton_clicked));

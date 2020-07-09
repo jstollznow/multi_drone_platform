@@ -8,6 +8,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TwistStamped.h>
 #include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Float32.h>
 #include <ros/callback_queue.h>
 #include <geometry_msgs/PoseArray.h>
 #include "multi_drone_platform/log.h"
@@ -45,6 +46,8 @@ private:
     void des_position_callback(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void curr_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg);
     void des_velocity_callback(const geometry_msgs::TwistStamped::ConstPtr& msg);
+    void battery_callback(const std_msgs::Float32::ConstPtr& msg);
+
     void fill_panel(geometry_msgs::Pose ob, int level);
     std::vector<int> reduce(std::vector<int> a, std::vector<int> b);
     void check_x(geometry_msgs::Pose ob, std::vector<int>& candidates);
@@ -70,6 +73,7 @@ private:
     ros::Subscriber desPoseSubscriber;
     ros::Subscriber desTwistSubscriber;
     ros::Subscriber obstacleSubscriber;
+    ros::Subscriber batterySubscriber;
 
     geometry_msgs::PoseStamped currPositionMsg;
     geometry_msgs::PoseStamped desPositionMsg;
@@ -78,6 +82,8 @@ private:
     geometry_msgs::TwistStamped desVelocityMsg;
 
     geometry_msgs::PoseArray obstacles;
+
+    double batteryPercent;
 
     // internal variables
     std::string toAddToLog;
@@ -123,7 +129,8 @@ private:
     // extra information
     Gtk::Label* stateInput;
     Gtk::LevelBar* batteryLevelBar;
-    Gtk::Label* speedMultiplierLabel;
+    Gtk::Label* speedLabel;
+    Gtk::Label* maxSpeedLabel;
     Gtk::Label* pktLossLabel;
 
     // logging
@@ -134,7 +141,6 @@ private:
     // for user interaction
     Gtk::Button* landButton;
     Gtk::Button* emergencyButton;
-    Gtk::Scale* speedScale;
     Gtk::Button* expandButton;
     Gtk::Image* compressImage;
     Gtk::Image* expandImage;

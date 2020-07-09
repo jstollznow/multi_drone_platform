@@ -58,6 +58,20 @@ private:
     float ltMax;
     float rtMax;
 
+    int allEmergencyInput;
+    int selectedEmergencyInput;
+    int changeDroneInput;
+    int safeShutdownInput;
+    int takeoffInput;
+    int landInput;
+    int hoverInput;
+    int goToHomeInput;
+    float xAxesInput;
+    float yAxesInput;
+    float incAltitudeInput;
+    float decAltitudeInput;
+    float yawAxes;
+
     ros::Publisher emergencyPublisher;
     ros::Subscriber joySubscriber;
     ros::Publisher logPublisher;
@@ -66,11 +80,11 @@ private:
     void input_callback(const sensor_msgs::Joy::ConstPtr& msg);
     void control_update();
 
-    void command_handle(const sensor_msgs::Joy::ConstPtr& msg);
-    bool emergency_handle(int allDronesButton, int oneDroneButton, int safeShutdownButton);
-    bool option_change_handle(float idChange);
-    bool high_lvl_command_handle(int takeoff, int land, int hover, int goToHome);
-    bool last_input_handle(float xAxes, float yAxes, float zUpTrigger, float zDownTrigger, float yawAxes);
+    void command_handle();
+    bool emergency_handle();
+    bool option_change_handle();
+    bool high_lvl_command_handle();
+    bool last_input_handle();
 
     std::array<double, 3> input_capped(std::array<double, 3> requestedVelocity);
     double yaw_capped();
