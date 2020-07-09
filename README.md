@@ -17,3 +17,10 @@ follow this guide to create a ROS catkin workspace: http://wiki.ros.org/catkin/T
 then clone this repository into your catkin workspace/src folder.
 
 Then run `catkin_make` in the base workspace folder.
+
+Many issues during compilation may be fixed by deleting the generated workspace /devel/ and /build/ folders and recompiling.
+
+## stuff you need to know
+when adding crazyflies, make sure to declare the rigidbody on optitrack when the drone is facing the positive x direction
+otherwise the drone will spin itself out as it attempts to recorrect itself based on incorrect position data.
+

@@ -368,13 +368,11 @@ void rigidbody::handle_command() {
                 /* VELOCITY */
                 case 0:
                     ROS_INFO("V: [%.2f, %.2f, %.2f] rel_Xy: %d, rel_z: %d, dur: %.1f", msg.posVel.x, msg.posVel.y, msg.posVel.z, msg.relativeXY, msg.relativeZ, msg.duration);
-                    if (msg.relativeXY && msg.relativeZ) this->log(logger::ERROR, "This should have already been preprocessed");
                     set_desired_velocity(msg.posVel, msg.yawVal, msg.duration);
                     break;
                 /* POSITION */
                 case 1:
                     ROS_INFO("P: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posVel.x, msg.posVel.y, msg.posVel.z, msg.relativeXY, msg.relativeZ);
-                    if (msg.relativeXY && msg.relativeZ) this->log(logger::ERROR, "This should have already been preprocessed");
                     set_desired_position(msg.posVel, msg.yawVal, msg.duration);
                     break;
                 /* TAKEOFF */
@@ -593,6 +591,9 @@ double rigidbody::get_end_yaw_from_yawrate_and_time_period(double yawrate, doubl
     return current_yaw + (yawrate * time_period);
 }
 
+ros::NodeHandle rigidbody::get_ros_node_handle() const {
+    return this->droneHandle;
+}
 
 void mdp_timer::reset_timer(double duration, bool Stage1Timeout) {
     this->timeoutTime = ros::Time::now().toSec() + duration;

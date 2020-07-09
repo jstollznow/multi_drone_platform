@@ -208,6 +208,12 @@ class rigidbody {
          */
         double get_end_yaw_from_yawrate_and_time_period(double yawrate, double time_period) const;
 
+        /**
+         * returns the node handle assosciated to the drone server
+         * @return the ros node handle
+         */
+        ros::NodeHandle get_ros_node_handle() const;
+
         // Wrapper Methods
 
         /**
