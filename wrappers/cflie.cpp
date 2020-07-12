@@ -194,7 +194,8 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     }
 
     void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration) override {
-        go_to(pos, yaw, duration, false);
+        float base_yaw = this->absoluteYaw - (std::signbit(this->absoluteYaw)? -1 : 1) * std::fmod(std::abs(this->absoluteYaw), 360.0f);
+        go_to(pos, base_yaw + yaw, duration, false);
     }
 
     void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) override {
@@ -202,15 +203,16 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         positionGoal.x = (vel.x * duration);
         positionGoal.y = (vel.y * duration);
         positionGoal.z = (vel.z * duration);
-
+        float yaw = this->get_end_yaw_from_yawrate_and_time_period(yawrate, duration);
         // as it calculates a relative positon
-        go_to(positionGoal, yawrate , duration, true);
+        go_to(positionGoal, yaw , duration, true);
     }
 
     void on_takeoff(float height, float duration) override {
         this->log(logger::INFO, "Takeoff requested");
         crazyflie_driver::Takeoff msg;
         msg.request.duration = ros::Duration(duration);
+
         msg.request.height = height;
         if (!takeoffService.call(msg)) {
             this->log(logger::ERROR, "Takeoff service failed");

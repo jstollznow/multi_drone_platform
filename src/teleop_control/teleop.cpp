@@ -3,7 +3,7 @@
 #define NODE_NAME "teleop"
 #define INPUT_TOPIC "/ps4"
 #define EMERGENCY_TOPIC "mdp_emergency"
-#define UPDATE_RATE 10
+#define UPDATE_RATE 5
 
 #define TAKEOFF_TIME 3.0f
 #define LAND_TIME 3.0f
@@ -151,18 +151,18 @@ bool teleop::last_input_handle() {
 
     // Left Joystick (Top/Bottom)
     float x = maxX * xAxesInput * MSG_DUR;
-
     // Left Joystick (Left/Right)
     float y = maxY * yAxesInput * MSG_DUR;
 
     // Triggers
     // LT go down RT go up
-    float z = ((maxFall) / MSG_DUR) * (decAltitudeInput - 1) - ((maxRise) / MSG_DUR) * (incAltitudeInput - 1);
+    float z = ((maxFall) / MSG_DUR) * (decAltitudeInput - 1.0f) - ((maxRise) / MSG_DUR) * (incAltitudeInput - 1.0f);
 
     // Right Joystick (Top/Bottom)
     teleopInput.yaw = maxYaw * yawAxes * MSG_DUR;
 
     teleopInput.axesInput = {x, y, z};
+
 }
 void teleop::command_handle() {
 
@@ -216,8 +216,8 @@ double teleop::yaw_capped() {
 void teleop::joystick_command(const std::array<double, 3> vel) {
     mdp::velocity_msg velocityMsg;
     velocityMsg.duration = MSG_DUR;
-    velocityMsg.keepHeight = true;
-    velocityMsg.relative = true;
+    velocityMsg.keepHeight = false;
+    velocityMsg.relative = false;
     velocityMsg.velocity = input_capped(vel);
     velocityMsg.yawRate = teleopInput.yaw;
 
@@ -337,7 +337,7 @@ void teleop::input_callback(const sensor_msgs::Joy::ConstPtr& msg) {
         changeDroneInput = (int)msg->axes[7];
     }
     else if (msg->axes.size() == PS3) {
-        changeDroneInput = msg->buttons[13] - msg->buttons[14];
+        changeDroneInput = msg->buttons[13]-msg->buttons[14];
     }
 
     allEmergencyInput = msg->buttons[10];
@@ -360,7 +360,7 @@ void teleop::set_limits() {
     switch(LIMIT_LEVEL) {
         // DEMO
         case 0:
-            maxYaw = 0.0f;
+            maxYaw = 0.05f;
             maxX = 0.75f;
             maxY = 0.75f;
             maxRise = 1.0f;
