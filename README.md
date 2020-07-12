@@ -1,13 +1,16 @@
 # Getting Started
 
+
 ## Installing the platform
+
+
 
 1. Install ROS Kinetic according to the instructions - [kinetic/Installation/Ubuntu](http://wiki.ros.org/kinetic/Installation/Ubuntu)
 2. Install the relevant dependencies
-    1.  Joy [http://wiki.ros.org/joy](http://wiki.ros.org/joy)
-    2.    Gtkmm [https://www.gtkmm.org/en/download.html](https://www.gtkmm.org/en/download.html)
-    3.  natnet_ros [https://github.com/mje-nz/natnet_ros](https://github.com/mje-nz/natnet_ros)
-    4.   vrpn_client_ros [https://answers.ros.org/question/285887/ros_vrpn_client-installation-help/](https://answers.ros.org/question/285887/ros_vrpn_client-installation-help/)
+    *   Joy [http://wiki.ros.org/joy](http://wiki.ros.org/joy)
+    *   Gtkmm [https://www.gtkmm.org/en/download.html](https://www.gtkmm.org/en/download.html)
+    *   natnet_ros [https://github.com/mje-nz/natnet_ros](https://github.com/mje-nz/natnet_ros)
+    *   vrpn_client_ros [https://answers.ros.org/question/285887/ros_vrpn_client-installation-help/](https://answers.ros.org/question/285887/ros_vrpn_client-installation-help/)
 3. A ROS workspace should be created using the following guide - [http://wiki.ros.org/catkin/Tutorials/create_a_workspace](http://wiki.ros.org/catkin/Tutorials/create_a_workspace)
 4. Navigate to _catkin_ws/src_ and clone crazyflie_ros, then building the repository according to the instructions provided - [whoenig/crazyflie_ros: ROS Driver for Bitcraze Crazyflie](https://github.com/whoenig/crazyflie_ros)
 5. Navigate to_ catkin_ws/src/crazyflie_ros/crazyflie_controller/config/crazyflie2.yaml _and change the Z controller values to -
@@ -15,8 +18,8 @@
     2.     kd: 15000.0
     3.     ki: 200.0
 6. The multi drone platform should first be cloned from the relevant source using the last stable build into your catkin_workspace. Using -
-    1. GitLab - [https://gitlab.adelaide.edu.au/a1706141/mdp](https://gitlab.adelaide.edu.au/a1706141/mdp)
-    2. GitHub - [https://github.com/jstollznow/multi_drone_platform](https://github.com/jstollznow/multi_drone_platform)
+    * GitLab - [https://gitlab.adelaide.edu.au/a1706141/mdp](https://gitlab.adelaide.edu.au/a1706141/mdp)
+    * GitHub - [https://github.com/jstollznow/multi_drone_platform](https://github.com/jstollznow/multi_drone_platform)
 7. Following, the platform should be built by navigating to _catkin_ws_ and executing the command - `catkin_make`
 8. Finally, navigate to _multi_drone_platform_ and build the doxygen documentation through the following command - `doxygen Doxyfile`
 
@@ -27,8 +30,8 @@ Each subdirectory will briefly be summarised to provide user clarity -
 
 
 
-* documentation - Contains relevant platform information files, including Doxygen generated documentation. Doxygen generated documentation can be navigated by opening _catkin_ws/src/multi_drone_platform/documentation/doxygen/html/index.html_
-* example - Contains a number of bash files to add a given number of virtual drones to the drone server and an example rviz (ros visualisation tool) configuration to visualise the drones on the drone server (up to 10, more can be added)
+*   documentation - Contains relevant platform information files, including Doxygen generated documentation. Doxygen generated documentation can be navigated by opening _catkin_ws/src/multi_drone_platform/documentation/doxygen/html/index.html_
+*   example - Contains a number of bash files to add a given number of virtual drones to the drone server and an example rviz (ros visualisation tool) configuration to visualise the drones on the drone server (up to 10, more can be added)
 *   include - Rigidbody and User API header files
 *   launch - Selection of ros launch files which can be used rather than launching each node individually.
 *   matlab - Contains all MATLAB related files including the API and relevant test scripts.
@@ -62,7 +65,7 @@ Ros nodes should be started in a specific order to ensure integration between di
 2. Motion tracking
 3. If using crazyflie drones, crazyflie server
 4. MDP drone server
-5. Add drones to drone server (can write a bash script to automate this process, some have been written in the _multi_drone_platform/examples _directory)
+5. Add drones to drone server (can write a bash script to automate this process, some have been written in the _multi_drone_platform/example _directory)
 6. Launch debug windows for each drone (optional)
 7. Launch MATLAB data generation (optional)
 8. Launch script or program
@@ -83,11 +86,14 @@ Ros nodes should be started in a specific order to ensure integration between di
             *   `rosrun multi_drone_platform add_drone vflie_00 0.50 1.00`
         *   cflie - `rosrun multi_drone_platform add_drone &lt;tag> &lt;linkURI> &lt;droneAddress>`
             *   `rosrun multi_drone_platform add_drone cflie_E7 radio://0/80/2M E7`
+            *   `rosrun multi_drone_platform add_drone cflie_E7 d d `
+                *   This will run default settings as the crazyflie drones should be added so their motion capture tag matches their drone address
+            *   These parameters relate to the crazy radio and the address of the crazyflie drone
     *   Via prompts - same command as above but with no arguments, prompts will guide the adding process, this is good to learn to arguments associated with each drone type
 *   Launch debug windows 
     *   Expanded - `rosrun multi_drone_platform all_debug_windows expanded`
     *   Compressed - `rosrun multi_drone_platform all_debug_windows compressed`
-*   Launch MATLAB data recording - running the bash script called _matlab_data.sh _in the examples local directory. This bash file may need to be altered depending on the install location of MATLAB.
+*   Launch MATLAB data recording - running the bash script called _matlab_data.sh _in the example local directory. This bash file may need to be altered depending on the install location of MATLAB.
 *   Each script can be run using the same basic template - `rosrun multi_drone_platform &lt;script_name> `
     *   yaw_control - `rosrun multi_drone_platform yaw_control`
 
