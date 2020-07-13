@@ -143,9 +143,7 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
     desiredPosePublisher.publish(desPoseMsg);
 
     /* declare flight state to moving if this is not a hover message */
-    if (!(pos.x == 0.0f && pos.y == 0.0f && pos.z == 0.0f)) {
-        this->declare_expected_state(flight_state::MOVING);
-    }
+    this->declare_expected_state(flight_state::MOVING);
 
     // mod input yaw to between 0 and 360 degrees
     yaw = std::fmod(yaw, 360.0f);
