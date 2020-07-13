@@ -21,7 +21,9 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue), icpObjec
     this->height = 0.0;
     this->restrictedDistance = 0.0;
     this->influenceDistance = 0.0;
-    this->absoluteYaw = 0.0;
+
+    // assume rigidbody is declared with drone facing in positive x direction
+    this->absoluteYaw = 0.0f;
 
     droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/width", this->width);
     droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/height", this->height);
@@ -145,44 +147,19 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
     /* declare flight state to moving if this is not a hover message */
     this->declare_expected_state(flight_state::MOVING);
 
-    // mod input yaw to between 0 and 360 degrees
+    /* modify input yaw such that it takes the shortest route to the new yaw */
     yaw = std::fmod(yaw, 360.0f);
 
-    /* modify input yaw such that it takes the shortest route to the new yaw */
-    // NOTE: this is only necessary when setting absolute yaw
-    // @TODO: may need testing.
-    float current_yaw = mdp_conversions::get_yaw_from_pose(this->get_current_pose());
+    float currentYaw = std::fmod(mdp_conversions::get_yaw_from_pose(this->get_current_pose()), 360.0f);
 
-    float yawDiff = std::fmod(yaw, 360.0f) - std::fmod(current_yaw, 360.0f);
-    if (yawDiff > 180.0) {
-        yawDiff -= 360.0f;
+    float yawDiff = yaw - currentYaw;
+    if (std::abs(yawDiff) > 180.0f) {
+        yawDiff += 360.0f;
+        yawDiff = std::fmod(yawDiff, 360.0f);
     }
-    yaw = current_yaw + yawDiff;
+    yaw = currentYaw + yawDiff;
 
-
-//    if (current_yaw > yaw) {
-//        float degrees_to_move = current_yaw - yaw;
-//        float over_360 = (360.0f - current_yaw) + yaw;
-//        if (std::abs(over_360) < std::abs(degrees_to_move)) {
-//            // if going over 360 is the shortest path to new yaw
-//            yaw = 360.0f + yaw;
-//        } else {
-//            // otherwise a direct path is shorter
-//            yaw = yaw;
-//        }
-//    } else {
-//        float degrees_to_move = yaw - current_yaw;
-//        float over_360 = (current_yaw) + (360.0f - yaw);
-//        if (std::abs(over_360) < std::abs(degrees_to_move)) {
-//            // if going over 0 is the shortest path
-//            yaw = (360.0f - yaw);
-//        } else {
-//            // otherwise a direct path is shorter
-//            yaw = yaw;
-//        }
-//    }
-
-    this->log(logger::WARN, "yaw as " + std::to_string(yaw));
+    this->log(logger::WARN, "next yaw is: " + std::to_string(yaw));
 
     /* send to wrapper */
     this->on_set_position(pos, yaw, duration);
@@ -257,6 +234,9 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     motionMsg.pose.orientation.z = msg->pose.orientation.z;
     motionMsg.pose.orientation.w = msg->pose.orientation.w;
 
+    motionMsg.header.frame_id = "mocap";
+
+
     if (motionCapture.empty()) {
         motionCapture.push(motionMsg);
         motionCapture.push(motionMsg);
@@ -267,6 +247,9 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
         
         std::string homePosLog = "HOME POS: [" + std::to_string(homePosition.x) + ", " 
         + std::to_string(homePosition.y) + ", " + std::to_string(homePosition.z) + "]";
+
+        this->absoluteYaw = mdp_conversions::get_yaw_from_pose(motionMsg.pose);
+
         this->log(logger::INFO, homePosLog);
     }
 
@@ -274,6 +257,7 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     motionCapture.pop();
     motionCapture.push(motionMsg);
     this->calculate_velocity();
+    this->adjust_absolute_yaw();
 
     currentPose = motionCapture.back().pose;
     // ROS_INFO("Current Position: x: %f, y: %f, z: %f",currPos.position.x, currPos.position.y, currPos.position.z);
@@ -362,11 +346,13 @@ void rigidbody::handle_command() {
                 /* VELOCITY */
                 case 0:
                     ROS_INFO("V: [%.2f, %.2f, %.2f] rel_Xy: %d, rel_z: %d, dur: %.1f", msg.posVel.x, msg.posVel.y, msg.posVel.z, msg.relativeXY, msg.relativeZ, msg.duration);
+                    if (msg.relativeXY && msg.relativeZ) this->log(logger::ERROR, "This should have already been preprocessed");
                     set_desired_velocity(msg.posVel, msg.yawVal, msg.duration);
                     break;
                 /* POSITION */
                 case 1:
                     ROS_INFO("P: xyz: %.2f %.2f %.2f, rel_Xy: %d, rel_z: %d", msg.posVel.x, msg.posVel.y, msg.posVel.z, msg.relativeXY, msg.relativeZ);
+                    if (msg.relativeXY && msg.relativeZ) this->log(logger::ERROR, "This should have already been preprocessed");
                     set_desired_position(msg.posVel, msg.yawVal, msg.duration);
                     break;
                 /* TAKEOFF */
@@ -581,8 +567,17 @@ const geometry_msgs::Pose& rigidbody::get_current_pose() const {
 }
 
 double rigidbody::get_end_yaw_from_yawrate_and_time_period(double yawrate, double time_period) const {
-    double current_yaw = mdp_conversions::get_yaw_from_pose(this->get_current_pose());
-    return current_yaw + (yawrate * time_period);
+    return absoluteYaw + (yawrate * time_period);
+}
+
+void rigidbody::adjust_absolute_yaw() {
+    auto newYaw = mdp_conversions::get_yaw_from_pose(motionCapture.front().pose);
+    auto oldYaw = mdp_conversions::get_yaw_from_pose(motionCapture.back().pose);
+    float yawDiff = newYaw - oldYaw;
+    if (std::abs(yawDiff) > 180.0f) {
+        yawDiff = std::fmod(360.0f + yawDiff, 360.f);
+    }
+    absoluteYaw += yawDiff;
 }
 
 ros::NodeHandle rigidbody::get_ros_node_handle() const {

@@ -5,7 +5,7 @@
 #include "../drone_server/element_conversions.cpp"
 #include "static_physical_management.h"
 
-#define NAIVE_ACCEL_BUFFER 1.1
+#define NAIVE_ACCEL_BUFFER 1.1f
 // @TODO: Use these two methods from utility functions rather than creating copies
 template<class T>
 T multiply_by_constant(T a, double multiple) {
@@ -181,7 +181,10 @@ void static_physical_management::make_absolute_velocity(rigidbody *d, multi_dron
 void static_physical_management::check_land(rigidbody *d, multi_drone_platform::api_update &msg) {
     double velZ = d->currentPose.position.z / msg.duration;
     velZ = std::min(d->velocity_limits.z[1], std::max(velZ, d->velocity_limits.z[0]));
-    msg.duration = std::max(msg.duration, (float)((d->currentPose.position.z / velZ) * NAIVE_ACCEL_BUFFER));
+    float reqDuration = (float)(d->currentPose.position.z / velZ) * NAIVE_ACCEL_BUFFER;
+    if (!std::isnan(reqDuration)) {
+        msg.duration = std::max(msg.duration, reqDuration);
+    }
 }
 
 void static_physical_management::check_go_home(rigidbody* d, multi_drone_platform::api_update &msg) {
@@ -200,7 +203,13 @@ void static_physical_management::check_go_home(rigidbody* d, multi_drone_platfor
     if (magnitude(vel) > d->maxVel) {
         vel = multiply_by_constant(vel, d->maxVel/magnitude(vel));
     }
-    msg.duration = std::max((float)(magnitude(distToTravel)/magnitude(vel)), msg.duration);
+
+    float reqDuration = (float)(magnitude(distToTravel)/magnitude(vel)) * NAIVE_ACCEL_BUFFER;
+
+    if (!std::isnan(reqDuration)) {
+        msg.duration = std::max(reqDuration, msg.duration);
+    }
+
 }
 
 multi_drone_platform::api_update static_physical_management::adjust_command(rigidbody* d, const multi_drone_platform::api_update msg) {
