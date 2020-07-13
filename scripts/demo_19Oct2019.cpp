@@ -58,28 +58,29 @@ void hover_test(mdp::id drone)
 {
     mdp::cmd_takeoff(drone, 1.0);
 
-    ros::Duration d(3.0);
-
     mdp::sleep_until_idle(drone);
 
     // spin for a bit
-    mdp::velocity_msg v_msg;
-    v_msg.duration = 2.2f;
-    v_msg.keepHeight = true;
-    v_msg.velocity = {0.1, 0.0, 0.0};
-    v_msg.yawRate = 360.0f;
-
-    mdp::set_drone_velocity(drone, v_msg);
-    mdp::sleep_until_idle(drone);
+//    mdp::velocity_msg v_msg;
+//    v_msg.duration = 2.2f;
+//    v_msg.keepHeight = true;
+//    v_msg.velocity = {0.1, 0.0, 0.0};
+//    v_msg.yawRate = 360.0f;
+//
+//    mdp::set_drone_velocity(drone, v_msg);
+//    mdp::sleep_until_idle(drone);
 
     mdp::position_msg msg;
     msg.relative = true;
     msg.keepHeight = true;
     msg.position = {1.0, 0.0, 0.0};
-    msg.yaw = 45.0;
+    msg.yaw = 450.0;
     msg.duration = 3.0;
 
     mdp::set_drone_position(drone, msg);
+    mdp::sleep_until_idle(drone);
+    mdp::cmd_hover(drone,5.0);
+
 
     //msg.position = {0.0, 0.5, 0.0};
     //d.sleep();
@@ -88,7 +89,7 @@ void hover_test(mdp::id drone)
 
     mdp::sleep_until_idle(drone);
 
-    mdp::go_to_home(drone, 4.0, 0.0);
+    mdp::go_to_home(drone, 0.5, 0.0);
 
     mdp::sleep_until_idle(drone);
 }

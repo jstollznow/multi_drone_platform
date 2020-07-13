@@ -3,7 +3,7 @@
 #define NODE_NAME "teleop"
 #define INPUT_TOPIC "/ps4"
 #define EMERGENCY_TOPIC "mdp_emergency"
-#define UPDATE_RATE 10
+#define UPDATE_RATE 5
 
 #define TAKEOFF_TIME 3.0f
 #define LAND_TIME 3.0f
@@ -16,6 +16,9 @@
 // 0 DEMO - SAFE
 // 1 MORE CONTROL
 #define LIMIT_LEVEL 0
+#define PS4 8
+#define PS3 6
+
 
 
 
@@ -64,16 +67,16 @@ void teleop::log(const logger::log_type logLevel, const std::string& msg) {
     logger::post_log(logLevel, NODE_NAME, logPublisher, msg);
 }
 
-bool teleop::emergency_handle(const int allDronesButton, const int oneDroneButton, const int safeShutdownButton) {
+bool teleop::emergency_handle() {
     // PS Button
-    if (allDronesButton) {
+    if (allEmergencyInput) {
         emergency = true;
         this->log(logger::WARN, "ALL EMERGENCY requested");
         emergencyPublisher.publish(std_msgs::Empty());
         return true;
     }
-    // Share Button
-    else if (oneDroneButton) {
+    // Share/Select Button
+    else if (selectedEmergencyInput) {
         if (drones.size() > controlIndex) {
             emergency = true;
             this->log(logger::WARN, "EMERGENCY requested for " + drones[controlIndex].name);
@@ -81,8 +84,8 @@ bool teleop::emergency_handle(const int allDronesButton, const int oneDroneButto
         }
         return true;
     }
-    // Options Button
-    else if (safeShutdownButton) {
+    // Options/Start Button
+    else if (safeShutdownInput) {
         emergency = true;
         node.setParam("mdp/should_shut_down", true);
         this->log(logger::WARN, "Safe server shutdown requested");
@@ -90,15 +93,15 @@ bool teleop::emergency_handle(const int allDronesButton, const int oneDroneButto
     }
     return false;
 }
-bool teleop::option_change_handle(const float idChange) {
+bool teleop::option_change_handle() {
 
     // up or down D-Pad
-    if ((int)idChange != 0) {
+    if (changeDroneInput != 0) {
         clear_command_queue();
 
         this->log(logger::DEBUG, "ID Change requested");
         this->log(logger::DEBUG, "Changing from " + drones[controlIndex].name);
-        if(idChange > 0) {
+        if(changeDroneInput > 0) {
             commandQueue.push(ID_SWITCH_UP);
         }
         else {
@@ -110,31 +113,31 @@ bool teleop::option_change_handle(const float idChange) {
     return false;
 }
 
-bool teleop::high_lvl_command_handle(const int takeoff, const int land, const int hover, const int goToHome) {
+bool teleop::high_lvl_command_handle() {
 
     // cross
-    if (takeoff) {
+    if (takeoffInput) {
         clear_command_queue();
         this->log(logger::DEBUG, "Takeoff requested for " + drones[controlIndex].name);
         commandQueue.push(TAKEOFF);
         return true;
     }
     // circle
-    else if (land) {
+    else if (landInput) {
         clear_command_queue();
         this->log(logger::DEBUG, "Land requested for " + drones[controlIndex].name);
         commandQueue.push(LAND);
         return true;
     }
     // triangle
-    else if (hover) {
+    else if (hoverInput) {
         clear_command_queue();
         this->log(logger::DEBUG, "Hover requested for " + drones[controlIndex].name);
         commandQueue.push(HOVER);
         return true;
     }
     // square
-    else if (goToHome) {
+    else if (goToHomeInput) {
         clear_command_queue();
         this->log(logger::DEBUG, "GoToHome requested for " + drones[controlIndex].name);
         commandQueue.push(GO_TO_HOME);
@@ -144,38 +147,38 @@ bool teleop::high_lvl_command_handle(const int takeoff, const int land, const in
     return false;
 }
 
-bool teleop::last_input_handle(const float xAxes, const float yAxes, const float zUpTrigger, const float zDownTrigger, const float yawAxes) {
+bool teleop::last_input_handle() {
 
     // Left Joystick (Top/Bottom)
-    float x = maxX * xAxes * MSG_DUR;
-
+    float x = maxX * xAxesInput * MSG_DUR;
     // Left Joystick (Left/Right)
-    float y = maxY * yAxes * MSG_DUR;
+    float y = maxY * yAxesInput * MSG_DUR;
 
     // Triggers
     // LT go down RT go up
-    float z = ((maxFall) / MSG_DUR) * (zDownTrigger - 1) - ((maxRise) / MSG_DUR) * (zUpTrigger - 1);
+    float z = ((maxFall) / MSG_DUR) * (decAltitudeInput - 1.0f) - ((maxRise) / MSG_DUR) * (incAltitudeInput - 1.0f);
 
     // Right Joystick (Top/Bottom)
     teleopInput.yaw = maxYaw * yawAxes * MSG_DUR;
 
     teleopInput.axesInput = {x, y, z};
+
 }
-void teleop::command_handle(const sensor_msgs::Joy::ConstPtr& msg) {
+void teleop::command_handle() {
 
     if (isSynced) {
-        if (!emergency_handle(msg->buttons[10], msg->buttons[8], msg->buttons[9])) {
-            if (!option_change_handle(msg->axes[7])) {
-                high_lvl_command_handle(msg->buttons[0], msg->buttons[1], msg->buttons[2], msg->buttons[3]);
+        if (!emergency_handle()) {
+            if (!option_change_handle()) {
+                high_lvl_command_handle();
             }
         }
-        last_input_handle(msg->axes[1], msg->axes[0], msg->axes[5], msg->axes[2], msg->axes[4]);
+        last_input_handle();
     }
 
     else {
         // sync triggers
-        ltMax = std::max(msg->axes[5], ltMax);
-        rtMax = std::max(msg->axes[2], rtMax);
+        ltMax = std::max(decAltitudeInput, ltMax);
+        rtMax = std::max(incAltitudeInput, rtMax);
         if ((bool)ltMax && (bool)rtMax) {
             isSynced = true;
             this->log(logger::INFO, "Ready for take off");
@@ -213,8 +216,8 @@ double teleop::yaw_capped() {
 void teleop::joystick_command(const std::array<double, 3> vel) {
     mdp::velocity_msg velocityMsg;
     velocityMsg.duration = MSG_DUR;
-    velocityMsg.keepHeight = true;
-    velocityMsg.relative = true;
+    velocityMsg.keepHeight = false;
+    velocityMsg.relative = false;
     velocityMsg.velocity = input_capped(vel);
     velocityMsg.yawRate = teleopInput.yaw;
 
@@ -330,14 +333,34 @@ void teleop::control_update() {
 }
 
 void teleop::input_callback(const sensor_msgs::Joy::ConstPtr& msg) {
-    command_handle(msg);
+    if (msg->axes.size() == PS4) {
+        changeDroneInput = (int)msg->axes[7];
+    }
+    else if (msg->axes.size() == PS3) {
+        changeDroneInput = msg->buttons[13]-msg->buttons[14];
+    }
+
+    allEmergencyInput = msg->buttons[10];
+    selectedEmergencyInput = msg->buttons[8];
+    safeShutdownInput = msg->buttons[9];
+    takeoffInput = msg->buttons[0];
+    landInput = msg->buttons[1];
+    hoverInput = msg->buttons[2];
+    goToHomeInput = msg->buttons[3];
+    xAxesInput = msg->axes[1];
+    yAxesInput = msg->axes[0];
+    yawAxes = msg->axes[4];
+    incAltitudeInput = msg->axes[5];
+    decAltitudeInput = msg->axes[2];
+
+    command_handle();
 }
 //@TODO: configure limit modes
 void teleop::set_limits() {
     switch(LIMIT_LEVEL) {
         // DEMO
         case 0:
-            maxYaw = 0.0f;
+            maxYaw = 0.05f;
             maxX = 0.75f;
             maxY = 0.75f;
             maxRise = 1.0f;

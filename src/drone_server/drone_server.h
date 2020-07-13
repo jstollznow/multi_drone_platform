@@ -18,13 +18,15 @@
 #define SUB_TOPIC "mdp"
 #define EMERGENCY_TOPIC "mdp_emergency"
 #define SHUTDOWN_PARAM "mdp/should_shut_down"
+#define SESSION_PARAM "/mdp/session_directory"
 #define ADD_DRONE_TOPIC "mdp/add_drone_srv"
+
 
 
 class drone_server {
     private:
         std::vector<rigidbody*> rigidbodyList{};
-
+        ros::Time serverStartTime;
         ros::NodeHandle node;
         ros::Subscriber inputAPISub;
         ros::Subscriber emergencySub;
@@ -39,6 +41,8 @@ class drone_server {
         float motionCaptureUpdateRate;
         float timeToUpdateDrones;
         float waitTime;
+
+        std::string exportLog;
 
 #if POINT_SET_REG
         icp_impl icpImplementation;
