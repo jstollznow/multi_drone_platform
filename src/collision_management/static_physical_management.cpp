@@ -192,10 +192,10 @@ void static_physical_management::check_go_home(rigidbody* d, multi_drone_platfor
     geometry_msgs::Vector3 distToTravel;
     distToTravel.x = d->homePosition.x - d->currentPose.position.x;
     distToTravel.y = d->homePosition.y - d->currentPose.position.y;
-    vel.y = d->homePosition.y / msg.duration;
+    vel.y = distToTravel.y / msg.duration;
     vel.y = std::min(d->velocity_limits.y[1], std::max(vel.y, d->velocity_limits.y[0]));
 
-    vel.x = d->homePosition.x / msg.duration;
+    vel.x = distToTravel.x / msg.duration;
     vel.x = std::min(d->velocity_limits.x[1], std::max(vel.x, d->velocity_limits.x[0]));
 
     vel.z = 0.0f;
