@@ -212,17 +212,17 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
     this->on_set_velocity(vel, yawRate, duration);
 }
 
-bool rigidbody::is_msg_different(multi_drone_platform::api_update msg) {
+bool rigidbody::is_msg_different(const multi_drone_platform::api_update& msg, const multi_drone_platform::api_update& last_message) const {
     double timeBetweenCommonMsgs = 0.5;
     double distanceBetweenCommonMsgs = 0.02;
     double timeBetweenTwoMsgs = ros::Time::now().toSec() - timeOfLastApiUpdate.toSec();
     if (timeBetweenTwoMsgs > timeBetweenCommonMsgs) return true; // there has been significant time between msgs
-    if (msg.msgType != lastRecievedApiUpdate.msgType) return true;        // they are not the same msg type
-    if (msg.relativeXY != lastRecievedApiUpdate.relativeXY) return true;    // they do not have the same xy relative
-    if (msg.relativeZ != lastRecievedApiUpdate.relativeZ) return true;      // they do not have the same z relative
-    if (std::abs(msg.duration - (lastRecievedApiUpdate.duration - timeBetweenTwoMsgs)) > 0.5) return true; // relative durations are significantly different
-    if (vec3_distance(msg.posVel, lastRecievedApiUpdate.posVel) > distanceBetweenCommonMsgs) return true; // they are significantly different in destinations
-    if (std::abs(msg.yawVal - lastRecievedApiUpdate.yawVal) > 10.0) return true; // they have significantly different yawvals
+    if (msg.msgType != last_message.msgType) return true;        // they are not the same msg type
+    if (msg.relativeXY != last_message.relativeXY) return true;    // they do not have the same xy relative
+    if (msg.relativeZ != last_message.relativeZ) return true;      // they do not have the same z relative
+    if (std::abs(msg.duration - (last_message.duration - timeBetweenTwoMsgs)) > 0.5) return true; // relative durations are significantly different
+    if (vec3_distance(msg.posVel, last_message.posVel) > distanceBetweenCommonMsgs) return true; // they are significantly different in destinations
+    if (std::abs(msg.yawVal - last_message.yawVal) > 10.0) return true; // they have significantly different yawvals
     return false;   // else they are pretty much the same message
 }
 
@@ -247,19 +247,6 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     /* if this is the first recieved message, fill motionCapture with homePositions */
     geometry_msgs::PoseStamped motionMsg;
 
-//#if USE_NATNET
-//    // natnet is z up
-//    motionMsg.header = msg->header;
-//
-//    motionMsg.pose.position.x = msg->pose.position.x;
-//    motionMsg.pose.position.y = msg->pose.position.y;
-//    motionMsg.pose.position.z = msg->pose.position.z;
-//
-//    motionMsg.pose.orientation.x = msg->pose.orientation.x;
-//    motionMsg.pose.orientation.y = msg->pose.orientation.y;
-//    motionMsg.pose.orientation.z = msg->pose.orientation.z;
-//    motionMsg.pose.orientation.w = msg->pose.orientation.w;
-//#else /* USE VRPN */ // @TODO: check if this actually fixes the issue
     // do stuff with coordinate systems
     motionMsg.header = msg->header;
 
@@ -271,7 +258,6 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     motionMsg.pose.orientation.y = msg->pose.orientation.x;
     motionMsg.pose.orientation.z = msg->pose.orientation.z;
     motionMsg.pose.orientation.w = msg->pose.orientation.w;
-//#endif
 
     if (motionCapture.empty()) {
         motionCapture.push(motionMsg);
@@ -323,8 +309,8 @@ void rigidbody::publish_physical_state() const {
 }
 
 void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
-    if (this->hoverTimer.has_timed_out()) {
-        if (this->hoverTimer.is_stage_timeout()) {
+    if (this->timeoutTimer.has_timed_out()) {
+        if (this->timeoutTimer.is_stage_timeout()) {
             this->log(logger::WARN, "Timeout stage 2: Landing drone");
 
             /* send land command through api */
@@ -364,14 +350,11 @@ void rigidbody::api_callback(const multi_drone_platform::api_update& msg) {
 }
 
 void rigidbody::handle_command() {
-    geometry_msgs::Vector3 noMove;
-    noMove.x = noMove.y = noMove.z = 0.0f;
-
-    if (commandQueue.size() > 0) {
-        this->hoverTimer.close_timer(); // stop timeout 2 from happening as drone has received a message
+    if (!commandQueue.empty()) {
+        this->timeoutTimer.close_timer(); // stop timeout 2 from happening as drone has received a message
         bool isGoHomeMessage = false;
         multi_drone_platform::api_update msg = this->commandQueue.front();
-        if (is_msg_different(msg)) {
+        if (is_msg_different(msg, this->lastRecievedApiUpdate)) {
             this->log(logger::INFO, "=> Handling command: " + msg.msgType);
             this->log(logger::DEBUG, "Duration " + std::to_string(msg.duration));
             this->lastRecievedApiUpdate = msg;
@@ -401,7 +384,7 @@ void rigidbody::handle_command() {
                 /* HOVER */
                 case 4:
                     this->hover(msg.duration);
-                    this->hoverTimer.reset_timer(msg.duration - 0.05f);
+                    this->timeoutTimer.reset_timer(msg.duration - 0.05f);
                     break;
                 /* EMERGENCY */
                 case 5: 
@@ -439,7 +422,7 @@ void rigidbody::dequeue_command() {
     // @TODO: the application is seg faulting here for some reason, please fix
     // Why is this a vector not a queue? Queues are good for multithreading applications
     // It was originally a queue
-    if (commandQueue.size() > 0) { // this is a hack fix
+    if (!commandQueue.empty()) { // this is a hack fix
         auto it = commandQueue.begin();
         commandQueue.erase(it);
     }
@@ -583,7 +566,7 @@ void rigidbody::declare_expected_state(rigidbody::flight_state inputState, doubl
 void rigidbody::do_stage_1_timeout() {
     this->log(logger::DEBUG, "Timeout stage 1");
     this->hover(TIMEOUT_HOVER);
-    this->hoverTimer.reset_timer(TIMEOUT_HOVER, true);
+    this->timeoutTimer.reset_timer(TIMEOUT_HOVER, true);
     this->set_state(flight_state::HOVERING);
 }
 

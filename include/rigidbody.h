@@ -90,7 +90,7 @@ class rigidbody {
         ros::CallbackQueue myQueue;
         ros::Publisher apiPublisher;
         flight_state state = flight_state::UNKNOWN; /** The current state of the rigidbody */
-        mdp_timer hoverTimer;
+        mdp_timer timeoutTimer;
         double declaredStateEndTime = 0.0;
         std::vector<multi_drone_platform::api_update> commandQueue;
         bool isVflie = false;
@@ -159,7 +159,7 @@ public:
         void enqueue_command(multi_drone_platform::api_update command);
         void dequeue_command();
         void do_stage_1_timeout();
-        bool is_msg_different(multi_drone_platform::api_update msg);
+        bool is_msg_different(const multi_drone_platform::api_update& msg, const multi_drone_platform::api_update& last_message) const;
 
         void set_desired_position(geometry_msgs::Vector3 pos, float yaw, float duration);
         void set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration);
