@@ -149,42 +149,19 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
         this->declare_expected_state(flight_state::MOVING);
     }
 
-
     /* modify input yaw such that it takes the shortest route to the new yaw */
-    // NOTE: this is only necessary when setting absolute yaw
-    // @TODO: may need testing.
-    float current_yaw = mdp_conversions::get_yaw_from_pose(this->get_current_pose());
+    yaw = std::fmod(yaw, 360.0f);
 
-    float yawDiff = std::fmod(yaw, 360.0f) - std::fmod(current_yaw, 360.0f);
-    if (yawDiff > 180.0) {
-        yawDiff -= 360.0f;
+    float currentYaw = std::fmod(mdp_conversions::get_yaw_from_pose(this->get_current_pose()), 360.0f);
+
+    float yawDiff = yaw - currentYaw;
+    if (std::abs(yawDiff) > 180.0f) {
+        yawDiff += 360.0f;
+        yawDiff = std::fmod(yawDiff, 360.0f);
     }
-    yaw = current_yaw + yawDiff;
+    yaw = currentYaw + yawDiff;
 
-
-//    if (current_yaw > yaw) {
-//        float degrees_to_move = current_yaw - yaw;
-//        float over_360 = (360.0f - current_yaw) + yaw;
-//        if (std::abs(over_360) < std::abs(degrees_to_move)) {
-//            // if going over 360 is the shortest path to new yaw
-//            yaw = 360.0f + yaw;
-//        } else {
-//            // otherwise a direct path is shorter
-//            yaw = yaw;
-//        }
-//    } else {
-//        float degrees_to_move = yaw - current_yaw;
-//        float over_360 = (current_yaw) + (360.0f - yaw);
-//        if (std::abs(over_360) < std::abs(degrees_to_move)) {
-//            // if going over 0 is the shortest path
-//            yaw = (360.0f - yaw);
-//        } else {
-//            // otherwise a direct path is shorter
-//            yaw = yaw;
-//        }
-//    }
-
-    this->log(logger::WARN, "yaw as " + std::to_string(yaw));
+    this->log(logger::WARN, "next yaw is: " + std::to_string(yaw));
 
     /* send to wrapper */
     this->on_set_position(pos, yaw, duration);
@@ -601,7 +578,10 @@ void rigidbody::adjust_absolute_yaw() {
     auto newYaw = mdp_conversions::get_yaw_from_pose(motionCapture.front().pose);
     auto oldYaw = mdp_conversions::get_yaw_from_pose(motionCapture.back().pose);
     float yawDiff = newYaw - oldYaw;
-    absoluteYaw += std::min(yawDiff, 360.0f - yawDiff);
+    if (std::abs(yawDiff) > 180.0f) {
+        yawDiff = std::fmod(360.0f + yawDiff, 360.f);
+    }
+    absoluteYaw += yawDiff;
 }
 
 

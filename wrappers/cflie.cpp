@@ -85,7 +85,7 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     }
 
     void battery_log(const std_msgs::Float32::ConstPtr &msg) {
-        if (msg->data <= 3.00f) {
+        if (msg->data <= 2.50f) {
             this->log(logger::WARN, "Battery dying soon...");
             batteryDying = true;
         }
