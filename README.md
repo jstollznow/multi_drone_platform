@@ -14,9 +14,9 @@
 3. A ROS workspace should be created using the following guide - [http://wiki.ros.org/catkin/Tutorials/create_a_workspace](http://wiki.ros.org/catkin/Tutorials/create_a_workspace)
 4. Navigate to _catkin_ws/src_ and clone crazyflie_ros, then building the repository according to the instructions provided - [whoenig/crazyflie_ros: ROS Driver for Bitcraze Crazyflie](https://github.com/whoenig/crazyflie_ros)
 5. Navigate to_ catkin_ws/src/crazyflie_ros/crazyflie_controller/config/crazyflie2.yaml _and change the Z controller values to -
-    1.     kp: 30000.0
-    2.     kd: 15000.0
-    3.     ki: 200.0
+    * kp: 30000.0
+    * kd: 15000.0
+    * ki: 200.0
 6. The multi drone platform should first be cloned from the relevant source using the last stable build into your catkin_workspace. Using -
     * GitLab - [https://gitlab.adelaide.edu.au/a1706141/mdp](https://gitlab.adelaide.edu.au/a1706141/mdp)
     * GitHub - [https://github.com/jstollznow/multi_drone_platform](https://github.com/jstollznow/multi_drone_platform)
@@ -75,16 +75,16 @@ Ros nodes should be started in a specific order to ensure integration between di
 
 
 
-*   Launch motion tracking 
+*   Launch motion tracking (one of these two options, depending on your preference defined in rigidbody.cpp)
     *   natnet - `rosrun natnet_ros _server:=129.127.29.166`
     *   vrpn - `roslaunch vrpn_client_ros sample.launch server:=129.127.29.166`
 *   Launching crazyflie server - `rosrun crazyflie_driver crazyflie_server`
 *   Drone server - `rosrun multi_drone_platform drone_server`
 *   Adding drones to your drone server
     *   Via command line arguments - The drones name (motion capture tag) followed by the specific arguments for the drone type associated with the tag. Examples of adding each of the two main drone types can be seen below -
-        *   vflie - `rosrun multi_drone_platform add_drone &lt;tag> &lt;homePosX> &lt;homePosY>`
+        *   vflie - `rosrun multi_drone_platform add_drone <tag> <homePosX> <homePosY>`
             *   `rosrun multi_drone_platform add_drone vflie_00 0.50 1.00`
-        *   cflie - `rosrun multi_drone_platform add_drone &lt;tag> &lt;linkURI> &lt;droneAddress>`
+        *   cflie - `rosrun multi_drone_platform add_drone <tag> <linkURI> <droneAddress>`
             *   `rosrun multi_drone_platform add_drone cflie_E7 radio://0/80/2M E7`
             *   `rosrun multi_drone_platform add_drone cflie_E7 d d `
                 *   This will run default settings as the crazyflie drones should be added so their motion capture tag matches their drone address
