@@ -40,7 +40,7 @@
 
 class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     private:
-    const std::string linkUri = "radio://0/80/2M";
+    std::string linkUri;
     std::string myUri;
 
     std::string droneAddress;
@@ -105,6 +105,21 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         this->height = 0.07;
         this->restrictedDistance = 0.10;
         this->influenceDistance = 0.40;
+        // link URI
+        if (args.size() > 1 && args[1] != "d") {
+            this->linkUri = args[1];
+        }
+        else {
+            this->linkUri = "radio://0/80/2M";
+        }
+        // drone address
+        if (args.size() > 2 && args[2] != "d") {
+            this->droneAddress = args[2];
+        }
+        else {
+            this->droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
+        }
+
 
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/width", this->width);
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/height", this->height);
@@ -112,7 +127,6 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/restrictedDistance", this->restrictedDistance);
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/influenceDistance", this->influenceDistance);
 
-        droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
         myUri = linkUri + "/0xE7E7E7E7" + droneAddress;
         crazyflie_driver::AddCrazyflie msg;
