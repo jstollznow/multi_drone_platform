@@ -64,19 +64,7 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
         geometry_msgs::Quaternion orientation = to_quaternion(this->currentYaw);
 
         geometry_msgs::PoseStamped translatedMsg;
-#if USE_NATNET
-        // natnet is z up
-        translatedMsg.pose.position.x = positionArray[0];
-        translatedMsg.pose.position.y = positionArray[1];
-        translatedMsg.pose.position.z = positionArray[2];
 
-        translatedMsg.pose.orientation.x = orientation.x;
-        translatedMsg.pose.orientation.y = orientation.y;
-        translatedMsg.pose.orientation.z = orientation.z;
-        translatedMsg.pose.orientation.w = orientation.w;
-        translatedMsg.header.frame_id = "mocap";
-#else /* USE VRPN */
-        // convert to y up
         translatedMsg.pose.position.x = positionArray[1];
         translatedMsg.pose.position.y = positionArray[0] * -1;
         translatedMsg.pose.position.z = positionArray[2];
@@ -85,8 +73,7 @@ class DRONE_WRAPPER(vflie, homePosX, homePosY)
         translatedMsg.pose.orientation.y = orientation.x * -1;
         translatedMsg.pose.orientation.z = orientation.z;
         translatedMsg.pose.orientation.w = orientation.w;
-        translatedMsg.header.frame_id = "map";
-#endif
+        translatedMsg.header.frame_id = "mocap";
         translatedMsg.header.stamp = ros::Time::now();
         this->posePub.publish(translatedMsg);
     }

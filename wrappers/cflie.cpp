@@ -40,7 +40,7 @@
 
 class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     private:
-    const std::string linkUri = "radio://0/80/2M";
+    std::string linkUri;
     std::string myUri;
 
     std::string droneAddress;
@@ -85,7 +85,7 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     }
 
     void battery_log(const std_msgs::Float32::ConstPtr &msg) {
-        if (msg->data <= 3.00f) {
+        if (msg->data <= 2.50f) {
             this->log(logger::WARN, "Battery dying soon...");
             batteryDying = true;
         }
@@ -105,6 +105,21 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         this->height = 0.07;
         this->restrictedDistance = 0.10;
         this->influenceDistance = 0.40;
+        // link URI
+        if (args.size() > 1 && args[1] != "d") {
+            this->linkUri = args[1];
+        }
+        else {
+            this->linkUri = "radio://0/80/2M";
+        }
+        // drone address
+        if (args.size() > 2 && args[2] != "d") {
+            this->droneAddress = args[2];
+        }
+        else {
+            this->droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
+        }
+
 
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/width", this->width);
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/height", this->height);
@@ -112,7 +127,6 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/restrictedDistance", this->restrictedDistance);
         droneHandle.setParam("mdp/drone_" + std::to_string(this->get_id()) + "/influenceDistance", this->influenceDistance);
 
-        droneAddress = (this->get_tag().substr(this->get_tag().find_first_of('_')+1));
         addCrazyflieService = droneHandle.serviceClient<crazyflie_driver::AddCrazyflie>("/add_crazyflie");
         myUri = linkUri + "/0xE7E7E7E7" + droneAddress;
         crazyflie_driver::AddCrazyflie msg;
@@ -194,7 +208,8 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     }
 
     void on_set_position(geometry_msgs::Vector3 pos, float yaw, float duration) override {
-        go_to(pos, yaw, duration, false);
+        float base_yaw = this->absoluteYaw - (std::signbit(this->absoluteYaw)? -1 : 1) * std::fmod(std::abs(this->absoluteYaw), 360.0f);
+        go_to(pos, base_yaw + yaw, duration, false);
     }
 
     void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) override {
@@ -202,15 +217,16 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         positionGoal.x = (vel.x * duration);
         positionGoal.y = (vel.y * duration);
         positionGoal.z = (vel.z * duration);
-
+        float yaw = this->get_end_yaw_from_yawrate_and_time_period(yawrate, duration);
         // as it calculates a relative positon
-        go_to(positionGoal, yawrate , duration, true);
+        go_to(positionGoal, yaw , duration, true);
     }
 
     void on_takeoff(float height, float duration) override {
         this->log(logger::INFO, "Takeoff requested");
         crazyflie_driver::Takeoff msg;
         msg.request.duration = ros::Duration(duration);
+
         msg.request.height = height;
         if (!takeoffService.call(msg)) {
             this->log(logger::ERROR, "Takeoff service failed");
