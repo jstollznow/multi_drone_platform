@@ -61,7 +61,7 @@ rigidbody::rigidbody(std::string tag, uint32_t id): mySpin(1,&myQueue), icpObjec
     apiPublisher = droneHandle.advertise<multi_drone_platform::api_update> (apiTopic, 2);
     apiSubscriber = droneHandle.subscribe(apiTopic, 2, &rigidbody::api_callback, this);
     logPublisher = droneHandle.advertise<multi_drone_platform::log> (logTopic, 20);
-    motionSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 1,&rigidbody::add_motion_capture, this);
+    motionCaptureSubscriber = droneHandle.subscribe<geometry_msgs::PoseStamped>(motionTopic, 1, &rigidbody::add_motion_capture, this);
     batteryPublisher = droneHandle.advertise<std_msgs::Float32>(batteryTopic, 1);
 
     currentPosePublisher = droneHandle.advertise<geometry_msgs::PoseStamped> (currPoseTopic, 1);
@@ -145,7 +145,12 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
     desiredPosePublisher.publish(desPoseMsg);
 
     /* declare flight state to moving if this is not a hover message */
-    this->declare_expected_state(flight_state::MOVING);
+    auto current_pos = this->get_current_pose().position;
+    if (pos.x == current_pos.x && pos.y == current_pos.y && pos.z == current_pos.z) {
+        this->declare_expected_state(flight_state::MOVING, duration);
+    } else {
+        this->declare_expected_state(flight_state::MOVING);
+    }
 
     /* modify input yaw such that it takes the shortest route to the new yaw */
     yaw = std::fmod(yaw, 360.0f);
@@ -272,7 +277,7 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     }
     this->publish_physical_state();
 
-    this->lastUpdate = ros::Time::now();
+    this->timeOfLastMotionCaptureUpdate = ros::Time::now();
     this->on_motion_capture(motionMsg);
 
 }

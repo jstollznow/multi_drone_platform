@@ -22,10 +22,16 @@
 #define DEFAULT_QUEUE 10
 #define TIMEOUT_HOVER 20
 
+/**
+ * declares the use of Natnet in motion capture
+ */
 #define USE_NATNET false
 
 // api structures
 
+/**
+ * map representing all drone commands available
+ */
 static std::map<std::string, int> apiMap = {
     {"VELOCITY", 0},    {"POSITION", 1},    {"TAKEOFF", 2},
     {"LAND", 3},        {"HOVER", 4},       {"EMERGENCY", 5},
@@ -33,6 +39,9 @@ static std::map<std::string, int> apiMap = {
     {"ORIENTATION", 9}, {"TIME", 10},       {"DRONE_SERVER_FREQ", 11}
 };
 
+/**
+ * class used internally to handle timeout timers for each rigidbody
+ */
 class mdp_timer {
 private:
     bool isStage1Timeout = false;
@@ -40,9 +49,28 @@ private:
     double timeoutTime {};
 
 public:
+    /**
+     * declares the timer as no longer valid
+     */
     void close_timer();
+
+    /**
+     * restarts the timer with the given duration and an indication of if this is for stage 1 timeout
+     * @param duration the duration the timer should run for in seconds
+     * @param Stage1Timeout an indication whether this is for stage 1 timeout
+     */
     void reset_timer(double duration, bool Stage1Timeout = false);
+
+    /**
+     * checks to see if the timer has finished. This will only return true once after timer completion
+     * @return if the timer has completed and has not yet been reported
+     */
     bool has_timed_out();
+
+    /**
+     * checks whether this timer is for stage 1 timout
+     * @return if the timer is for stage 1 timeout
+     */
     bool is_stage_timeout() const;
 
 };
@@ -59,6 +87,9 @@ public:
  * @ingroup public_api
  */
 class rigidbody {
+    /**
+     * all available flight states a drone can be in
+     */
     enum flight_state {
         UNKNOWN,
         LANDED,
@@ -67,74 +98,161 @@ class rigidbody {
         DELETED
     };
 
+    /**
+     * classes who are given direct access to the rigidbody class for a variety of reasons
+     */
     friend class drone_server;
     friend class static_physical_management;
     friend class potential_fields;
     friend class icp_impl;
+
 /* DATA */
     private:
+        /**
+         * ID uniquely identifying the drone on the drone server
+         */
         uint32_t numericID;
+
+        /**
+         * the drone's tag as given by the user
+         */
         std::string tag;
+
+        /**
+         * ROS subscriber representing this drone's connection to the user API
+         */
         ros::Subscriber apiSubscriber;
+
+        ros::Subscriber motionCaptureSubscriber;
+
+        /**
+         * A ROS publisher used by the drone server to contact the above subscriber
+         */
+        ros::Publisher apiPublisher;
+
+        /**
+         * various publishers for logging, pose, velocity, obstacles publishing
+         */
         ros::Publisher logPublisher;
         ros::Publisher currentPosePublisher;
         ros::Publisher currentTwistPublisher;
-
         ros::Publisher desiredPosePublisher;
         ros::Publisher desiredTwistPublisher;
         ros::Publisher obstaclesPublisher;
         ros::Publisher closestObstaclePublisher;
+
+        /**
+         * A time point representing the end of the last received command
+         */
         ros::Time commandEnd;
 
+        /**
+         * boolean which turns true on rigidbody shutdown. When this is set true, the drone will no longer perform commands
+         */
         bool shutdownHasBeenCalled = false;
+
+        /**
+         * ROS async spinner and callback queue to facilitate asynchronous command execution
+         */
         ros::AsyncSpinner mySpin;
         ros::CallbackQueue myQueue;
-        ros::Publisher apiPublisher;
-        flight_state state = flight_state::UNKNOWN; /** The current state of the rigidbody */
+
+        /**
+         * The current observed flight state of the drone
+         */
+        flight_state state = flight_state::UNKNOWN;
+
+        /**
+         * The drone's timeout timer
+         */
         mdp_timer timeoutTimer;
+
+        /**
+         * The end point where the declared flight state is no longer applied
+         */
         double declaredStateEndTime = 0.0;
+
+        /**
+         * A queue holding upcoming API commands to be executed by the rigidbody
+         */
         std::vector<multi_drone_platform::api_update> commandQueue;
+
+        /**
+         * boolean representing if the rigidbody is a vflie, used in ICP
+         */
         bool isVflie = false;
 
     protected:
+        /**
+         * boolean representing if the drone is running low on battery charge
+         */
         bool batteryDying = false; // @TODO: formalise wrapper drone use of this variable (and cflie)
+
+        /**
+         * A full copy of the last received API command, the time of this api update
+         */
         multi_drone_platform::api_update lastRecievedApiUpdate;
         ros::Time timeOfLastApiUpdate;
-        ros::Time lastUpdate;
-        std::queue<geometry_msgs::PoseStamped> motionCapture;
 
-        // velocity handles
+        /**
+         * The value and time of the last motion capture frame
+         */
+        std::queue<geometry_msgs::PoseStamped> motionCapture;
+        ros::Time timeOfLastMotionCaptureUpdate;
+
+        /**
+         * Velocity handles
+         */
         geometry_msgs::Twist desiredVelocity;
         geometry_msgs::Twist currentVelocity;
 
-        // Position handles
+        /**
+         * Position handles
+         */
         geometry_msgs::Pose desiredPose;
         geometry_msgs::Pose currentPose;
 
+        /**
+         * The current absolute yaw of the rigidbody (not modulated to 360 degrees)
+         */
         float absoluteYaw;
 
+        /**
+         * The home position of the rigidbody
+         */
         geometry_msgs::Vector3 homePosition;
-        ros::Subscriber motionSubscriber;
+
         ros::Publisher batteryPublisher;
+
+        /**
+         * The ROS node handle for this drone
+         */
         ros::NodeHandle droneHandle;
 
+        /**
+         * Velocity limits of this drone. The drone will not exceed these limits in set position or velocity commands.
+         */
         struct {
             std::array<double, 2> x;
             std::array<double, 2> y;
             std::array<double, 2> z;
         } velocity_limits;
         double maxVel;
-        // related to traditional APF
-        // in kg
+
+        /**
+         * related to traditional APF. in kg
+         */
         double mass;
 
-        // related to velocity APF
-        // in meters
+        /**
+         * related to velocity AP. in meters
+         */
         double restrictedDistance;
         double influenceDistance;
 
-        // related to safeguarding LiveView feedback
-        // in meters
+        /**
+         * related to safeguarding LiveView feedback. in meters
+         */
         double width;
         double height;
         double length;
@@ -143,44 +261,175 @@ public:
 
     /* FUNCTIONS */
     private:
+        /**
+         * calculates and updates the observed velocity of the drone using the last two motion capture frames
+         */
         void calculate_velocity();
+
+        /**
+         * calculates and updates the absoluteYaw variable on the drone
+         */
         void adjust_absolute_yaw();
+
+        /**
+         * sets the maxVel variable based upon the given velocity limits
+         */
         void set_max_vel();
+
+        /**
+         * calculates the distance between the two supplied vector3s
+         * @param a the first vector point
+         * @param b the second vector point
+         * @return the distance between these vector points
+         */
         static double vec3_distance(geometry_msgs::Vector3 a, geometry_msgs::Vector3 b);
 
-        /* this function declares that we are expecting the drone to enter this state very soon. This expected overrides the physical state for the next 100ms or so.
-         * This is so that state immediately changes when a call to set position for instance is made (and so that wait_till_idle on the user api is not skipped over) */
+        /**
+         * this function declares that we are expecting the drone to enter this state very soon. This expected overrides the physical state for the next 100ms or so.
+         * This is so that state immediately changes when a call to set position for instance is made (and so that wait_till_idle on the user api is not skipped over)
+         * @param inputState the flight state to declare
+         * @param duration the duration by which to declare this state in seconds
+         */
         void declare_expected_state(flight_state inputState, double duration = 0.5);
+
+        /**
+         * sets the flight state of the drone
+         * @param state the desired flight state
+         */
         void set_state(const flight_state& state);
+
+        /**
+         * returns the flight state of the drone
+         * @return the flight state
+         */
         const flight_state& get_state() const;
+
+        /**
+         * returns a string representation of the given flight state intended for printing
+         * @param input the flight state
+         * @return a string representation of the flight state
+         */
         static std::string get_flight_state_string(flight_state input);
+
+        /**
+         * determines what the current flight state of the drone is based upon it's current velocity. If a state is not
+         * being declared then this observed state is set as the drones current flight state.
+         */
         void update_current_flight_state();
 
+        /**
+         * publishes this flight state to the relevant ROS param
+         */
         void publish_physical_state() const;
 
+        /**
+         * The main function where queued API commands are handled by the drone
+         */
         void handle_command();
+
         void enqueue_command(multi_drone_platform::api_update command);
         void dequeue_command();
+
+        /**
+         * performs a stage 1 timeout on the drone
+         */
         void do_stage_1_timeout();
+
+        /**
+         * determines whether the two supplied api messages are significantly different based on a number of variables
+         * @param msg the new message
+         * @param last_message the old message
+         * @return if they are significantly different
+         */
         bool is_msg_different(const multi_drone_platform::api_update& msg, const multi_drone_platform::api_update& last_message) const;
 
+        /**
+         * sets the rigidbody's desired position
+         * @param pos the absolute position to set to im meters relative to world origin
+         * @param yaw the desired yaw in degrees
+         * @param duration the duration to reach this position in seconds
+         */
         void set_desired_position(geometry_msgs::Vector3 pos, float yaw, float duration);
+
+        /**
+         * sets the rigidbody's desired velocity
+         * @param vel the velocity in meters per second relative on world coordinates
+         * @param yawRate the yawrate in degrees per second
+         * @param duration the duration to hold this velocity for in seconds
+         */
         void set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, float duration);
 
+        /**
+         * ROS callback to receive motion capture updates
+         * @param msg the latest motion capture update
+         */
         void add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& msg);
+
+        /**
+         * returns the last motion capture update
+         * @return the last motion capture update
+         */
         geometry_msgs::PoseStamped get_motion_capture();
 
+        /**
+         * main update function called on the rigidbody by the drone server with a list of all active rigidbodies on the platform
+         * @param rigidBodies a list of all declared rigidbodies on the platform
+         */
         void update(std::vector<rigidbody*>& rigidBodies);
+
+        /**
+         * ROS callback to handle api commands
+         * @param msg the new api command
+         */
         void api_callback(const multi_drone_platform::api_update& msg);
 
+        /**
+         * calls emergency on this rigidbody
+         */
         void emergency();
+
+        /**
+         * calls land on this rigidbody
+         * @param duration the duration over which to land in seconds
+         */
         void land(float duration);
+
+        /**
+         * calls takeoff on this rigidbody
+         * @param height the height to go to in meters
+         * @param duration the duration it takes to get there in seconds
+         */
         void takeoff(float height, float duration);
+
+        /**
+         * calls hover on the rigidbody
+         * @param duration the duration to hover for in seconds
+         */
         void hover(float duration);
+
+        /**
+         * calls go to home on the rigidbody
+         * @param yaw the desired end yaw of the rigidbody in degrees
+         * @param duration the duration to reach home in seconds
+         * @param height the desired height upon reaching the home point in meters
+         */
         void go_home(float yaw, float duration, float height);
+
+        /**
+         * calls shutdown on the rigidbody
+         */
         void shutdown();
 
+        /**
+         * returns the home position of the rigidbody
+         * @return the home position of the rigidbody
+         */
         geometry_msgs::Vector3 get_home_coordinates();
+
+        /**
+         * sets the home position of the rigidbody
+         * @param pos the new home position in meters relative to the world origin
+         */
         void set_home_coordiates(geometry_msgs::Vector3 pos);
 
     protected:

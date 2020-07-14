@@ -96,7 +96,7 @@ geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vec
         if (rb->get_id() != d->get_id()) {
             auto obPoint = utility_functions::point_to_vec3(rb->currentPose.position);
             auto dPoint = utility_functions::point_to_vec3(d->currentPose.position);
-            auto dFuturePoint = predict_position(d->lastUpdate, d->currentVelocity, d->currentPose, 10);
+            auto dFuturePoint = predict_position(d->timeOfLastMotionCaptureUpdate, d->currentVelocity, d->currentPose, 10);
             auto diffVec = utility_functions::difference(dFuturePoint, obPoint);
             double d0 = utility_functions::magnitude(diffVec);
             auto unitDirection = utility_functions::multiply_by_constant(diffVec, 1 / d0);
