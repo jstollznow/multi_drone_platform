@@ -24,9 +24,9 @@ double magnitude(T a) {
 }
 
 static_limits static_physical_management::staticBoundary(
-    {{-3.00, 3.00}},
-    {{-3.00, 3.00}},
-    {{0.10, 3.00}}
+    {{-1.45, 1.25}},
+    {{-1.50, 1.50}},
+    {{0.10, 2.00}}
 );
 
 geometry_msgs::Vector3 static_physical_management::predict_position(ros::Time lastUpdate, geometry_msgs::Twist currVel, geometry_msgs::Pose currPos, int timeSteps) {
@@ -192,19 +192,19 @@ void static_physical_management::check_go_home(rigidbody* d, multi_drone_platfor
     geometry_msgs::Vector3 distToTravel;
     distToTravel.x = d->homePosition.x - d->currentPose.position.x;
     distToTravel.y = d->homePosition.y - d->currentPose.position.y;
-    vel.y = d->homePosition.y / msg.duration;
+    vel.y = distToTravel.y / msg.duration;
     vel.y = std::min(d->velocity_limits.y[1], std::max(vel.y, d->velocity_limits.y[0]));
 
-    vel.x = d->homePosition.x / msg.duration;
+    vel.x = distToTravel.x / msg.duration;
     vel.x = std::min(d->velocity_limits.x[1], std::max(vel.x, d->velocity_limits.x[0]));
 
     vel.z = 0.0f;
 
     if (magnitude(vel) > d->maxVel) {
-        vel = multiply_by_constant(vel, d->maxVel/magnitude(vel));
+        vel = multiply_by_constant(vel, d->maxVel / magnitude(vel));
     }
 
-    float reqDuration = (float)(magnitude(distToTravel)/magnitude(vel)) * NAIVE_ACCEL_BUFFER;
+    float reqDuration = (float)(magnitude(distToTravel) / magnitude(vel)) * NAIVE_ACCEL_BUFFER;
 
     if (!std::isnan(reqDuration)) {
         msg.duration = std::max(reqDuration, msg.duration);

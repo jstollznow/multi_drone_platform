@@ -20,10 +20,10 @@ void do_drone_flight_test(mdp::id drone)
     // mdp::sleep_until_idle(drone);        // sleep api program until drone is idle (takeoff command has finished)
 
     mdp::position_msg msg;         // construct a position msg
-    msg.relative = true;
+    msg.relative = false;
     msg.keepHeight = true;
-    msg.position = {2.0, 0.0, 0.0};
-    msg.duration = 2.0;
+    msg.position = {2.0, 1.0, 0.0};
+    msg.duration = 3.0;
     msg.yaw = 0.0;
 
     for (size_t i = 0; i < 100; i++) {
@@ -71,10 +71,10 @@ void hover_test(mdp::id drone)
 //    mdp::sleep_until_idle(drone);
 
     mdp::position_msg msg;
-    msg.relative = true;
+    msg.relative = false;
     msg.keepHeight = true;
-    msg.position = {1.0, 0.0, 0.0};
-    msg.yaw = 450.0;
+    msg.position = {2.0, 1.0, 0.0};
+    msg.yaw = 0.0;
     msg.duration = 3.0;
 
     mdp::set_drone_position(drone, msg);

@@ -307,7 +307,7 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
         }
     }
     else if (this->get_state() == MOVING || this->get_state() == HOVERING){
-        //potential_fields::check(this, rigidbodies);
+//        potential_fields::check(this, rigidbodies);
     }
 
     this->on_update();
@@ -434,7 +434,7 @@ void rigidbody::takeoff(float height, float duration) {
         this->log(logger::WARN, "takeoff called when already in flight, ignoring");
         return;
     }
-
+    this->absoluteYaw = std::fmod(this->absoluteYaw, 360.0f);
     this->declare_expected_state(flight_state::MOVING);
     this->on_takeoff(height, duration);
 }

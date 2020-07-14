@@ -1,4 +1,8 @@
 //
+// Created by jacob on 13/7/20.
+//
+
+//
 // Created by jacob on 9/7/20.
 //
 
@@ -14,9 +18,9 @@ int main() {
         mdp::sleep_until_idle(drone);
 
         mdp::position_msg initialPos;
-        initialPos.relative = true;
+        initialPos.relative = false;
         initialPos.keepHeight = true;
-        initialPos.yaw = 135;
+        initialPos.yaw = 0;
         initialPos.position = {1.0, 1.0, 0.0};
         initialPos.duration = 3.0;
         mdp::set_drone_position(drone, initialPos);
