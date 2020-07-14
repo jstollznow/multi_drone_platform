@@ -1,28 +1,5 @@
 #include "teleop.h"
 
-#define NODE_NAME "teleop"
-#define INPUT_TOPIC "/controller"
-#define EMERGENCY_TOPIC "mdp_emergency"
-
-#define UPDATE_RATE 5
-
-#define TAKEOFF_TIME 3.0f
-#define LAND_TIME 3.0f
-#define HOVER_TIME 10.0f
-#define GO_TO_HOME_TIME 4.0f
-
-#define THRESHOLD_VEL 0.01f
-
-#define MSG_DUR 2.0f
-
-// 0 DEMO - SAFE
-// 1 MORE CONTROL
-#define LIMIT_LEVEL 0
-
-#define PS4 8
-#define PS3 6
-
-
 teleop::teleop(std::vector<mdp::id>& drones):spin(1, &queue) {
 
     this->drones = drones;

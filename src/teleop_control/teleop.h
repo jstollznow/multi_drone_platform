@@ -15,6 +15,48 @@
 #ifndef MULTI_DRONE_PLATFORM_TELEOP_H
 #define MULTI_DRONE_PLATFORM_TELEOP_H
 
+/**
+ * ROS topics referenced throughout
+ */
+#define NODE_NAME "teleop"
+#define INPUT_TOPIC "/controller"
+#define EMERGENCY_TOPIC "mdp_emergency"
+
+/**
+ * Operating frequency of the ROS control loop
+ */
+#define UPDATE_RATE 5
+
+/**
+ * Duration applied for each command type
+ */
+#define TAKEOFF_TIME 3.0f
+#define LAND_TIME 3.0f
+#define HOVER_TIME 10.0f
+#define GO_TO_HOME_TIME 4.0f
+
+/**
+ * Velocity in any direction deemed greater than this constant breaks the stationary boolean (see stable_for_command)
+ */
+#define THRESHOLD_VEL 0.01f
+
+/**
+ * Message duration applied to velocity joystick commands
+ */
+#define MSG_DUR 2.0f
+
+/**
+ * Limit level determines how controllable the drone is, higher limits translate to more control, but also results in
+ * more instability. 0 - Demo (safe), 1 - Developer (less safe)
+ */
+#define LIMIT_LEVEL 0
+
+/**
+ * Differences in axes array size in the joy message determine which remote is being used.
+ */
+#define PS4 8
+#define PS3 6
+
 class teleop {
 public:
     /**

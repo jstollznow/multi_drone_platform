@@ -1,3 +1,7 @@
+/**
+ * References used for Gtk elements in Live View window
+ */
+
 #include <gtkmm/builder.h>
 #include <gtkmm/application.h>
 #include <gtkmm/applicationwindow.h>

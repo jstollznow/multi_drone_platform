@@ -1,11 +1,11 @@
 #include "teleop.h"
 
 #define NODE_NAME "teleop"
-#define UPDATE_RATE 10
+#define API_RATE 10
 
 
 int main(int argc, char **argv) {
-    mdp::initialise(UPDATE_RATE, NODE_NAME);
+    mdp::initialise(API_RATE, NODE_NAME);
     std::vector<mdp::id> controllableDrones = mdp::get_all_rigidbodies();
 
     auto it = controllableDrones.begin();
