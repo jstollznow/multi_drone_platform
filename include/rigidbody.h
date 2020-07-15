@@ -68,8 +68,8 @@ public:
     bool has_timed_out();
 
     /**
-     * checks whether this timer is for stage 1 timout
-     * @return if the timer is for stage 1 timeout
+     * checks whether this timer is for stage 2 timout
+     * @return if the timer is for stage 2 timeout
      */
     bool is_stage_timeout() const;
 
@@ -318,7 +318,7 @@ public:
         void update_current_flight_state();
 
         /**
-         * publishes this flight state to the relevant ROS param
+         * publishes the pose and velocity of the rigidbody to the ROS topics
          */
         void publish_physical_state() const;
 

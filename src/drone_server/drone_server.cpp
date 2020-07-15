@@ -57,7 +57,8 @@ void drone_server::shutdown() {
         for (size_t i = 0; i < rigidbodyList.size(); i++) {
             if (rigidbodyList[i] != nullptr) {
                 rigidbodyList[i]->update(rigidbodyList);
-                if (rigidbodyList[i]->get_state() != rigidbody::flight_state::LANDED) {
+                auto rState = rigidbodyList[i]->get_state();
+                if (rState != rigidbody::flight_state::LANDED && rState != rigidbody::flight_state::DELETED && rState != rigidbody::flight_state::UNKNOWN) {
                     allLanded = false;
                 }
             }

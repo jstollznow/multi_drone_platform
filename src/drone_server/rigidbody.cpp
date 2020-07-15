@@ -272,9 +272,6 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     double velocityMag = sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z));
 //    this->log(logger::INFO, "vel = " + std::to_string(velocityMag) + "(z = " + std::to_string(vel.z) + ")");
 
-    if (ros::Time::now().toSec() > this->declaredStateEndTime) {
-        this->update_current_flight_state();
-    }
     this->publish_physical_state();
 
     this->timeOfLastMotionCaptureUpdate = ros::Time::now();
@@ -296,8 +293,9 @@ void rigidbody::publish_physical_state() const {
 }
 
 void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
-    if (this->timeoutTimer.has_timed_out()) {
-        if (this->timeoutTimer.is_stage_timeout()) {
+    /* do a stage 2 timeout if necessary */
+    if (this->timeoutTimer.is_stage_timeout()) {
+        if (this->timeoutTimer.has_timed_out()) {
             this->log(logger::WARN, "Timeout stage 2: Landing drone");
 
             /* send land command through api */
@@ -305,12 +303,11 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
             msg.msgType = "LAND";
             msg.duration = 5.0f;
             apiPublisher.publish(msg);
-        } else {
-            this->do_stage_1_timeout();
         }
     }
-    else if (this->get_state() == MOVING || this->get_state() == HOVERING){
-        //potential_fields::check(this, rigidbodies);
+
+    if (ros::Time::now().toSec() > this->declaredStateEndTime) {
+        this->update_current_flight_state();
     }
 
     this->on_update();
@@ -502,7 +499,7 @@ void rigidbody::update_current_flight_state() {
 
 
     /* switch rigidbody's state to the detected state */
-    if (droneHasMoved && ros::Time::now().toNSec() <= commandEnd.toNSec()) {
+    if (droneHasMoved) {
         this->set_state(flight_state::MOVING);
     } else if (!droneIsOnTheGround) {
         /* if the drone is in flight and the drone has no velocity: 'HOVER' */
@@ -515,6 +512,12 @@ void rigidbody::update_current_flight_state() {
                 handle_command();
             } else {
                 /* Timeout stage 1 */
+                this->do_stage_1_timeout();
+            }
+        } else {
+            this->set_state(flight_state::HOVERING);
+            /* timeout stage 1 after end of hover call */
+            if (this->timeoutTimer.has_timed_out() && !this->timeoutTimer.is_stage_timeout()) {
                 this->do_stage_1_timeout();
             }
         }
