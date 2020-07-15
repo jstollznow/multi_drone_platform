@@ -14,7 +14,7 @@ void logger::post_log(const log_type type, const std::string& caller, const ros:
     myLogPost.timeStamp = ros::Time::now();
     myLogPost.logMessage = message;
 
-    /* Publish to the associated log topic, could be a specific drone for example */
+    /* Publish to the associated log topic, could be a specific drone for examplec */
     logPublisher.publish(myLogPost);
 
     switch (type) {

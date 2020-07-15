@@ -293,21 +293,22 @@ void rigidbody::publish_physical_state() const {
 }
 
 void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
-    if (this->timeoutTimer.has_timed_out()) {
-        if (this->timeoutTimer.is_stage_timeout()) {
-            this->log(logger::WARN, "Timeout stage 2: Landing drone");
+    if (this->state == flight_state::HOVERING) {
+        if (this->timeoutTimer.has_timed_out()) {
+            if (this->timeoutTimer.is_stage_timeout()) {
+                this->log(logger::WARN, "Timeout stage 2: Landing drone");
 
-            /* send land command through api */
-            multi_drone_platform::api_update msg;
-            msg.msgType = "LAND";
-            msg.duration = 5.0f;
-            apiPublisher.publish(msg);
-        } else {
-            this->do_stage_1_timeout();
-        }
-    }
-    else if (this->get_state() == MOVING || this->get_state() == HOVERING){
+                /* send land command through api */
+                multi_drone_platform::api_update msg;
+                msg.msgType = "LAND";
+                msg.duration = 5.0f;
+                apiPublisher.publish(msg);
+            } else {
+                this->do_stage_1_timeout();
+            }
+        } else if (this->get_state() == MOVING || this->get_state() == HOVERING) {
 //        potential_fields::check(this, rigidbodies);
+        }
     }
 
     this->on_update();

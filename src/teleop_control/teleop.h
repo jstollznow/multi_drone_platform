@@ -25,7 +25,7 @@
 /**
  * Operating frequency of the ROS control loop
  */
-#define UPDATE_RATE 5
+#define UPDATE_RATE 10
 
 /**
  * Duration applied for each command type

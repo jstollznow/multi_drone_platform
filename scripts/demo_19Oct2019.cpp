@@ -2,10 +2,10 @@
 #include "ros/ros.h"
 
 #define DO_FLIGHT_TEST      0
-#define DO_HOVER_TEST       1
+#define DO_HOVER_TEST       0
 #define DO_BASEBALL_RUN     0
 #define DO_FIGURE_EIGHT     0
-#define DO_DONUTS           0
+#define DO_DONUTS           1
 
 
 void do_drone_flight_test(mdp::id drone)
@@ -245,7 +245,7 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
 
     mdp::set_drone_position(donutDrone, donutMsg);
     mdp::sleep_until_idle(donutDrone);
-    donutMsg.duration = 0.5;
+    donutMsg.duration = 3.0;
 
     mdp::spin_until_rate();
     for (size_t i = 0; i < positions.size(); i++) {
@@ -257,8 +257,8 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
             baseDronePos = mdp::get_position(baseDrone);
 
             double timeNow = ros::Time::now().toSec();
-            double donutX = sin(timeNow) * 0.6;
-            double donutY = cos(timeNow) * 0.6;
+            double donutX = sin(timeNow) * 0.3;
+            double donutY = cos(timeNow) * 0.3;
 
             donutMsg.position = {baseDronePos.x + donutX, baseDronePos.y + donutY, 0.0};
             mdp::set_drone_position(donutDrone, donutMsg);
