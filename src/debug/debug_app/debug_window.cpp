@@ -300,7 +300,7 @@ void debug_window::obstacle_callback(const geometry_msgs::PoseArray::ConstPtr &m
 }
 
 void debug_window::battery_callback(const std_msgs::Float32::ConstPtr &msg) {
-    batteryPercent = *(double*)(msg.get());
+    batteryPercent = (double)(msg->data);
 }
 
 void debug_window::on_expandButton_clicked() {
