@@ -201,6 +201,12 @@ class rigidbody {
         ros::Time timeOfLastMotionCaptureUpdate;
 
         /**
+         * how many of the last 4 frames were detected as moving. used in state system.
+         */
+        int movCounter = 0;
+        std::queue<bool> movCounterQueue;
+
+        /**
          * Velocity handles
          */
         geometry_msgs::Twist desiredVelocity;

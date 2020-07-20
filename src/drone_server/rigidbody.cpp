@@ -272,6 +272,10 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
     double velocityMag = sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z));
 //    this->log(logger::INFO, "vel = " + std::to_string(velocityMag) + "(z = " + std::to_string(vel.z) + ")");
 
+    if (ros::Time::now().toSec() > this->declaredStateEndTime) {
+        this->update_current_flight_state();
+    }
+
     this->publish_physical_state();
 
     this->timeOfLastMotionCaptureUpdate = ros::Time::now();
@@ -304,10 +308,6 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
             msg.duration = 5.0f;
             apiPublisher.publish(msg);
         }
-    }
-
-    if (ros::Time::now().toSec() > this->declaredStateEndTime) {
-        this->update_current_flight_state();
     }
 
     this->on_update();
@@ -420,8 +420,8 @@ void rigidbody::emergency() {
 }
 
 void rigidbody::land(float duration) {
-    /* ignore if drone has already landed, or is already landing */
     if (this->get_state() == flight_state::LANDED) {
+        this->log(logger::WARN, "takeoff called when already in flight, ignoring");
         return;
     }
 
@@ -488,15 +488,36 @@ void rigidbody::update_current_flight_state() {
 
     /* determine whether the last few poses are significantly different to suggest the drone is moving */
     geometry_msgs::Vector3& vel = currentVelocity.linear;
-    double velocityMag = sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z));
+    double velocityMag = std::sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z));
     // @TODO: find a good value for this
-    bool droneHasMoved = velocityMag > 0.02;
+    bool droneHasMoved = velocityMag > 0.08;
+
+    /* MOV COUNTING */
+    /* update movCounter with new information */
+    if (movCounterQueue.size() >= 6) {
+        if (movCounterQueue.front()) {
+            movCounter--;
+        }
+        movCounterQueue.pop();
+    }
+    if (droneHasMoved) {
+        movCounter++;
+    }
+    movCounterQueue.push(droneHasMoved);
+
+    /* only accept moving if almost all of last frames agree */
+    droneHasMoved = (movCounter >= 2);
+    /* ~MOV COUNTING */
 
     /* determine whether the drone is considered to be on the ground */
     /* in this case, if the drone is less than 5cm in from its home height it is considered landed */
     // @TODO: find a good value for this
     bool droneIsOnTheGround = (motionCapture.back().pose.position.z < (homePosition.z + 0.05));
 
+//    if (droneHasMoved) {
+//        this->log(logger::INFO, "mov count: " + std::to_string(this->movCounter));
+//        this->log(logger::INFO, "vel: (" + std::to_string(vel.x) + ", " + std::to_string(vel.y) + ", " + std::to_string(vel.z) + ") = " + std::to_string(velocityMag));
+//    }
 
     /* switch rigidbody's state to the detected state */
     if (droneHasMoved) {
@@ -530,7 +551,7 @@ void rigidbody::update_current_flight_state() {
 
 void rigidbody::set_state(const flight_state& inputState) {
     if (inputState != this->get_state()) {
-        this->log(logger::INFO, "Setting state to " + get_flight_state_string(inputState));
+        // this->log(logger::INFO, "Setting state to " + get_flight_state_string(inputState));
         this->state = inputState;
         droneHandle.setParam("mdp/drone_" + std::to_string(this->numericID) + "/state", get_flight_state_string(this->state));
     }

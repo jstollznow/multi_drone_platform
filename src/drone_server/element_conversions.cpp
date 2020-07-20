@@ -69,17 +69,17 @@ float min(float a, float b) {
 
 /**
  * calculates the velocity between two PoseStampeds
- * @param lastPos the earlier of the two poses
- * @param firstPos the later of the two poses
+ * @param newestPose the earlier of the two poses
+ * @param oldestPose the later of the two poses
  * @return the velocity between them
  */
-geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &lastPos, geometry_msgs::PoseStamped &firstPos) {
+geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &newestPose, geometry_msgs::PoseStamped &oldestPose) {
     geometry_msgs::Twist returnVel;
 
-    float dx = lastPos.pose.position.x - firstPos.pose.position.x;
-    float dy = lastPos.pose.position.y - firstPos.pose.position.y;
-    float dz = lastPos.pose.position.z - firstPos.pose.position.z;
-    float dt = (lastPos.header.stamp.toSec() - firstPos.header.stamp.toSec());
+    float dx = newestPose.pose.position.x - oldestPose.pose.position.x;
+    float dy = newestPose.pose.position.y - oldestPose.pose.position.y;
+    float dz = newestPose.pose.position.z - oldestPose.pose.position.z;
+    float dt = (newestPose.header.stamp.toSec() - oldestPose.header.stamp.toSec());
     returnVel.linear.x = dx / dt;
     returnVel.linear.y = dy / dt;
     returnVel.linear.z = dz / dt;
@@ -88,8 +88,8 @@ geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &lastPos, geometry_msgs
 
 
      // convert orientation to angular position
-     auto lastPosEuler = to_euler(lastPos.pose.orientation);
-     auto firstPosEuler = to_euler(firstPos.pose.orientation);
+     auto lastPosEuler = to_euler(newestPose.pose.orientation);
+     auto firstPosEuler = to_euler(oldestPose.pose.orientation);
 
      // not used by Duong in his algorithms
      // maybe yaw will be useful but pitch and roll will be internal controls
