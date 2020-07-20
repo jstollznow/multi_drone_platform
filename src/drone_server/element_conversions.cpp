@@ -58,6 +58,9 @@ geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &lastPos, geometry_msgs
     float dy = lastPos.pose.position.y - firstPos.pose.position.y;
     float dz = lastPos.pose.position.z - firstPos.pose.position.z;
     float dt = (lastPos.header.stamp.toSec() - firstPos.header.stamp.toSec());
+    if (dt == 0.0) {
+        dt = 1.0;
+    }
     returnVel.linear.x = dx / dt;
     returnVel.linear.y = dy / dt;
     returnVel.linear.z = dz / dt;

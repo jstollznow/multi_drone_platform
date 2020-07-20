@@ -240,8 +240,9 @@ void rigidbody::add_motion_capture(const geometry_msgs::PoseStamped::ConstPtr& m
 
 
     if (motionCapture.empty()) {
-        motionCapture.push(motionMsg);
-        motionCapture.push(motionMsg);
+        for (int i = 0; i < 5; i++) {
+            motionCapture.push(motionMsg);
+        }
 
         homePosition.x = motionMsg.pose.position.x;
         homePosition.y = motionMsg.pose.position.y;
@@ -306,9 +307,11 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
             } else {
                 this->do_stage_1_timeout();
             }
-        } else if (this->get_state() == MOVING || this->get_state() == HOVERING) {
-//        potential_fields::check(this, rigidbodies);
         }
+    }
+
+    if (this->get_state() == MOVING || this->get_state() == HOVERING) {
+        potential_fields::check(this, rigidbodies);
     }
 
     this->on_update();
