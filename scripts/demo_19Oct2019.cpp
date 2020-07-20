@@ -20,10 +20,10 @@ void do_drone_flight_test(mdp::id drone)
     // mdp::sleep_until_idle(drone);        // sleep api program until drone is idle (takeoff command has finished)
 
     mdp::position_msg msg;         // construct a position msg
-    msg.relative = false;
+    msg.relative = true;
     msg.keepHeight = true;
-    msg.position = {2.0, 1.0, 0.0};
-    msg.duration = 3.0;
+    msg.position = {2.0, 0.0, 0.0};
+    msg.duration = 2.0;
     msg.yaw = 0.0;
 
     for (size_t i = 0; i < 100; i++) {
@@ -71,10 +71,10 @@ void hover_test(mdp::id drone)
 //    mdp::sleep_until_idle(drone);
 
     mdp::position_msg msg;
-    msg.relative = false;
+    msg.relative = true;
     msg.keepHeight = true;
-    msg.position = {2.0, 1.0, 0.0};
-    msg.yaw = 0.0;
+    msg.position = {1.0, 0.0, 0.0};
+    msg.yaw = 450.0;
     msg.duration = 3.0;
 
     mdp::set_drone_position(drone, msg);
@@ -245,7 +245,7 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
 
     mdp::set_drone_position(donutDrone, donutMsg);
     mdp::sleep_until_idle(donutDrone);
-    donutMsg.duration = 3.0;
+    donutMsg.duration = 1.0;
 
     mdp::spin_until_rate();
     for (size_t i = 0; i < positions.size(); i++) {
@@ -257,8 +257,8 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
             baseDronePos = mdp::get_position(baseDrone);
 
             double timeNow = ros::Time::now().toSec();
-            double donutX = sin(timeNow) * 0.3;
-            double donutY = cos(timeNow) * 0.3;
+            double donutX = sin(timeNow) * 0.6;
+            double donutY = cos(timeNow) * 0.6;
 
             donutMsg.position = {baseDronePos.x + donutX, baseDronePos.y + donutY, 0.0};
             mdp::set_drone_position(donutDrone, donutMsg);
