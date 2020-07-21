@@ -1,5 +1,5 @@
 #include "rigidbody.h"
-#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 struct window_bounds {
     std::array<double, 3> min;
@@ -13,62 +13,6 @@ inline geometry_msgs::Point create_point(double x, double y, double z) {
     res.z = z;
     return res;
 }
-
-/**
- * math and util to represent a 3d plane
- */
-class plane_3d {
-    geometry_msgs::Point position;
-    geometry_msgs::Point normal;
-
-    inline geometry_msgs::Point cross_prod(const geometry_msgs::Point& a, const geometry_msgs::Point& b) {
-        geometry_msgs::Point res;
-        res.x = (a.y * b.z) - (a.z * b.y);
-        res.y = (a.z * b.x) - (a.x * b.z);
-        res.z = (a.x * b.y) - (a.y - b.x);
-        return res;
-    }
-
-    inline geometry_msgs::Point minus(const geometry_msgs::Point& a, const geometry_msgs::Point& b) {
-        geometry_msgs::Point res;
-        res.x = a.x - b.x;
-        res.y = a.y - b.y;
-        res.z = a.z - b.z;
-        return res;
-    }
-
-    inline double magnitude(const geometry_msgs::Point& p) {
-        return std::sqrt(std::pow(p.x, 2) + std::pow(p.y, 2) + std::pow(p.z, 2));
-    }
-
-    inline geometry_msgs::Point div(const geometry_msgs::Point& p, double d) {
-        geometry_msgs::Point res;
-        res.x = p.x / d;
-        res.y = p.y / d;
-        res.z = p.z / d;
-        return res;
-    }
-
-public:
-    plane_3d(geometry_msgs::Point a, geometry_msgs::Point b, geometry_msgs::Point c) {
-        this->position = a;
-        auto dir = cross_prod(minus(b, a), minus(c, a));
-        this->normal = div(dir, magnitude(dir));
-    }
-    ~plane_3d() {}
-
-    geometry_msgs::Point get_closest_point_on_plane(const geometry_msgs::Point& from_point) const {
-        // @TODO: should probably check this math
-        double c = (normal.x * position.x) + (normal.y * position.y) + (normal.z * position.z);
-        double k = (-c - (normal.x * from_point.x) - (normal.y * from_point.y) - (normal.z * from_point.z)) / ((normal.x * normal.x) + (normal.y * normal.y) + (normal.z * normal.z));
-
-        geometry_msgs::Point res;
-        res.x = normal.x * k + from_point.x;
-        res.y = normal.y * k + from_point.y;
-        res.z = normal.z * k + from_point.z;
-        return res;
-    }
-};
 
 class DRONE_WRAPPER(window)
     private:
@@ -112,6 +56,21 @@ class DRONE_WRAPPER(window)
     }
 
     /**
+     * checks whether the point is within the bounds of the window. This is generally meant to be used where input
+     * point is found via a call to get_closest_point_on_window_plane() such that input point is on the plane of the window.
+     * @param point a point anywhere in space
+     * @return whether this point is within the bounding box of the window or not via an AABB test.
+     */
+    bool is_point_within_window(const geometry_msgs::Point& point) const {
+        auto bounds = this->get_bounds();
+        bool within_window_bounds = true;
+        if (point.x < bounds.min[0] || point.x > bounds.max[0]) within_window_bounds = false;
+        if (point.y < bounds.min[1] || point.y > bounds.max[1]) within_window_bounds = false;
+        if (point.z < bounds.min[2] || point.z > bounds.max[2]) within_window_bounds = false;
+        return within_window_bounds;
+    }
+
+    /**
      * returns the bounds of the window in world coordinates (min, max) for (x, y, z)
      */
     window_bounds get_bounds() const {
@@ -139,11 +98,14 @@ class DRONE_WRAPPER(window)
      */
     geometry_msgs::Point get_closest_point_on_window_plane(const geometry_msgs::Point& p) {
         auto bounds = get_bounds();
-        plane_3d windowPlane(
-                create_point(bounds.min[0], bounds.min[1], bounds.min[2]),
-                create_point(bounds.max[0], bounds.max[1], bounds.max[2]),
-                create_point(bounds.min[0], bounds.min[1], bounds.max[2]));
-        return windowPlane.get_closest_point_on_plane(p);
+
+        auto pointA = Eigen::Vector3d(bounds.min[0], bounds.min[1], bounds.min[2]);
+        auto pointB = Eigen::Vector3d(bounds.max[0], bounds.max[1], bounds.max[2]);
+        auto pointC = Eigen::Vector3d(bounds.min[0], bounds.min[1], bounds.max[2]);
+        Eigen::Hyperplane<double, 3> plane = Eigen::Hyperplane<double, 3>::Through(pointA, pointB, pointC);
+
+        auto closestPoint = plane.projection(Eigen::Vector3d(p.x, p.y, p.z));
+        return create_point(closestPoint.x(), closestPoint.y(), closestPoint.z());
     }
 };
 
