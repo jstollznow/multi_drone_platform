@@ -13,6 +13,11 @@ struct euler_rotation {
     float yaw;
 };
 
+/**
+ * converts a quaternion into euler orientations
+ * @param pQuaternion the input quaternion
+ * @return a structure holding yaw, pitch, and roll rotations
+ */
 euler_rotation to_euler(geometry_msgs::Quaternion pQuaternion) {
     // do we need to consider gimbal lock case?
 
@@ -38,6 +43,11 @@ euler_rotation to_euler(geometry_msgs::Quaternion pQuaternion) {
     return angles;
 }
 
+/**
+ * returns the up vector given a quaternion rotation
+ * @param pQuaternion the quaternion
+ * @return a unit vector 3 holding the up direction
+ */
 geometry_msgs::Vector3 get_up_vector(geometry_msgs::Quaternion pQuaternion) {
     geometry_msgs::Vector3 v;
     // UP (z)
@@ -47,17 +57,34 @@ geometry_msgs::Vector3 get_up_vector(geometry_msgs::Quaternion pQuaternion) {
     return v;
 }
 
+/**
+ * returns the minimum of two functions... why didnt we just use std::min(..)?
+ * @param a float a
+ * @param b float b
+ * @return the minimum of the two
+ */
 float min(float a, float b) {
     return (a > b) ? b : a;
 }
 
-geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &lastPos, geometry_msgs::PoseStamped &firstPos) {
+/**
+ * calculates the velocity between two PoseStampeds
+ * @param newestPose the earlier of the two poses
+ * @param oldestPose the later of the two poses
+ * @return the velocity between them
+ */
+geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &newestPose, geometry_msgs::PoseStamped &oldestPose) {
     geometry_msgs::Twist returnVel;
 
-    float dx = lastPos.pose.position.x - firstPos.pose.position.x;
-    float dy = lastPos.pose.position.y - firstPos.pose.position.y;
-    float dz = lastPos.pose.position.z - firstPos.pose.position.z;
-    float dt = (lastPos.header.stamp.toSec() - firstPos.header.stamp.toSec());
+    float dx = newestPose.pose.position.x - oldestPose.pose.position.x;
+    float dy = newestPose.pose.position.y - oldestPose.pose.position.y;
+    float dz = newestPose.pose.position.z - oldestPose.pose.position.z;
+    float dt = (newestPose.header.stamp.toSec() - oldestPose.header.stamp.toSec());
+
+    if (dt == 0.0) {
+        dt = 1.0;
+    }
+
     returnVel.linear.x = dx / dt;
     returnVel.linear.y = dy / dt;
     returnVel.linear.z = dz / dt;
@@ -66,8 +93,8 @@ geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &lastPos, geometry_msgs
 
 
      // convert orientation to angular position
-     auto lastPosEuler = to_euler(lastPos.pose.orientation);
-     auto firstPosEuler = to_euler(firstPos.pose.orientation);
+     auto lastPosEuler = to_euler(newestPose.pose.orientation);
+     auto firstPosEuler = to_euler(oldestPose.pose.orientation);
 
      // not used by Duong in his algorithms
      // maybe yaw will be useful but pitch and roll will be internal controls
@@ -87,6 +114,11 @@ geometry_msgs::Twist calc_vel(geometry_msgs::PoseStamped &lastPos, geometry_msgs
     return returnVel;
 }
 
+/**
+ * converts a ROS point to a ROS vector3
+ * @param point the geometry_msgs::Point
+ * @return the geometry_msgs::Vector3
+ */
 geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point &point) {
     geometry_msgs::Vector3 v;
     v.x = point.x;
@@ -95,14 +127,29 @@ geometry_msgs::Vector3 point_to_vector3(geometry_msgs::Point &point) {
     return v;
 }
 
+/**
+ * converts radians to degrees
+ * @param rads r
+ * @return deg
+ */
 constexpr float to_degrees(float rads) {
     return rads * 57.2957795f;
 }
 
+/**
+ * converts degrees to radians
+ * @param degrees deg
+ * @return r
+ */
 constexpr float to_rads(float degrees) {
     return degrees / 57.2957795f;
 }
 
+/**
+ * returns the yaw from a given pose
+ * @param pos the input pose
+ * @return the yaw of that pose in degrees
+ */
 float get_yaw_from_pose(const geometry_msgs::Pose &pos) {
     return to_degrees(to_euler(pos.orientation).yaw);
 }

@@ -66,17 +66,23 @@ classdef mdp_api
             % pause for 1 seconds to ensure the publisher has initialised
         end
         
-        function delete(obj)
-            fprintf("Shutting Down Client API Connection\n");
-            Drones = getalldrones(obj);
-            for i = 1 : size(Drones)
-                if getstate(Drones(i)) ~= mdp_flight_state.DELETED
-                    cmdland(obj, Drones(i), 4.0);
-                end
+        function delete(obj, land_drones)
+            if nargin < 2
+               land_drones = true;
             end
-            for i = 1 : size(Drones)
-                if getstate(Drones(i)) ~= mdp_flight_state.DELETED
-                    sleepuntilidle(obj, Drones(i));
+            
+            fprintf("Shutting Down Client API Connection\n");
+            if land_drones
+                Drones = getalldrones(obj);
+                for i = 1 : size(Drones)
+                    if getstate(Drones(i)) ~= mdp_flight_state.DELETED
+                        cmdland(obj, Drones(i), 4.0);
+                    end
+                end
+                for i = 1 : size(Drones)
+                    if getstate(Drones(i)) ~= mdp_flight_state.DELETED
+                        sleepuntilidle(obj, Drones(i));
+                    end
                 end
             end
             fprintf("Finished Client API Connection\n");
@@ -250,8 +256,12 @@ classdef mdp_api
             StateParam = strcat("mdp/drone_", num2str(drone.NumericId), "/state");
             Ptree = rosparam();
             if has(Ptree,StateParam) 
-                StrState = rosparam('get',StateParam);
-                State = mdp_flight_state.convertstringtoflightstate(StrState);
+                StrState = get(Ptree,StateParam);
+                if StrState
+                    State = mdp_flight_state.convertstringtoflightstate(StrState);
+                else
+                    State = mdp_flight_state.convertstringtoflightstate('DELETED');
+                end
             else 
                 State = mdp_flight_state.convertstringtoflightstate('DELETED');
             end

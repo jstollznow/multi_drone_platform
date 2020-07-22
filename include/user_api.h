@@ -126,9 +126,10 @@ void initialise(double updateRate, std::string nodeName);
 
 /**
  * terminates the multi-drone platform application, de-allocating data structures created through initialise()
+ * @param land_drones whether or not the platform should automatically land any in flight drones as part of this terminate call
  * @see initialise
  */
-void terminate();
+void terminate(bool land_drones = true);
 
 /**
  * returns a list of all the rigidbodies currently active on the drone server.

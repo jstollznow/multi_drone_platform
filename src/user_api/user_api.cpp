@@ -76,16 +76,18 @@ void initialise(double pUpdateRate, std::string nodeName) {
     ROS_INFO("Initialised Client API Connection");
 }
 
-void terminate() {
+void terminate(bool land_drones) {
     ROS_INFO("Shutting Down Client API Connection");
     // land all active drones
-    auto drones = get_all_rigidbodies();
-    for (size_t i = 0; i < drones.size(); i++) {
-        if (get_state({static_cast<uint32_t>(i), ""}) != drone_state::LANDED)
-            cmd_land(drones[i]);
-    }
-    for (const auto & drone : drones) {
-        sleep_until_idle(drone);
+    if (land_drones) {
+        auto drones = get_all_rigidbodies();
+        for (size_t i = 0; i < drones.size(); i++) {
+            if (get_state({static_cast<uint32_t>(i), ""}) != drone_state::LANDED)
+                cmd_land(drones[i]);
+        }
+        for (const auto &drone : drones) {
+            sleep_until_idle(drone);
+        }
     }
 
     nodeData->droneData.clear();
@@ -312,6 +314,7 @@ void go_to_home(const mdp::id& pDroneID, float duration, float pHeight) {
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "GOTO_HOME";
     inputMsg.pos_vel().z = pHeight;
+    inputMsg.yaw() = 0.0f;
     inputMsg.duration() = duration;
 
     inputMsg.relative() = encode_relative_array_to_double(false, (pHeight < 0.0f));

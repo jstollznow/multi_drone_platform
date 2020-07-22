@@ -1,7 +1,7 @@
 <launch>
   <node name="joy_node" pkg="joy" type="joy_node">
-    <remap from="joy" to="ps4"/>
-    <remap from="joy/set_feedback" to="ps4/set_feedback"/>
+    <remap from="joy" to="controller"/>
+    <remap from="joy/set_feedback" to="controller/set_feedback"/>
   </node>
 
   <node 

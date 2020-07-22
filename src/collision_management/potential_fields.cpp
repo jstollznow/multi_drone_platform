@@ -1,23 +1,22 @@
 //
 // Created by jacob on 18/5/20.
 //
+#include <limits>
+
 #include "potential_fields.h"
 #include "utility_functions.cpp"
 
-#define ATTRACTIVE_DIST 0.10f
-#define K_P 6.0f
-#define K_D 0.8f
+double potential_fields::closest = std::numeric_limits<double>::max();
+double potential_fields::lastClosestRound = std::numeric_limits<double>::max();
+double potential_fields::closestThisRound = std::numeric_limits<double>::max();
 
-double closest = 1000.0f;
-double closestThisRound = 1000.0f;
-double lastClosestRound = 1000.0f;
+
 bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies) {
     auto remainingDuration = d->commandEnd.toSec() - ros::Time().now().toSec();
-
+    closestThisRound = std::numeric_limits<double>::max();
     geometry_msgs::Vector3 velocity;
     geometry_msgs::Point posLimited;
     if (remainingDuration > 0.00) {
-//        d->log(logger::INFO, "Remaining dur: " + std::to_string(remainingDuration));
 //    @TODO: This is currently not configured for yaw
         switch(apiMap[d->lastRecievedApiUpdate.msgType]) {
             /* VELOCITY */
@@ -27,20 +26,12 @@ bool potential_fields::check(rigidbody* d, std::vector<rigidbody*>& rigidbodies)
 //                    d->set_desired_velocity(velLimited, 0.0, remainingDuration, true, true);
 //                }
             break;
-                /* POSITION */
+            /* POSITION */
             case 1:
                 position_based_pf(d, rigidbodies);
                 break;
         }
     }
-}
-geometry_msgs::Vector3 potential_fields::escape_local_minima(double speed) {
-    geometry_msgs::Vector3 randomVec;
-    randomVec.x = (2 * (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5));
-    randomVec.y = (2 * (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5));
-    randomVec.z = (2 * (static_cast <float> (rand()) / static_cast <float> (RAND_MAX) - 0.5));
-    randomVec = utility_functions::multiply_by_constant(randomVec, speed / utility_functions::magnitude(randomVec));
-    return randomVec;
 }
 
 geometry_msgs::Vector3 predict_position(ros::Time lastUpdate, geometry_msgs::Twist currVel, geometry_msgs::Pose currPos, int timeSteps) {
@@ -72,10 +63,6 @@ void potential_fields::position_based_pf(rigidbody *d, std::vector<rigidbody *> 
     d->log_coord(logger::DEBUG, "NetForces", netPotentialVelocity);
     if (utility_functions::magnitude(netPotentialVelocity) <= 0.20) {
         d->log(logger::DEBUG, "Local Minima");
-//        var halfWayVector = (Vector3.up + Vector3.right).normalized;
-        auto tangVec = utility_functions::get_tangent_vec(attractiveForces, repulsiveForces);
-
-//        netPotentialVelocity = utility_functions::multiply_by_constant(tangVec, 2);
     }
 
     if (utility_functions::magnitude(repulsiveForces) <= 0.2) {
@@ -86,7 +73,6 @@ void potential_fields::position_based_pf(rigidbody *d, std::vector<rigidbody *> 
     }
     d->log(logger::INFO, "Closest dist: " + std::to_string(closest));
     lastClosestRound = closestThisRound;
-    closestThisRound = 1000.0f;
 }
 
 geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vector<rigidbody *> &rigidbodies) {
@@ -96,7 +82,7 @@ geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vec
         if (rb->get_id() != d->get_id()) {
             auto obPoint = utility_functions::point_to_vec3(rb->currentPose.position);
             auto dPoint = utility_functions::point_to_vec3(d->currentPose.position);
-            auto dFuturePoint = predict_position(d->lastUpdate, d->currentVelocity, d->currentPose, 10);
+            auto dFuturePoint = predict_position(d->timeOfLastMotionCaptureUpdate, d->currentVelocity, d->currentPose, 10);
             auto diffVec = utility_functions::difference(dFuturePoint, obPoint);
             double d0 = utility_functions::magnitude(diffVec);
             auto unitDirection = utility_functions::multiply_by_constant(diffVec, 1 / d0);
@@ -137,12 +123,6 @@ geometry_msgs::Vector3 potential_fields::replusive_forces(rigidbody *d, std::vec
     d->obstaclesPublisher.publish(msg);
     d->closestObstaclePublisher.publish(closestMsg);
     return replusiveForce;
-}
-geometry_msgs::Vector3 potential_fields::tangential_force(rigidbody* d, geometry_msgs::Vector3 repulsive, geometry_msgs::Vector3 attractive) {
-    geometry_msgs::Vector3 coordForce;
-    auto normalVec = utility_functions::get_tangent_vec(attractive, repulsive);
-    normalVec = utility_functions::multiply_by_constant(normalVec, 2);
-    return normalVec;
 }
 
 geometry_msgs::Vector3 potential_fields::attractive_forces(rigidbody *d, double remainingDuration) {

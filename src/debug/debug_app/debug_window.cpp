@@ -5,45 +5,41 @@
 #include <math.h>
 #include <std_msgs/Float32.h>
 
-#define VNAME(x) #x
-
-struct importError : public std::exception {
-    const char* what() const throw() {
-        return "There was an import error, please check the xml file";
-    }
-};
-
 debug_window::debug_window(BaseObjectType* cobject, const Glib::RefPtr<Gtk::Builder>& refGlade):
 Gtk::Window(cobject), builder(refGlade), windowSpinner(1,&windowQueue), dispatcher() {
     try {
         link_widgets();
     }
-    catch(importError &e) {
+    catch(import_error &e) {
+        /* Show why the window crashed */
         std::cout<<e.what()<<std::endl;
     }
-    first = true;
+
     windowNode = ros::NodeHandle();
-    
-    toAddToLog = "";
 }
 
 void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, bool expanded) {
-    maxMag = 0.0f;
+    maxDroneSpeed = 0.0f;
     myDrone = droneName;
+    toAddToLog = "";
 
+    /* Get physical values for drone */
     windowNode.getParam("mdp/drone_" + std::to_string(myDrone.numericID) + "/width", this->dWidth);
     windowNode.getParam("mdp/drone_" + std::to_string(myDrone.numericID) + "/height", this->dHeight);
     windowNode.getParam("mdp/drone_" + std::to_string(myDrone.numericID) + "/length", this->dLength);
     windowNode.getParam("mdp/drone_" + std::to_string(myDrone.numericID) + "/restrictedDistance", this->dRestrictedDistance);
     windowNode.getParam("mdp/drone_" + std::to_string(myDrone.numericID) + "/influenceDistance", this->dInfluenceDistance);
 
-    logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
+    std::string logTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/log";
+
     firstTimeStamp = ros::Time().now();
+
     logTextBuffer->set_text(
             round_to_string(firstTimeStamp.toSec(), 4) +
             ": All timing relative to " +
             std::to_string(firstTimeStamp.toSec()) +
             "\n");
+
     std::string currPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/curr_pose";
     std::string desPoseTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/des_pose";
 
@@ -55,18 +51,21 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
     std::string batteryTopic = "mdp/drone_" + std::to_string(myDrone.numericID) + "/battery";
 
     windowNode.setCallbackQueue(&windowQueue);
-    
+
+    /* larger queue size to get log messages between periodic updates */
     logSubscriber = windowNode.subscribe<multi_drone_platform::log>(
             logTopic,
             50,
             &debug_window::log_callback,
             this);
 
+    /* for all other topics only need most recent message */
     currPoseSubscriber = windowNode.subscribe<geometry_msgs::PoseStamped>(
             currPoseTopic,
             1,
             &debug_window::curr_position_callback,
             this);
+
     desPoseSubscriber = windowNode.subscribe<geometry_msgs::PoseStamped>(
             currPoseTopic,
             1,
@@ -102,9 +101,11 @@ void debug_window::init(mdp::id droneName, std::array<int, 2> startLocation, boo
 
     if (expanded) on_expandButton_clicked();
 
+    /* Move to start location before displaying */
     if (startLocation != std::array<int,2>({0, 0})) {
         this->move(startLocation[0], startLocation[1]);
     }
+
     this->show();
 }
 
@@ -119,6 +120,8 @@ std::string debug_window::round_to_string(double val, int n) {
 
 bool debug_window::on_draw(const Cairo::RefPtr<Cairo::Context>& cr) {
     draw_obstacles();
+
+    /* on_draw required to update window components */
     return Gtk::Window::on_draw(cr);
 }
 
@@ -157,6 +160,7 @@ void debug_window::check_y(geometry_msgs::Pose ob, std::vector<int> &candidates)
 }
 
 void debug_window::draw_obstacles() {
+    /* Reset colour from last update */
     reset_all_panels();
     for (int i = obstacles.poses.size() - 1; i >= 0; i --) {
         geometry_msgs::Pose ob = obstacles.poses[i];
@@ -178,6 +182,7 @@ void debug_window::draw_obstacles() {
 }
 
 void debug_window::update_ui_labels() {
+    /* round each value to 3 decimals as it fits the window nicely */
     int decimals = 3;
 
     currVelX->set_text(round_to_string(currVelocityMsg.twist.linear.x, decimals));
@@ -200,14 +205,14 @@ void debug_window::update_ui_labels() {
     desPosZ->set_text(round_to_string(desPositionMsg.pose.position.z, decimals));
     desYaw->set_text(round_to_string(mdp_conversions::get_yaw_from_pose(desPositionMsg.pose), decimals));
 
-    double vel = std::sqrt(
+    double speed = std::sqrt(
             currVelocityMsg.twist.linear.x * currVelocityMsg.twist.linear.x +
             currVelocityMsg.twist.linear.y * currVelocityMsg.twist.linear.y +
             currVelocityMsg.twist.linear.z + currVelocityMsg.twist.linear.z
             );
+    maxDroneSpeed = std::max(maxDroneSpeed, speed);
+    maxSpeedLabel->set_text(round_to_string(maxDroneSpeed, decimals));
 
-    maxMag = std::max(maxMag, vel);
-    maxSpeedLabel->set_text(round_to_string(maxMag, decimals));
     stateInput->set_text(currState);
 
     batteryLevelBar->set_value(batteryPercent);
@@ -219,20 +224,24 @@ void debug_window::update_ui_on_resume() {
     logTextBuffer->insert(logTextBuffer->end(), toAddToLog);
     toAddToLog = "";
     update_ui_labels();
-//    Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
-//    scrollAdjust->set_value(scrollAdjust->get_upper());
+    /* @TODO Fix auto scroll of log view */
+
+    /* Glib::RefPtr<Gtk::Adjustment> scrollAdjust = logScroll->get_vadjustment();
+       scrollAdjust->set_value(scrollAdjust->get_upper()); */
 }
 
 void debug_window::write_to_file() {
     std::ofstream file;
     std::string session = "";
+
+    /* Only write log files if the session directory exists */
     if (ros::param::has(SESSION_PARAM)) {
         ros::param::get(SESSION_PARAM, session);
+        std::string fileName = "drone_" + std::to_string(myDrone.numericID) + ".txt";
+        file.open(session + fileName);
+        file << logTextBuffer->get_text(true);
+        file.close();
     }
-    std::string fileName = "drone_" + std::to_string(myDrone.numericID) + ".txt";
-    file.open(session + fileName);
-    file << logTextBuffer->get_text(true);
-    file.close();
 }
 
 void debug_window::fetch_state_param() {
@@ -240,13 +249,19 @@ void debug_window::fetch_state_param() {
         windowNode.getParam("/mdp/drone_" + std::to_string(myDrone.numericID) + "/state", currState);
     }
     else {
+        /* If the state does not exist, the drone has been removed from the drone_server */
         this->close();
     }
 }
 
 bool debug_window::ros_spin() {
+
+    /* Call all ROS events queued since last iteration */
     windowQueue.callAvailable();
+
     fetch_state_param();
+
+    /* Call dispatcher to update UI elements */
     dispatcher.emit();
     return true;
 }
@@ -260,7 +275,6 @@ void debug_window::on_emergencyButton_clicked() {
 }
 
 void debug_window::log_callback(const multi_drone_platform::log::ConstPtr& msg) {
-    double time = ros::Duration(msg->timeStamp - firstTimeStamp).toSec();
     std::string newLogLine = round_to_string(msg->timeStamp.toSec(), 4) + ": " + msg->type + " " + msg->logMessage + "\n";
     toAddToLog += newLogLine;
 }
@@ -286,19 +300,16 @@ void debug_window::obstacle_callback(const geometry_msgs::PoseArray::ConstPtr &m
 }
 
 void debug_window::battery_callback(const std_msgs::Float32::ConstPtr &msg) {
-    batteryPercent = *(double*)(msg.get());
+    batteryPercent = (double)(msg->data);
 }
 
 void debug_window::on_expandButton_clicked() {
-    if (!expanded) {
-        logSubscriber = windowNode.subscribe<multi_drone_platform::log>(logTopic, 50, &debug_window::log_callback, this);
-    }
-    else {
-        logSubscriber.shutdown();
-    }
     sidePanelGrid->set_visible(!expanded);
     logScroll->set_visible(!expanded);
     expandButton->set_image(expanded ? *expandImage : *compressImage);
+
+    /* This makes the window as small as it can go, considering the new conditions imposed by the grid and the
+     * log view */
     this->resize(1, 1);
     expanded = !expanded;
 }
@@ -310,33 +321,41 @@ bool debug_window::on_close(GdkEventAny* event) {
 void debug_window::link_widgets() {
     try {
         builder->get_widget(VNAME(droneNameLabel), droneNameLabel);
-        builder->get_widget(VNAME(droneNameLabel), droneNameLabel);
+
         builder->get_widget(VNAME(currPosX), currPosX);
         builder->get_widget(VNAME(currPosY), currPosY);
         builder->get_widget(VNAME(currPosZ), currPosZ);
         builder->get_widget(VNAME(currYaw), currYaw);
+
         builder->get_widget(VNAME(currVelX), currVelX);
         builder->get_widget(VNAME(currVelY), currVelY);
         builder->get_widget(VNAME(currVelZ), currVelZ);
         builder->get_widget(VNAME(currYawRate), currYawRate);
+
         builder->get_widget(VNAME(desPosX), desPosX);
         builder->get_widget(VNAME(desPosY), desPosY);
         builder->get_widget(VNAME(desPosZ), desPosZ);
         builder->get_widget(VNAME(desYaw), desYaw);
+
         builder->get_widget(VNAME(desVelX), desVelX);
         builder->get_widget(VNAME(desVelY), desVelY);
         builder->get_widget(VNAME(desVelZ), desVelZ);
         builder->get_widget(VNAME(desYawRate), desYawRate);
+
         builder->get_widget(VNAME(stateInput), stateInput);
         builder->get_widget(VNAME(batteryLevelBar), batteryLevelBar);
         builder->get_widget(VNAME(pktLossLabel), pktLossLabel);
         builder->get_widget(VNAME(logTextView), logTextView);
+
         builder->get_widget(VNAME(landButton), landButton);
         builder->get_widget(VNAME(emergencyButton), emergencyButton);
+
         builder->get_widget(VNAME(speedLabel), speedLabel);
         builder->get_widget(VNAME(maxSpeedLabel), maxSpeedLabel);
+
         builder->get_widget(VNAME(expandButton), expandButton);
         builder->get_widget(VNAME(sidePanelGrid), sidePanelGrid);
+
         builder->get_widget(VNAME(topViewBottom), topViewBottom);
         builder->get_widget(VNAME(topViewTop), topViewTop);
         builder->get_widget(VNAME(topViewLeft), topViewLeft);
@@ -345,13 +364,18 @@ void debug_window::link_widgets() {
         builder->get_widget(VNAME(topViewTopRight), topViewTopRight);
         builder->get_widget(VNAME(topViewBotRight), topViewBotRight);
         builder->get_widget(VNAME(topViewBotLeft), topViewBotLeft);
+
         builder->get_widget(VNAME(sideViewTop), sideViewTop);
         builder->get_widget(VNAME(sideViewBottom),sideViewBottom);
+
         builder->get_widget(VNAME(logScroll), logScroll);
+
         builder->get_widget(VNAME(compressImage), compressImage);
         builder->get_widget(VNAME(expandImage), expandImage);
 
         logTextBuffer = logTextView->get_buffer();
+
+        /* Connect various event callbacks */
 
         landButton->signal_clicked().connect
                 (sigc::mem_fun(*this, &debug_window::on_landButton_clicked));
@@ -362,14 +386,19 @@ void debug_window::link_widgets() {
         expandButton->signal_clicked().connect
                 (sigc::mem_fun(*this, &debug_window::on_expandButton_clicked));
 
-        Glib::signal_timeout().connect(sigc::mem_fun(*this, &debug_window::ros_spin), LOG_POST_RATE);
+
+        /* Periodic function to call ROS related events, whilst Gtk events are called asynchronous */
+        Glib::signal_timeout().connect(sigc::mem_fun(*this, &debug_window::ros_spin), UI_UPDATE_RATE);
         this->signal_delete_event().connect(
                 sigc::mem_fun(*this, &debug_window::on_close)
         );
+
+        /* Linking the dispatcher */
         dispatcher.connect(sigc::mem_fun(*this, &debug_window::update_ui_on_resume));
+
     }
     catch (const std::exception &e) {
-        throw importError();
+        throw import_error();
     }
 }
 
@@ -378,6 +407,8 @@ void debug_window::reset_all_panels() {
     Gtk::Allocation allocation = topViewTopLeft->get_allocation();
     const int width = allocation.get_width();
     const int height = allocation.get_height();
+
+    /* TopView 1 (Arc) */
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
     cr->scale(width, height);
@@ -389,6 +420,7 @@ void debug_window::reset_all_panels() {
     cr->arc(1.0, 1.0, outer, M_PI, M_PI/2);
     cr->stroke();
 
+    /* TopView 2 (Straight) */
     cr = topViewTop->get_window()->create_cairo_context();
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -401,6 +433,7 @@ void debug_window::reset_all_panels() {
     cr->line_to(1.0, 1.0 - inner);
     cr->stroke();
 
+    /* TopView 3 (Arc) */
     cr = topViewTopRight->get_window()->create_cairo_context();
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -410,6 +443,7 @@ void debug_window::reset_all_panels() {
     cr->arc(0.0, 1.0, outer, M_PI/2, 0.0);
     cr->stroke();
 
+    /* TopView 4 (Straight) */
     cr = topViewLeft->get_window()->create_cairo_context();
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -422,6 +456,7 @@ void debug_window::reset_all_panels() {
     cr->line_to(1.0 - outer, 1.0);
     cr->stroke();
 
+    /* TopView 5 (Straight) */
     cr = topViewRight->get_window()->create_cairo_context();
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -434,6 +469,7 @@ void debug_window::reset_all_panels() {
     cr->line_to(outer, 1.0);
     cr->stroke();
 
+    /* TopView 6 (Arc) */
     cr = topViewBotLeft->get_window()->create_cairo_context();
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -446,6 +482,7 @@ void debug_window::reset_all_panels() {
     cr->arc(1.0, 0.0, outer, -M_PI/2, -M_PI);
     cr->stroke();
 
+    /* TopView 7 (Straight) */
     cr = topViewBottom->get_window()->create_cairo_context();
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -458,6 +495,7 @@ void debug_window::reset_all_panels() {
     cr->line_to(1.0, outer);
     cr->stroke();
 
+    /* TopView 8 (Arc) */
     cr = topViewBotRight->get_window()->create_cairo_context();
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -470,6 +508,7 @@ void debug_window::reset_all_panels() {
     cr->arc(0.0, 0.0, outer, 0, -M_PI/2);
     cr->stroke();
 
+    /* SideView 1 (Straight) */
     cr = sideViewTop->get_window()->create_cairo_context();
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -482,6 +521,7 @@ void debug_window::reset_all_panels() {
     cr->line_to(1.0, 1.0 - outer);
     cr->stroke();
 
+    /* SideView 2 (Straight) */
     cr = sideViewBottom->get_window()->create_cairo_context();
     cr->set_line_width(lineWidth);
     cr->set_source_rgb(defaultColor[0], defaultColor[1], defaultColor[2]);
@@ -500,15 +540,15 @@ void debug_window::fill_panel(geometry_msgs::Pose ob, int level) {
 
     switch (level) {
         case 3:
-            // red
+            /* Red */
             highlightColor = {0.8, 0.0, 0.10};
             break;
         case 2:
-            // orange
+            /* Orange */
             highlightColor = {0.9, 0.50, 0.00};
             break;
         case 1:
-            // yellow
+            /* Yellow */
             highlightColor = {1.0, 0.90, 0.00};
             break;
     }
@@ -521,10 +561,13 @@ void debug_window::fill_panel(geometry_msgs::Pose ob, int level) {
 
     int width = 0;
     int height = 0;
+
     Gtk::Allocation allocation;
     Cairo::RefPtr<Cairo::Context> cr;
 
+    /* should only be one panel remaining from check_x and check_y as they are reduce functions */
     if (panels.size() == 1) {
+        /* Number associated with TopView grid provided in header file */
         switch (panels[0]) {
             case 1:
                 cr = topViewTopLeft->get_window()->create_cairo_context();
@@ -656,7 +699,9 @@ void debug_window::fill_panel(geometry_msgs::Pose ob, int level) {
         cr->set_line_width(lineWidth);
         cr->stroke();
 
+        /* Side view panels are alot simpler as there are only two */
         if (ob.position.z >= dHeight/2) {
+            /* SideView 1 */
             cr = sideViewTop->get_window()->create_cairo_context();
             allocation = topViewBotRight->get_allocation();
             cr->scale(allocation.get_width(), allocation.get_height());
@@ -676,6 +721,7 @@ void debug_window::fill_panel(geometry_msgs::Pose ob, int level) {
             cr->stroke();
         }
         else if (ob.position.z <= -dHeight/2) {
+            /* SideView 2 */
             cr = sideViewBottom->get_window()->create_cairo_context();
             allocation = topViewBotRight->get_allocation();
             cr->scale(allocation.get_width(), allocation.get_height());

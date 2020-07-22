@@ -2,10 +2,10 @@
 #include "ros/ros.h"
 
 #define DO_FLIGHT_TEST      0
-#define DO_HOVER_TEST       1
+#define DO_HOVER_TEST       0
 #define DO_BASEBALL_RUN     0
 #define DO_FIGURE_EIGHT     0
-#define DO_DONUTS           0
+#define DO_DONUTS           1
 
 
 void do_drone_flight_test(mdp::id drone)
@@ -227,12 +227,20 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
             {-0.5, 0.0, 0.0}}
     };
 
+    std::array<double, 5> yawPositions = {
+            0.0,
+            90.0,
+            180.0,
+            270.0,
+            360.0
+    };
+
     mdp::position_msg baseMsg;
     baseMsg.relative = false;
     baseMsg.keepHeight = true;
     baseMsg.position = positions[0];
     baseMsg.duration = 6.0;
-    baseMsg.yaw = 0.0;
+    baseMsg.yaw = yawPositions[0];
 
     auto baseDronePos = mdp::get_position(baseDrone);
 
@@ -245,11 +253,13 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
 
     mdp::set_drone_position(donutDrone, donutMsg);
     mdp::sleep_until_idle(donutDrone);
-    donutMsg.duration = 0.5;
+    donutMsg.duration = 1.0;
 
     mdp::spin_until_rate();
     for (size_t i = 0; i < positions.size(); i++) {
         baseMsg.position = positions[i];
+        baseMsg.yaw = yawPositions[i];
+
         mdp::set_drone_position(baseDrone, baseMsg);
         mdp::spin_until_rate();
 
@@ -259,8 +269,10 @@ void do_donuts(mdp::id baseDrone, mdp::id donutDrone) {
             double timeNow = ros::Time::now().toSec();
             double donutX = sin(timeNow) * 0.6;
             double donutY = cos(timeNow) * 0.6;
-
             donutMsg.position = {baseDronePos.x + donutX, baseDronePos.y + donutY, 0.0};
+
+            donutMsg.yaw = std::fmod(timeNow, 6.23) * 57.29;
+
             mdp::set_drone_position(donutDrone, donutMsg);
 
             mdp::spin_until_rate();

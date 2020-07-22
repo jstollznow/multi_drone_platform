@@ -57,7 +57,8 @@ void drone_server::shutdown() {
         for (size_t i = 0; i < rigidbodyList.size(); i++) {
             if (rigidbodyList[i] != nullptr) {
                 rigidbodyList[i]->update(rigidbodyList);
-                if (rigidbodyList[i]->get_state() != rigidbody::flight_state::LANDED) {
+                auto rState = rigidbodyList[i]->get_state();
+                if (rState != rigidbody::flight_state::LANDED && rState != rigidbody::flight_state::DELETED && rState != rigidbody::flight_state::UNKNOWN) {
                     allLanded = false;
                 }
             }
@@ -90,7 +91,7 @@ bool drone_server::add_new_rigidbody(const std::string& pTag, std::vector<std::s
     if (mdp_wrappers::create_new_rigidbody(pTag, rigidbodyList.size(), std::move(args), RB)) {
         /* update drone state on param server */
 
-        /* indicate if the drone is a vflie or not, this is used for ICP */
+        /* indicate if the drone is a vflie or not */
         if (mdp_wrappers::get_drone_type_id(pTag) == droneTypeMap["vflie"]) {
             RB->isVflie = true;
         }
