@@ -1,4 +1,8 @@
-The platform should allow for multi-drone control and formation through various drone types with real-time collision avoidance. The platform should support user written demonstrations through a user API library accessible in MATLAB and C++. The platform should support velocity and position based control commands applicable to both individual and groups of drones. The platform should allow for effortless integration of new drone types with minimal alteration in platform dynamics. The platform should provide a unified solution for researchers in the operation, testing and logging of developed multi-drone formation and control algorithms.
+<a href="url"><img src="https://raw.githubusercontent.com/jstollznow/multi_drone_platform/master/cflie_drone.jpg" align="right" height="300" ></a>
+
+The platform allows for multi-drone control and formation through various drone types with real-time collision avoidance. The platform supports user written demonstrations through a user API library accessible in MATLAB and C++. The platform supports velocity and position based control commands applicable to both individual and groups of drones. The platform allows for effortless integration of new drone types with minimal alteration in platform dynamics. The platform provides a unified solution for researchers in the operation, testing and logging of developed multi-drone formation and control algorithms.
+
+
 
 # Getting Started
 
