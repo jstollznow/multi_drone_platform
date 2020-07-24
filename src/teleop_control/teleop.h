@@ -38,7 +38,7 @@
 /**
  * Velocity in any direction deemed greater than this constant breaks the stationary boolean (see stable_for_command)
  */
-#define THRESHOLD_VEL 0.01f
+#define THRESHOLD_VEL 0.05f
 
 /**
  * Message duration applied to velocity joystick commands

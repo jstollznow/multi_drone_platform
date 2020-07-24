@@ -314,6 +314,7 @@ void go_to_home(const mdp::id& pDroneID, float duration, float pHeight) {
     inputMsg.drone_id().numeric_id() = pDroneID.numericID;
     inputMsg.msg_type() = "GOTO_HOME";
     inputMsg.pos_vel().z = pHeight;
+    inputMsg.yaw() = 0.0f;
     inputMsg.duration() = duration;
 
     inputMsg.relative() = encode_relative_array_to_double(false, (pHeight < 0.0f));

@@ -149,20 +149,20 @@ void rigidbody::set_desired_position(geometry_msgs::Vector3 pos, float yaw, floa
     if (pos.x == current_pos.x && pos.y == current_pos.y && pos.z == current_pos.z) {
         this->declare_expected_state(flight_state::MOVING, duration);
     } else {
-        this->declare_expected_state(flight_state::MOVING);
+        this->declare_expected_state(flight_state::MOVING, duration);
     }
 
     /* modify input yaw such that it takes the shortest route to the new yaw */
-    yaw = std::fmod(yaw, 360.0f);
-
-    float currentYaw = std::fmod(mdp_conversions::get_yaw_from_pose(this->get_current_pose()), 360.0f);
-
-    float yawDiff = yaw - currentYaw;
-    if (std::abs(yawDiff) > 180.0f) {
-        yawDiff += 360.0f;
-        yawDiff = std::fmod(yawDiff, 360.0f);
-    }
-    yaw = currentYaw + yawDiff;
+//    yaw = std::fmod(yaw, 360.0f);
+//
+//    float currentYaw = std::fmod(mdp_conversions::get_yaw_from_pose(this->get_current_pose()), 360.0f);
+//
+//    float yawDiff = yaw - currentYaw;
+//    if (std::abs(yawDiff) > 180.0f) {
+//        yawDiff += 360.0f;
+//        yawDiff = std::fmod(yawDiff, 360.0f);
+//    }
+//    yaw = currentYaw + yawDiff;
 
     this->log(logger::WARN, "next yaw is: " + std::to_string(yaw));
 
@@ -188,7 +188,7 @@ void rigidbody::set_desired_velocity(geometry_msgs::Vector3 vel, float yawRate, 
 
     desiredTwistPublisher.publish(desTwistMsg);
 
-    this->declare_expected_state(flight_state::MOVING);
+    this->declare_expected_state(flight_state::MOVING, duration);
     this->on_set_velocity(vel, yawRate, duration);
 }
 
@@ -313,7 +313,6 @@ void rigidbody::update(std::vector<rigidbody*>& rigidbodies) {
     else if (this->get_state() == MOVING || this->get_state() == HOVERING){
         //potential_fields::check(this, rigidbodies);
     }
-
     this->on_update();
 }
 
@@ -438,8 +437,7 @@ void rigidbody::takeoff(float height, float duration) {
         this->log(logger::WARN, "takeoff called when already in flight, ignoring");
         return;
     }
-    this->absoluteYaw = std::fmod(this->absoluteYaw, 360.0f);
-    this->declare_expected_state(flight_state::MOVING);
+    this->declare_expected_state(flight_state::MOVING, duration);
     this->on_takeoff(height, duration);
 }
 
@@ -494,7 +492,7 @@ void rigidbody::update_current_flight_state() {
     geometry_msgs::Vector3& vel = currentVelocity.linear;
     double velocityMag = std::sqrt((vel.x * vel.x) + (vel.y * vel.y) + (vel.z * vel.z));
     // @TODO: find a good value for this
-    bool droneHasMoved = velocityMag > 0.08;
+    bool droneHasMoved = velocityMag > 0.01;
 
     /* MOV COUNTING */
     /* update movCounter with new information */
@@ -510,7 +508,7 @@ void rigidbody::update_current_flight_state() {
     movCounterQueue.push(droneHasMoved);
 
     /* only accept moving if almost all of last frames agree */
-    droneHasMoved = (movCounter >= 2);
+//    droneHasMoved = (movCounter >= 2);
     /* ~MOV COUNTING */
 
     /* determine whether the drone is considered to be on the ground */
@@ -605,13 +603,15 @@ double rigidbody::get_end_yaw_from_yawrate_and_time_period(double yawrate, doubl
 }
 
 void rigidbody::adjust_absolute_yaw() {
-    auto newYaw = mdp_conversions::get_yaw_from_pose(motionCapture.front().pose);
-    auto oldYaw = mdp_conversions::get_yaw_from_pose(motionCapture.back().pose);
-    float yawDiff = newYaw - oldYaw;
-    if (std::abs(yawDiff) > 180.0f) {
-        yawDiff = std::fmod(360.0f + yawDiff, 360.f);
+    if ((motionCapture.front().header.seq % (motionCapture.size() - 1)) == 0) {
+        auto newYaw = mdp_conversions::get_yaw_from_pose(motionCapture.back().pose);
+        auto oldYaw = mdp_conversions::get_yaw_from_pose(motionCapture.front().pose);
+        float yawDiff = newYaw - oldYaw;
+        if (std::abs(yawDiff) > 180.0f) {
+            yawDiff = - (360.0f - yawDiff);
+        }
+        absoluteYaw += yawDiff;
     }
-    absoluteYaw += yawDiff;
 }
 
 ros::NodeHandle rigidbody::get_ros_node_handle() const {

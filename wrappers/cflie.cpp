@@ -85,10 +85,10 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
     }
 
     void battery_log(const std_msgs::Float32::ConstPtr &msg) {
-        if (msg->data <= 2.50f) {
-            this->log(logger::WARN, "Battery dying soon...");
-            batteryDying = true;
-        }
+//        if (msg->data <= 1.50f) {
+//            this->log(logger::WARN, "Battery dying soon...");
+//            batteryDying = true;
+//        }
         std_msgs::Float32 percentage;
         percentage.data = msg->data/4.2;
         this->batteryPublisher.publish(percentage);
@@ -212,17 +212,17 @@ class DRONE_WRAPPER(cflie, linkUri, droneAddress)
         this->log(logger::INFO, "Base yaw: " + std::to_string(base_yaw));
         this->log(logger::INFO, "Absolute yaw: " + std::to_string(this->absoluteYaw));
         this->log(logger::INFO, "Goal yaw: " + std::to_string(base_yaw + yaw));
-        go_to(pos, base_yaw + yaw, duration, false);
+        go_to(pos, yaw, duration, false);
     }
 
     void on_set_velocity(geometry_msgs::Vector3 vel, float yawrate, float duration) override {
         geometry_msgs::Vector3 positionGoal;
-        positionGoal.x = (vel.x * duration);
-        positionGoal.y = (vel.y * duration);
-        positionGoal.z = (vel.z * duration);
+        positionGoal.x = this->currentPose.position.x + (vel.x * duration);
+        positionGoal.y = this->currentPose.position.y + (vel.y * duration);
+        positionGoal.z = this->currentPose.position.z + (vel.z * duration);
         float yaw = yawrate * duration;
-        // as it calculates a relative positon
-        go_to(positionGoal, yaw , duration, true);
+        // as it calculates a relative position
+        go_to(positionGoal, yaw , duration, false);
     }
 
     void on_takeoff(float height, float duration) override {

@@ -256,8 +256,12 @@ classdef mdp_api
             StateParam = strcat("mdp/drone_", num2str(drone.NumericId), "/state");
             Ptree = rosparam();
             if has(Ptree,StateParam) 
-                StrState = rosparam('get',StateParam);
-                State = mdp_flight_state.convertstringtoflightstate(StrState);
+                StrState = get(Ptree,StateParam);
+                if StrState
+                    State = mdp_flight_state.convertstringtoflightstate(StrState);
+                else
+                    State = mdp_flight_state.convertstringtoflightstate('DELETED');
+                end
             else 
                 State = mdp_flight_state.convertstringtoflightstate('DELETED');
             end

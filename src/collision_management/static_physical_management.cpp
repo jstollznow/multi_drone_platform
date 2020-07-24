@@ -24,7 +24,7 @@ double magnitude(T a) {
 }
 
 static_limits static_physical_management::staticBoundary(
-    {{-1.45, 1.25}},
+    {{-1.45, 1.05}},
     {{-1.50, 1.50}},
     {{0.10, 2.00}}
 );

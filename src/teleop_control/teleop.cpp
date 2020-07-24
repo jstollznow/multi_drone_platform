@@ -166,7 +166,7 @@ void teleop::command_handle() {
 }
 
 std::array<double, 3> teleop::input_capped(const std::array<double, 3> requestedVelocity) {
-    double maxVelChange = 0.25;
+    double maxVelChange = 0.4;
 
     std::array<double, 3> ret;
     std::array<double, 3> currVelArr = {currentVelocity.x, currentVelocity.y, currentVelocity.z};
@@ -178,6 +178,9 @@ std::array<double, 3> teleop::input_capped(const std::array<double, 3> requested
         if (std::isnan(dir)) dir = 1.0f;
         ret[i] =  currVelArr[i] + dir * relChange;
     }
+    this->log(logger::WARN, "Teleop Input [" + std::to_string(requestedVelocity[0]) + ", " + std::to_string(requestedVelocity[1]) + ", " + std::to_string(requestedVelocity[2]) + "]");
+    this->log(logger::WARN, "Current Velocity [" + std::to_string(currentVelocity.x) + ", " + std::to_string(currentVelocity.y) + ", " + std::to_string(currentVelocity.z) + "]");
+    this->log(logger::WARN, "Velocity Capped [" + std::to_string(ret[0]) + ", " + std::to_string(ret[1]) + ", " + std::to_string(ret[2]) + "]\n");
     return ret;
 }
 
@@ -191,7 +194,7 @@ void teleop::joystick_command(const std::array<double, 3> vel) {
     velocityMsg.keepHeight = false;
     velocityMsg.relative = false;
     velocityMsg.velocity = input_capped(vel);
-    velocityMsg.yawRate = teleopInput.yaw;
+    velocityMsg.yawRate = 0.0;
 
     mdp::set_drone_velocity(drones[controlIndex], velocityMsg);
 
@@ -200,9 +203,9 @@ void teleop::joystick_command(const std::array<double, 3> vel) {
 }
 
 bool teleop::stable_for_command() {
-    return (std::abs(currentVelocity.x) <= THRESHOLD_VEL &&
-            std::abs(currentVelocity.y) <= THRESHOLD_VEL &&
-            std::abs(currentVelocity.z) <= THRESHOLD_VEL);
+    return (std::sqrt(currentVelocity.x * currentVelocity.x +
+    currentVelocity.y * currentVelocity.y +
+    currentVelocity.z * currentVelocity.z) <= THRESHOLD_VEL);
 }
 
 void teleop::id_switch(const bool up) {
@@ -264,6 +267,7 @@ void teleop::control_update() {
                     commandQueue.pop();
                 }
                 else {
+                    this->log(logger::INFO, "LAND");
                     joystick_command(std::array<double,3>{0.0f, 0.0f, 0.0f});
                 }
                 break;
@@ -278,6 +282,7 @@ void teleop::control_update() {
                 }
                 else {
                     /* move towards zero velocity */
+                    this->log(logger::INFO, "HOVER");
                     joystick_command(std::array<double,3>{0.0f, 0.0f, 0.0f});
                 }
                 break;
